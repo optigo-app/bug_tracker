@@ -1,0 +1,877 @@
+.editorShell {
+  min-height: 100vh;
+  background: #f7f7f7;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+}
+
+.brandArea,
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbarCenter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.topbarChip {
+  height: 28px !important;
+  border-radius: 999px !important;
+  background: rgba(244, 246, 248, 0.95) !important;
+  color: #5f6773 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.logoTile {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.logoText {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #2f2f2f;
+}
+
+.backLink {
+  color: #5b6470;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.iconButton {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #656565;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iconButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.exportButton {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  padding: 0 16px !important;
+  background: #7367f0 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  transition: all 0.2s ease;
+}
+
+.exportButton:hover {
+  background: #6366f1 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(115, 103, 240, 0.3);
+}
+
+.continueButton {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  padding: 0 16px !important;
+  background: #7367f0 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  transition: all 0.2s ease;
+}
+
+.continueButton:hover {
+  background: #6366f1 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(115, 103, 240, 0.3);
+}
+
+.canvasArea {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #f1f3f5;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 1V19M1 10H19' stroke='%23111111' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='10' cy='10' r='1.8' fill='%23111111'/%3E%3C/svg%3E")
+      10 10,
+    crosshair;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.canvasSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.shapeGroup {
+  cursor: pointer;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.propertiesPanel {
+  position: absolute;
+  top: 68px;
+  right: 12px;
+  width: 288px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.1),
+    0 2px 4px rgba(15, 23, 42, 0.04);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.propertiesPanelCompact {
+  position: absolute;
+  top: 25px;
+  right: 12px;
+  width: 200px;
+  padding: 10px 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.12),
+    0 2px 6px rgba(15, 23, 42, 0.08);
+  z-index: 920;
+  overflow: visible;
+}
+
+.compactSection {
+  padding: 0 10px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.compactSection:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.compactInfoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  color: #5b6470;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.contextToolbar {
+  position: absolute;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 18px 34px rgba(15, 23, 42, 0.12),
+    0 6px 12px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.panelTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+.panelEyebrow {
+  margin: 0 !important;
+  color: #7a818c;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panelTitle {
+  margin: 2px 0 0 !important;
+  color: #111827;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-transform: capitalize;
+  line-height: 1.2 !important;
+}
+
+.panelBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #7367f0;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.propertyCard {
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.panelHelperText {
+  margin: 0 !important;
+  color: #667085;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.panelMessage {
+  margin-top: 8px !important;
+  color: #7367f0;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.propertySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.propertySectionHeader strong {
+  color: #111827;
+  font-size: 11px;
+}
+
+.propertyGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.colorDot {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.colorDot:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.colorDotActive {
+  border-color: #7367f0;
+  box-shadow: 0 0 0 2px rgba(115, 103, 240, 0.18);
+}
+
+.colorDotInner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6a6a6a;
+}
+
+.sliderValue {
+  min-width: 16px;
+  color: #7b8794;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.thicknessSlider {
+  flex: 1;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.thicknessSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 2px solid #7367f0;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.iconGrid,
+.iconGridSecondary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.iconGridSingle {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.iconGridSecondary {
+  margin-top: 8px;
+}
+
+.gridIconButton {
+  aspect-ratio: 1;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gridIconButton:hover {
+  background: #ffffff;
+  border-color: rgba(115, 103, 240, 0.18);
+  transform: scale(1.05);
+}
+
+.inlineIconButton,
+.inlineTextButton {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: rgba(244, 246, 248, 0.95);
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inlineIconButton:hover,
+.inlineTextButton:hover {
+  background: rgba(229, 231, 235, 0.95);
+  transform: scale(1.05);
+}
+
+.inlineTextButton {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.arrowEnds {
+  display: flex;
+  gap: 6px;
+}
+
+.sizeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.sizeButton {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #444;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sizeButton:hover {
+  background: rgba(15, 23, 42, 0.04);
+  transform: scale(1.05);
+}
+
+.sizeButtonActive {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.mediaUploadButton {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #7367f0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mediaUploadButton:hover {
+  background: #6366f1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(115, 103, 240, 0.3);
+}
+
+.gridIconButton:hover {
+  background: #ffffff;
+  border-color: rgba(115, 103, 240, 0.18);
+}
+
+.gridIconButtonActive {
+  background: linear-gradient(180deg, #eff6ff 0%, #e2edff 100%);
+  color: #7367f0;
+  border-color: #9d8eff;
+  box-shadow: 0 0 0 2px rgba(157, 142, 255, 0.14);
+}
+
+.toolSpecificPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panelTextarea {
+  min-height: 84px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+
+.panelButton {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  text-transform: none !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #5f6773;
+  font-size: 12px;
+}
+
+.infoRow strong {
+  color: #262626;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.resetButton {
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: all 0.2s ease;
+}
+
+.resetButton:hover {
+  color: #1f2937;
+  transform: translateX(2px);
+}
+
+.propertyFooter {
+  display: flex;
+  justify-content: center;
+}
+
+.zoomButtons {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.optionButton {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.optionButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+.bottomToolbarWrap {
+  position: absolute;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolDockWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.historyToolbar,
+.toolDock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.12),
+    0 10px 20px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.shapeMenu {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  transform: translateX(-50%);
+  width: 152px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.14),
+    0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.shapeMenuButton {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shapeMenuButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+.shapeMenuButtonActive {
+  background: rgba(115, 103, 240, 0.12);
+  color: #7367f0;
+}
+
+.historyToolbar {
+  border-radius: 14px;
+}
+
+.toolDock {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, 0.08),
+    0 5px 10px rgba(0, 0, 0, 0.04);
+}
+
+.toolButton {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toolButton:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111827;
+  transform: scale(1.05);
+}
+
+.toolButtonActive {
+  background: #7367f0 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(115, 103, 240, 0.25);
+}
+
+.zoomBadge {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: rgba(247, 247, 247, 0.9);
+  color: #4c4c4c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.madeWithBadge {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(32, 32, 32, 0.18);
+  border-radius: 8px;
+  background: rgba(248, 248, 248, 0.96);
+  color: #555;
+}
+
+.madeWithBadge small,
+.madeWithBadge strong {
+  display: block;
+  line-height: 1.1;
+}
+
+.madeWithBadge small {
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.madeWithBadge strong {
+  font-size: 12px;
+}
+
+.badgeDots {
+  width: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.badgeDots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #6d6d6d;
+}
+
+.textEditor {
+  position: absolute;
+  padding: 8px;
+  border: 1.5px solid #7367f0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.98);
+  font: inherit;
+  font-size: 18px;
+  outline: none;
+  resize: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 1100;
+}
+
+.videoFrame {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-style: solid;
+  border-radius: 18px;
+  background: #111827;
+}
+
+.videoElement {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #111827;
+}
+
+@media (max-width: 780px) {
+  .propertiesPanel {
+    transform: scale(0.88);
+    transform-origin: top right;
+  }
+
+  .propertiesPanelCompact {
+    transform: scale(0.9);
+    transform-origin: top right;
+  }
+
+  .exportButton {
+    display: none !important;
+  }
+
+  .topbarCenter {
+    display: none;
+  }
+
+  .bottomToolbarWrap {
+    bottom: 12px;
+    transform: translateX(-50%) scale(0.92);
+    transform-origin: bottom center;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding-inline: 10px;
+  }
+
+  .propertiesPanel {
+    right: -10px;
+    transform: scale(0.72);
+  }
+
+  .propertiesPanelCompact {
+    top: 68px;
+    right: -4px;
+    transform: scale(0.78);
+  }
+
+  .toolDock {
+    gap: 1px;
+    padding-inline: 4px;
+  }
+
+  .toolButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .madeWithBadge {
+    transform: scale(0.86);
+    transform-origin: bottom right;
+  }
+}

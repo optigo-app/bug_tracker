@@ -1,0 +1,10 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#F8FAFC"/>
+  <rect x="0.5" y="0.5" width="799" height="599" rx="15.5" stroke="#E2E8F0" stroke-dasharray="10 10"/>
+  <path d="M400 240C433.137 240 460 213.137 460 180C460 146.863 433.137 120 400 120C366.863 120 340 146.863 340 180C340 213.137 366.863 240 400 240Z" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M400 320V440" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M340 380H460" stroke="#94A3B8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="400" y="500" text-anchor="middle" fill="#94A3B8" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="600">No Media Available</text>
+  <path d="M300 150L200 250M200 150L300 250" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M600 150L500 250M500 150L600 250" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,110 @@
+USE [test-AI2]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_GetBugs]    Script Date: 24-04-2026 11:12:49 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author     : System Generated
+-- Create date: March 10, 2026
+-- Description: Bug Tracking System Stored Procedures
+-- =============================================
+
+-- =============================================
+-- Author     : System Generated
+-- Create date: March 10, 2026
+-- Description: Retrieves bugs with optional filtering by task and status
+-- Usage: EXEC sp_GetBugs @json='{"taskId":"123","status":"OPEN"}'
+-- =============================================
+ALTER   PROCEDURE [dbo].[sp_GetBugs]
+    @json NVARCHAR(MAX) = '{}',
+    @appuserid NVARCHAR(MAX) = 'system',
+    @IPAddress NVARCHAR(MAX) = '0.0.0.0',
+    @FormName NVARCHAR(MAX) = 'Bugs'
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FromDate DATETIME = ISNULL([dbo].[UTC_CSERVERLOCAL](GETDATE()), GETDATE())
+    DECLARE @ProcedureName NVARCHAR(MAX) = OBJECT_NAME(@@PROCID)
+
+    DECLARE 
+         @taskId NVARCHAR(50) = ''
+        ,@status NVARCHAR(50) = ''
+
+    BEGIN TRY
+
+        IF(ISNULL(@json,'') <> '' AND @json <> '{}')
+        BEGIN
+            SELECT TOP 1
+                 @taskId = taskId
+                ,@status = status
+            FROM OPENJSON(@json)
+            WITH
+            (
+                taskId NVARCHAR(50) '$.taskId',
+                status NVARCHAR(50) '$.status'
+            )
+        END
+
+        SELECT b.*
+        FROM Bugs b
+        WHERE (ISNULL(@taskId,'') = '' OR b.taskId = @taskId)
+          AND (ISNULL(@status,'') = '' OR b.status = @status)
+        ORDER BY b.createdAt DESC
+
+        -- Log Success
+        INSERT INTO StoredProcedureLog
+        (
+            procedureName,
+            appUserId,
+            ipAddress,
+            formName,
+            parameters,
+            logMessage
+        )
+        VALUES
+        (
+            @ProcedureName,
+            @appuserid,
+            @IPAddress,
+            @FormName,
+            @json,
+            'Bugs retrieved successfully'
+        )
+
+    END TRY
+    BEGIN CATCH
+
+        INSERT INTO StoredProcedureLog
+        (
+            procedureName,
+            appUserId,
+            ipAddress,
+            formName,
+            parameters,
+            errorMessage,
+            executionStatus
+        )
+        VALUES
+        (
+            @ProcedureName,
+            @appuserid,
+            @IPAddress,
+            @FormName,
+            @json,
+            ERROR_MESSAGE(),
+            'ERROR'
+        )
+
+        DECLARE 
+            @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE(),
+            @ErrSev INT = ERROR_SEVERITY(),
+            @ErrState INT = ERROR_STATE()
+
+        RAISERROR(@ErrMsg, @ErrSev, @ErrState)
+
+    END CATCH
+
+END;

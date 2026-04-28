@@ -1,0 +1,569 @@
+$button-Bgcolor: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+$button-color: #fff;
+$button-color-hover: #685dd8;
+$button-Bordercolor: #685dd8;
+$button-DangerBgcolor: linear-gradient(270deg, rgba(255, 72, 66, 0.8) 0%, #d90429 100%);
+$button-DangerBgcolor-hover: #c20225;
+$button-Dangercolor: #ffffff;
+
+$sidebar-Activebg: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%) !important;
+$font-family: "Public Sans", sans-serif, '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"';
+$titleColor: #444050;
+$secondaryColor: #7D7f85;
+$text2ndColor: #6D6B77;
+$placeholderColor: #808080;
+$box-shadow-value: rgba(0, 0, 0, 0.05) 0px 6px 24px, rgba(0, 0, 0, 0.03) 0px 0px 0px 1px;
+$paper-shadow-value: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
+$transition-duration: 200ms;
+
+
+// calendar
+// Primary Colors
+$primary-main: #7367f0;
+$primary-light: rgba(115, 103, 240, 0.16);
+$primary-light-bg: rgba($primary-main, 0.16);
+
+// Success Colors
+$success-main: #28C76F;
+$success-light: #c8e6c9;
+$success-light-bg: rgba($success-main, 0.16);
+
+// Error Colors
+$error-main: #d32f2f;
+$error-light: #ffcdd2;
+$error-light-bg: rgba($error-main, 0.16);
+
+// Warning Colors
+$warning-main: #f57c00;
+$warning-light: #ffe0b2;
+$warning-light-bg: rgba($warning-main, 0.16);
+
+// Info Colors
+$info-main: #00CFE8;
+$info-light: #b3e5fc;
+$info-light-bg: rgba($info-main, 0.16);
+
+$new-main: #a6a2d18a;
+$new-light: #33299f;
+$support-bg: #e3e3e3;
+$support-main: $titleColor;
+$support-light: #e3e3e3;
+
+$dark-bg: #6788f394;
+$dark-main: #fff;
+$dark-light: #fff;
+
+$divider-color: #e0e0e0;
+
+// Category-specific Colors
+// Productive - Light Blue
+$productive-main: #03A9F4;
+$productive-light: #B3E5FC;
+$productive-light-bg: rgba($productive-main, 0.16);
+
+// RND Tech - Purple
+$rnd-tech-main: #9C27B0;
+$rnd-tech-light: #E1BEE7;
+$rnd-tech-light-bg: rgba($rnd-tech-main, 0.16);
+
+// Creative - Warning (Orange)
+$creative-main: $warning-main;
+$creative-light: $warning-light;
+$creative-light-bg: $warning-light-bg;
+
+// SOP Correction - Success (Green)
+$sop-correction-main: $success-main;
+$sop-correction-light: $success-light;
+$sop-correction-light-bg: $success-light-bg;
+
+// Leave - Error (Red)
+$leave-main: $error-main;
+$leave-light: $error-light;
+$leave-light-bg: $error-light-bg;
+
+// Maintenance - Yellow
+$maintenance-main: #FFC107;
+$maintenance-light: #FFF9C4;
+$maintenance-light-bg: rgba($maintenance-main, 0.16);
+
+// Unplanned - Grey
+$unplanned-main: #757575;
+$unplanned-light: #F5F5F5;
+$unplanned-light-bg: rgba($unplanned-main, 0.16);
+
+p,
+div {
+    font-family: $font-family !important;
+}
+
+.buttonClassname {
+    font-family: $font-family !important;
+    background: $button-Bgcolor !important;
+    color: $button-color !important;
+    border-color: $button-Bordercolor !important;
+    text-transform: capitalize !important;
+    border-radius: 8px !important;
+
+    &:hover {
+        background-color: $button-color-hover;
+        border-color: $button-Bordercolor;
+    }
+}
+
+.disablebuttonClassanme {
+    font-family: $font-family !important;
+    background: $button-Bgcolor !important;
+    color: $button-color !important;
+    border-color: $button-Bordercolor !important;
+    text-transform: capitalize !important;
+    border-radius: 8px !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.secondaryBtnClassname {
+    font-family: $font-family !important;
+    background: #ebebed !important;
+    color: $secondaryColor !important;
+    border-color: #ebebed;
+    text-transform: capitalize !important;
+    border-radius: 8px !important;
+
+    &:hover {
+        background-color: $button-color-hover;
+        border-color: $button-Bordercolor;
+    }
+}
+
+.dangerbtnClassname {
+    font-family: $font-family !important;
+    background: $button-DangerBgcolor !important;
+    color: $button-color !important;
+    border-color: $button-DangerBgcolor-hover;
+    text-transform: capitalize !important;
+    border-radius: 8px !important;
+
+    &:hover {
+        background-color: $button-DangerBgcolor-hover !important;
+        border-color: $button-DangerBgcolor-hover !important;
+    }
+}
+
+.uploadBtnClassname {
+    border-color: $button-Bordercolor !important;
+    color: $button-Bordercolor !important;
+    font-family: $font-family !important;
+    border-radius: 8px !important;
+
+    &:hover {
+        border-color: $button-Bordercolor;
+        color: $button-Bordercolor !important;
+    }
+}
+
+.varientTextBtn {
+    display: flex;
+    justify-content: start;
+    align-items: end;
+    font-family: $font-family !important;
+    text-transform: capitalize;
+    font-weight: bold;
+    color: $placeholderColor;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+        background: transparent;
+        text-decoration: underline;
+    }
+}
+
+.MuiTypography-root {
+    font-family: $font-family !important;
+    color: $titleColor;
+}
+
+.textfieldsClass {
+    font-size: 14px;
+    color: $titleColor;
+    background-color: #fff;
+    border-radius: 8px;
+
+    .MuiTypography-root {
+        font-family: $font-family !important;
+        color: $titleColor;
+        font-size: 14px;
+    }
+
+    .MuiOutlinedInput-root {
+        font-family: $font-family !important;
+        color: $titleColor;
+        border-radius: 8px !important;
+        padding: 0px 5px !important;
+        font-size: 14px;
+        background-color: #fff;
+    }
+
+    .MuiPickersDay-root {
+        font-family: $font-family !important;
+        background-color: $button-Bgcolor;
+        color: $button-color;
+    }
+
+    .MuiOutlinedInput-root fieldset {
+        border-color: #d1d5db;
+    }
+
+    .MuiOutlinedInput-root.Mui-error fieldset {
+        border-color: $error-main !important;
+    }
+
+    .MuiOutlinedInput-root:hover fieldset {
+        border-color: $button-Bordercolor;
+    }
+
+    .MuiOutlinedInput-root.Mui-focused fieldset {
+        border-color: #6366f1;
+        border-width: 2px;
+    }
+
+    .MuiOutlinedInput-root.Mui-focused {
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    }
+
+    .MuiInputBase-input {
+        color: $titleColor !important;
+        padding: 7px 5px !important;
+
+        &:not(textarea) {
+            padding: 7px 5px !important;
+        }
+
+        &.MuiInputBase-inputSizeSmall {
+            padding: 7px 5px !important;
+        }
+
+        &.MuiInputBase-inputAdornedStart:not(.MuiAutocomplete-input) {
+            padding-left: 0 !important;
+        }
+
+        &.MuiInputBase-inputAdornedEnd:not(.MuiAutocomplete-input) {
+            padding-right: 0 !important;
+        }
+
+        &:not(.MuiInputBase-readOnly):not([readonly])::placeholder {
+            color: #9ca3af !important;
+            opacity: 1;
+            transition: $transition-duration !important;
+        }
+    }
+
+    .MuiOutlinedInput-root.Mui-focused {
+        box-shadow: $box-shadow-value !important;
+
+        .MuiInputBase-input:not(.MuiInputBase-readOnly):not([readonly])::placeholder {
+            transform: translateX(4px);
+        }
+    }
+
+    .MuiInputAdornment-root {
+        .MuiButtonBase-root {
+            padding: 0px 2px !important;
+            margin-right: 0px;
+
+            .MuiSvgIcon-root {
+                width: 22px;
+                height: 22px;
+                color: $placeholderColor;
+            }
+        }
+    }
+
+    // Apply to Chips
+    .MuiChip-root {
+        font-family: $font-family !important;
+        color: $titleColor;
+        cursor: pointer;
+
+        &:hover {
+            background: $button-Bgcolor !important;
+            color: $button-color;
+        }
+
+        .MuiChip-deleteIcon {
+            &:hover {
+                color: $button-color;
+            }
+        }
+
+        .MuiChip-label {
+            font-size: 12px !important;
+        }
+    }
+
+    .MuiFormHelperText-root {
+        font-family: $font-family !important;
+        margin-top: 4px;
+        margin-inline: 5px !important;
+    }
+}
+
+.textareaCustCss {
+    font-family: $font-family !important;
+    color: $titleColor !important;
+    border-radius: 8px !important;
+    font-size: 14px;
+}
+
+// for select placeholder
+.notranslate.placeholder {
+    color: #9ca3af;
+    font-size: 14px !important;
+}
+
+.notranslate {
+    color: $titleColor;
+    font-size: 14px !important;
+}
+
+// mui autocomplete
+.MuiAutocomplete-popper {
+    .MuiPaper-root {
+        box-shadow: $paper-shadow-value;
+        border-radius: 8px !important;
+
+        .MuiAutocomplete-listbox {
+            .MuiAutocomplete-option {
+                font-family: $font-family !important;
+                color: $titleColor !important;
+                border-radius: 8px !important;
+                margin: 5px 10px !important;
+                font-size: 14px !important;
+
+                &[aria-selected="true"] {
+                    background: #e6e6e6;
+                    color: #000 !important;
+                }
+
+                &:hover {
+                    background-color: $button-color-hover;
+                    color: $button-color !important;
+                }
+            }
+        }
+    }
+}
+
+// mui autocomplete
+.toggle-button-group {
+    font-family: $font-family !important;
+
+    .MuiToggleButton-root {
+        font-family: inherit;
+        color: $titleColor;
+        text-transform: capitalize !important;
+        transition: background-color 0.3s ease, color 0.3s ease;
+
+        &.Mui-selected {
+            background-color: $button-Bordercolor;
+            color: #fff;
+        }
+
+        &:hover {
+            background-color: rgba(173, 156, 220, 0.2);
+            color: $titleColor;
+        }
+    }
+}
+
+.MuiAvatar-root {
+    font-family: $font-family !important;
+}
+
+// Global Tooltip Styles
+.custom-tooltip {
+    background-color: #000 !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-family: $font-family !important;
+    text-transform: capitalize !important;
+    padding: 3px 6px !important;
+    border-radius: 4px !important;
+
+    .MuiTooltip-arrow {
+        color: #000 !important;
+    }
+}
+
+.filterCheckedBox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 0px 8px 8px 8px;
+    margin-top: -8px;
+
+    .filterChip {
+        background: $button-Bgcolor;
+        font-size: 12px !important;
+        color: #fff !important;
+        border-radius: 8px;
+
+        .filterKey {
+            color: #fff !important;
+            font-size: 12px !important;
+            text-transform: capitalize;
+        }
+
+        .filterValue {
+            color: #fff !important;
+            font-size: 12px !important;
+            text-transform: capitalize;
+        }
+
+        .closeIcon {
+            font-size: 14px !important;
+            color: #fff !important;
+            cursor: pointer;
+
+            &:hover {
+                color: $titleColor;
+            }
+        }
+    }
+
+    .clearAllBtn {
+        font-family: inherit;
+        text-transform: capitalize;
+        font-weight: bold;
+        color: $placeholderColor;
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:hover {
+            background: transparent;
+            text-decoration: underline;
+        }
+    }
+}
+
+.TablePaginationBox {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 15px 0;
+}
+
+.paginationText {
+    font-size: 15px;
+    color: $text2ndColor !important;
+}
+
+.pagination {
+    .MuiPaginationItem-root {
+        font-family: $font-family;
+        color: $text2ndColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border-color: rgba(0, 0, 0, 0);
+        background-color: rgba(47, 43, 61, 0.08);
+        min-height: 30px;
+
+        &:hover {
+            background-color: #e4e2fc;
+        }
+
+        &.Mui-selected {
+            background: $button-Bgcolor !important;
+            color: #fff !important;
+            border: none;
+        }
+
+        &:hover {
+            background-color: $button-color-hover !important;
+            color: $button-color !important;
+        }
+    }
+}
+
+.paginatedText {
+    color: $text2ndColor !important;
+}
+
+.custom-select {
+    font-family: 'Public Sans', sans-serif !important;
+    color: $text2ndColor;
+    font-size: 14px;
+}
+
+.custom-select .MuiOutlinedInput-notchedOutline {
+    border-color: $secondaryColor !important;
+    opacity: .5;
+}
+
+.custom-select.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: $primary-main !important;
+    opacity: 1;
+}
+
+.custom-select .MuiSelect-select {
+    font-family: $font-family !important;
+    padding: 5px 30px 5px 10px;
+}
+
+.custom-menu-item {
+    font-family: $font-family !important;
+    color: $text2ndColor;
+    font-size: 14px;
+}
+
+.filter-toggle {
+    font-family: $font-family !important;
+    border-color: $divider-color;
+}
+
+.customTgBox {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    position: relative;
+    padding: 5px;
+    gap: 10px;
+
+    .toggle-group {
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        padding: 5px;
+        min-width: 150px;
+        display: flex;
+        gap: 5px;
+
+        .toggle-button {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            font-size: 14px;
+            font-family: $font-family !important;
+            color: #666;
+            border: none;
+            line-height: .4rem;
+            padding: 10px;
+            text-transform: none;
+            transition: all 0.2s ease-in-out;
+
+            &.Mui-selected {
+                background-color: #fff !important;
+                color: #000 !important;
+                font-weight: 700;
+            }
+        }
+    }
+}
+
+button {
+    font-family: $font-family !important;
+}

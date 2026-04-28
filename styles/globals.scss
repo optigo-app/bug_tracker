@@ -1,0 +1,245 @@
+@import 'variables';
+
+$primary-color: #7367f0;
+$button-bg-gradient: linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%);
+$title-color: #444050;
+$secondary-color: #7D7f85;
+$text-2nd-color: #6D6B77;
+$placeholder-color: #808080;
+$divider-color: #e0e0e0;
+
+$background-color: #F8FAFC;
+$text-color: $title-color;
+$border-radius: 8px;
+
+:root {
+  --primary-main: #{$primary-color};
+  --title-color: #{$title-color};
+  --secondary-main: #{$secondary-color};
+  --text-2nd-color: #{$text-2nd-color};
+  --divider-color: #{$divider-color};
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-public-sans), 'Public Sans', sans-serif;
+  background-color: $background-color;
+  color: $text-color;
+  height: 100vh;
+  overflow: hidden; // Critical to prevent double scrollbars with MUI Box
+
+  /* Custom Thin Scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F9FAFB !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #E5E7EB !important;
+    border-radius: 10px !important;
+    border: 1px solid #F9FAFB !important;
+
+    &:hover {
+      background: #D1D5DB !important;
+    }
+  }
+
+  /* Support for Firefox */
+  scrollbar-width: thin !important;
+  scrollbar-color: #E5E7EB #F9FAFB !important;
+}
+
+/* Apply to all scrollable elements */
+* {
+  &::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F9FAFB !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #E5E7EB !important;
+    border-radius: 10px !important;
+    border: 1px solid #F9FAFB !important;
+
+    &:hover {
+      background: #D1D5DB !important;
+    }
+  }
+}
+
+/* Explicit class for forced slim scrolling */
+.slim-scroll {
+  &::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #F9FAFB !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #E5E7EB !important;
+    border-radius: 10px !important;
+    border: 1px solid #F9FAFB !important;
+
+    &:hover {
+      background: #D1D5DB !important;
+    }
+  }
+
+  scrollbar-width: thin !important;
+  scrollbar-color: #E2E8F0 #F8FAFC !important;
+}
+
+.layout-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 200px;
+  background-color: #FFFFFF;
+  border-right: 1px solid #F1F5F9;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+
+  &.sidebar-collapsed {
+    width: 64px;
+    padding: 20px 4px;
+
+    .sidebar-nav {
+      gap: 6px;
+    }
+  }
+
+  .sidebar-header {
+    margin-bottom: 24px;
+    padding-left: 8px;
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-main);
+      margin: 0;
+    }
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: $text-2nd-color;
+    font-weight: 500;
+    font-size: 0.82rem;
+    transition: all 0.15s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    position: relative;
+
+    &:hover {
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+
+    &.active {
+      background-color: #EEF2FF;
+      color: #4F46E5;
+      font-weight: 600;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        background-color: #4F46E5;
+        border-radius: 0 3px 3px 0;
+      }
+    }
+
+    &.logout-btn {
+      margin-top: auto;
+      color: #ef4444;
+
+      &:hover {
+        background-color: #fef2f2;
+      }
+    }
+  }
+
+  // Collapsed nav item: icon + tiny label stacked, centered
+  .nav-item-collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: $text-2nd-color;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    position: relative;
+
+    &:hover {
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+
+    &.active {
+      background-color: #EEF2FF;
+      color: #4F46E5;
+      font-weight: 600;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        background-color: #4F46E5;
+        border-radius: 0 3px 3px 0;
+      }
+    }
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding: 0;
+}
