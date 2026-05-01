@@ -102,7 +102,7 @@ div {
     color: $button-color !important;
     border-color: $button-Bordercolor !important;
     text-transform: capitalize !important;
-    border-radius: 8px !important;
+    border-radius: 16px !important;
 
     &:hover {
         background-color: $button-color-hover;
@@ -116,7 +116,7 @@ div {
     color: $button-color !important;
     border-color: $button-Bordercolor !important;
     text-transform: capitalize !important;
-    border-radius: 8px !important;
+    border-radius: 16px !important;
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -127,7 +127,7 @@ div {
     color: $secondaryColor !important;
     border-color: #ebebed;
     text-transform: capitalize !important;
-    border-radius: 8px !important;
+    border-radius: 16px !important;
 
     &:hover {
         background-color: $button-color-hover;
@@ -141,7 +141,7 @@ div {
     color: $button-color !important;
     border-color: $button-DangerBgcolor-hover;
     text-transform: capitalize !important;
-    border-radius: 8px !important;
+    border-radius: 16px !important;
 
     &:hover {
         background-color: $button-DangerBgcolor-hover !important;
@@ -153,7 +153,7 @@ div {
     border-color: $button-Bordercolor !important;
     color: $button-Bordercolor !important;
     font-family: $font-family !important;
-    border-radius: 8px !important;
+    border-radius: 16px !important;
 
     &:hover {
         border-color: $button-Bordercolor;
@@ -500,68 +500,10 @@ div {
     font-size: 14px;
 }
 
-.custom-select .MuiOutlinedInput-notchedOutline {
-    border-color: $secondaryColor !important;
-    opacity: .5;
-}
-
-.custom-select.Mui-focused .MuiOutlinedInput-notchedOutline {
-    border-color: $primary-main !important;
-    opacity: 1;
-}
-
-.custom-select .MuiSelect-select {
-    font-family: $font-family !important;
-    padding: 5px 30px 5px 10px;
-}
-
 .custom-menu-item {
     font-family: $font-family !important;
     color: $text2ndColor;
     font-size: 14px;
-}
-
-.filter-toggle {
-    font-family: $font-family !important;
-    border-color: $divider-color;
-}
-
-.customTgBox {
-    display: flex;
-    justify-content: end;
-    align-items: center;
-    position: relative;
-    padding: 5px;
-    gap: 10px;
-
-    .toggle-group {
-        background-color: #f5f5f5;
-        border-radius: 8px;
-        padding: 5px;
-        min-width: 150px;
-        display: flex;
-        gap: 5px;
-
-        .toggle-button {
-            display: flex;
-            gap: 8px;
-            flex: 1;
-            font-size: 14px;
-            font-family: $font-family !important;
-            color: #666;
-            border: none;
-            line-height: .4rem;
-            padding: 10px;
-            text-transform: none;
-            transition: all 0.2s ease-in-out;
-
-            &.Mui-selected {
-                background-color: #fff !important;
-                color: #000 !important;
-                font-weight: 700;
-            }
-        }
-    }
 }
 
 button {

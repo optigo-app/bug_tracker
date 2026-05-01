@@ -11,7 +11,7 @@ export default function StatusBadge({ status }) {
 
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.6, bgcolor: colorConfig.backgroundColor, border: `1px solid ${colorConfig.color}30`, borderRadius: 1.5, px: 1, py: 0.35 }}>
-      <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: colorConfig.color, lineHeight: 1 }}>{statusLabel}</Typography>
+      <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: colorConfig.color, lineHeight: 1}}>{statusLabel}</Typography>
     </Box>
   );
 }

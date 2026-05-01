@@ -899,8 +899,8 @@ export function useDrawEditor() {
         h: 0,
         color: currentColor,
         strokeWidth: currentStrokeWidth,
-        fill: currentFill,
-        backgroundColor: currentBackgroundColor,
+        fill: "none",
+        backgroundColor: "transparent",
         dash: currentDash,
       };
 

@@ -84,7 +84,7 @@ export default function ImageDrawEditor({ open, onClose, imageSrc, onSave }) {
             }}>
               t
             </Box>
-            <Box sx={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A' }}>
+            <Box sx={{ fontSize: '1rem', fontWeight: 700 }}>
               SketchFlow
             </Box>
           </Box>

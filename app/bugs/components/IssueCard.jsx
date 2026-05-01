@@ -8,6 +8,8 @@ import PriorityBadge from './PriorityBadge';
 export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUndoReassign }) {
   const hasComments = bug.commentCount > 0;
   const hasAttach = bug.attachmentCount > 0;
+  const priority = (bug.priority || '').toUpperCase();
+  const isHighPriority = priority === 'CRITICAL';
 
   // Timer state for reassignment undo
   const [timeLeft, setTimeLeft] = useState(0);
@@ -39,15 +41,22 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
         px: 2.5,
         py: 2,
         cursor: 'pointer',
-        bgcolor: isSelected ? '#eef2ff' : 'white',
-        borderBottom: '1px solid #E5E7EB',
+        bgcolor: isSelected
+          ? '#eef2ff'
+          : isHighPriority
+            ? 'rgba(239, 68, 68, 0.03)'
+            : 'white',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
         ...(isSelected && {
           boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.1)'
         }),
         '&:hover': {
-          bgcolor: isSelected ? '#e0e7ff' : '#F9FAFB',
+          bgcolor: isSelected
+            ? '#e0e7ff'
+            : isHighPriority
+              ? 'rgba(239, 68, 68, 0.06)'
+              : '#F9FAFB',
           transform: 'translateX(2px)'
         }
       }}
@@ -125,15 +134,17 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
         lineHeight: 1.3,
         textOverflow: 'ellipsis'
       }}>
-        {bug.description || 'No description provided'}
+        {bug.description || ''}
       </Typography>
 
       {/* Row 4: Footer - Status, Priority & Date */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack direction="row" spacing={0.75} alignItems="center">
-          <StatusBadge status={bug.status} />
-          <PriorityBadge priority={bug.priority} />
-        </Stack>
+        {bug.status || bug.priority ? (
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            {bug.status && <StatusBadge status={bug.status} />}
+            {bug.priority && <PriorityBadge priority={bug.priority} />}
+          </Stack>
+        ) : null}
         <Stack direction="row" spacing={0.5} alignItems="center">
           {timeLeft > 0 && (
             <Button

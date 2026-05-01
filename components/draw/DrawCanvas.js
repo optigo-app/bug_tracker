@@ -15,6 +15,7 @@ export default function DrawCanvas({
   handleCanvasPointerUp,
   handleWheel,
   selectedBounds,
+  selectedShape,
   setDraftText,
   setEditingText,
   shapes,
@@ -377,7 +378,7 @@ export default function DrawCanvas({
             top: editingText.y * viewport.scale + viewport.y,
             width: editingText.w * viewport.scale,
             height: editingText.h * viewport.scale,
-            color: currentColor,
+            color: selectedShape?.type === "text" ? (selectedShape.color || currentColor) : currentColor,
           }}
           value={draftText}
           onPointerDown={(event) => {
@@ -387,9 +388,8 @@ export default function DrawCanvas({
             event.stopPropagation();
           }}
           onChange={(event) => setDraftText(event.target.value)}
-          onBlur={commitTextEdit}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
+            if (event.key === "Enter" && event.shiftKey) {
               event.preventDefault();
               commitTextEdit();
             }

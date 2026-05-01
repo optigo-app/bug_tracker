@@ -106,18 +106,16 @@ function AutoLoginContent() {
         sessionStorage.setItem('AuthqueryParams', JSON.stringify(authQueryParams));
         sessionStorage.setItem('isAuthenticated', 'true');
         setStatus('success');
-        try {
-          await fetchMasterGlFunc();
-        } catch (masterError) {
+        // Call master API in background without blocking redirect
+        fetchMasterGlFunc().catch((masterError) => {
           console.error('Auto-login: Error fetching master data:', masterError);
+        });
+        // Redirect immediately
+        try {
+          router.push('/');
+        } catch (routerError) {
+          window.location.href = '/';
         }
-        setTimeout(() => {
-          try {
-            router.push('/');
-          } catch (routerError) {
-            window.location.href = '/';
-          }
-        }, 1500);
       } else {
         setStatus('error');
         setErrorMessage(response?.Message || 'Authentication failed from API');
@@ -149,7 +147,7 @@ function AutoLoginContent() {
           <Stack spacing={3} alignItems="center">
             <CircularProgress size={60} thickness={4} sx={{ color: '#7367f0' }} />
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0F172A', mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                 Authenticating...
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748B' }}>
@@ -173,7 +171,7 @@ function AutoLoginContent() {
               <CheckCircle2 size={48} color="#16A34A" />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0F172A', mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                 Authentication Successful!
               </Typography>
               <Typography variant="body2" sx={{ color: '#64748B' }}>
@@ -197,7 +195,7 @@ function AutoLoginContent() {
               <AlertCircle size={48} color="#EF4444" />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#0F172A', mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                 Authentication Failed
               </Typography>
               <Typography variant="body2" sx={{ color: '#EF4444', mb: 2, fontWeight: 600 }}>
@@ -243,7 +241,7 @@ function LoadingScreen() {
         <Stack spacing={3} alignItems="center">
           <CircularProgress size={60} thickness={4} sx={{ color: '#7367f0' }} />
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#0F172A', mb: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
               Loading...
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748B' }}>

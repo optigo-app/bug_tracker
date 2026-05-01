@@ -32,7 +32,7 @@ export default function EmptyStateSkeleton({ onCreate, isDeveloper = false }) {
         </Box>
         
         <Stack spacing={1} alignItems="center" textAlign="center">
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
             No Bug Selected
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, maxWidth: 300 }}>

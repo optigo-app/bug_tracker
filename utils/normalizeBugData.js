@@ -7,6 +7,7 @@
  * @returns {Object} Normalized bug object with enriched fields
  */
 export function normalizeBugData(bug) {
+  console.log("normalizeBugData", bug);
   if (!bug) return null;
 
   const normalized = { ...bug };
@@ -21,7 +22,7 @@ export function normalizeBugData(bug) {
     try {
       statusData = JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]');
       priorityData = JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]');
-      categoryData = JSON.parse(sessionStorage.getItem('taskbugcategoryData') || sessionStorage.getItem('taskworkcategoryData') || '[]');
+      categoryData = JSON.parse(sessionStorage.getItem('taskbugcategoryData') || '[]');
       assigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
     } catch (error) {
       console.error('Error loading reference data for bug normalization:', error);
@@ -29,7 +30,7 @@ export function normalizeBugData(bug) {
   }
 
   // Normalize status (by id)
-  const statusId = bug.statusId || bug.status;
+  const statusId = bug.statusId;
   const statusObj = statusData.find(s =>
     String(s?.id) === String(statusId)
   );
@@ -38,7 +39,7 @@ export function normalizeBugData(bug) {
   }
 
   // Normalize priority (by id or label)
-  const priorityId = bug.priorityId || bug.priority;
+  const priorityId = bug.priorityId;
   const priorityObj = priorityData.find(p =>
     String(p?.id) === String(priorityId)
   );
@@ -47,7 +48,7 @@ export function normalizeBugData(bug) {
   }
 
   // Normalize category (by id)
-  const categoryId = bug.categoryId || bug.category;
+  const categoryId = bug.categoryId;
   const categoryObj = categoryData.find(c =>
     String(c?.id) === String(categoryId)
   );
@@ -56,7 +57,7 @@ export function normalizeBugData(bug) {
   }
 
   // Normalize assignee (by id)
-  const assigneeId = bug.assigneeId || bug.assignee;
+  const assigneeId = bug.assigneeId;
   const assigneeObj = assigneeData.find(a =>
     String(a?.id) === String(assigneeId) ||
     String(a?.userid) === String(assigneeId)
@@ -75,7 +76,7 @@ export function normalizeBugData(bug) {
   }
 
   // Normalize reporter (by id)
-  const reporterId = bug.reporterId || bug.reporter;
+  const reporterId = bug.reporterId;
   const reporterObj = assigneeData.find(r =>
     String(r?.id) === String(reporterId) ||
     String(r?.userid) === String(reporterId)

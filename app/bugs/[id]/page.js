@@ -203,7 +203,8 @@ export default function BugDetailPage() {
   const patch = async (payload) => {
     setSaving(true);
     try {
-      await updateBugApi({ ...payload, id: params.id, userId: currentUser?.id });
+      const { status, priority, category, ...payloadWithoutIds } = payload;
+      await updateBugApi({ ...payloadWithoutIds, id: params.id, userId: currentUser?.id });
       fetchBug(true); // Silent refresh
     } catch (e) { console.error(e); }
     finally { setSaving(false); }

@@ -1,20 +1,40 @@
 USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 25-04-2026 13:36:52 ******/
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 01-05-2026 16:59:59 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-    ALTER PROCEDURE [dbo].[bugv1]
-        @con NVARCHAR(MAX) = ''
-        ,@p   NVARCHAR(MAX) = ''
-    AS
-    BEGIN
-        SET NOCOUNT ON;
+ALTER PROCEDURE [dbo].[bugv1]
+    @con NVARCHAR(MAX) = ''
+    ,@p   NVARCHAR(MAX) = ''
+AS
+BEGIN
+     	SET NOCOUNT ON;
+	-- dbo.getparam 'Reportv4'
 
-        DECLARE @FromDate DATETIME = ISNULL([dbo].[UTC_CSERVERLOCAL](GETDATE()), GETDATE())
-        DECLARE @spname NVARCHAR(MAX) = OBJECT_NAME(@@PROCID)
+	DECLARE @FromDate AS DATETIME=isnull([dbo].[UTC_CSERVERLOCAL](getdate()),getdate())
+	DECLARE @ProcedureName nvarchar(max)=OBJECT_NAME(@@PROCID)
+	DECLARE @spname AS NVARCHAR(MAX)
+	SELECT 
+		@spname = COALESCE(@spname +char(13)+'	, ', '') + concat(A.name,' = ''', A.value ,'''')
+	FROM (		
+		SELECT name, value
+		FROM (values 
+			(1, '@con', replace(cast(@con as NVARCHAR(MAX)),'''','''''')),
+			(2, '@p', replace(cast(@p as NVARCHAR(MAX)),'''','''''')),
+			(1, '--@con', replace(cast([dbo].Base64Decode(@con) as NVARCHAR(MAX)),'''','''''')),
+			--(2, '--@p', replace(cast([dbo].Base64Decode(@p) as NVARCHAR(MAX)),'''',''''''))
+			(2, '--@p', replace(cast(@p as NVARCHAR(MAX)),'''',''''''))
+			) p(num, name, value)
+	) AS A(name, value)		
+	--SET @spname=concat('exec [',DB_NAME(),'].[dbo].',@ProcedureName,' ',@spname)	
+-------------
+	SET @spname=concat('exec [404146_CentralUser].[dbo].',OBJECT_NAME(@@PROCID),' ',@spname)
+
+
+     
 
         DECLARE
             @DBNAME        NVARCHAR(50)  = ''
@@ -548,26 +568,28 @@ GO
             BEGIN
                 SET @SQL = '
                     -- Total bugs count
-                    SELECT COUNT(*) AS totalBugs
-                    FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
+                    SELECT COUNT(1) AS totalBugs
+                    FROM [' + @DBNAME + '].[dbo].[bug_Bugs] WITH (NOLOCK);
 
                     -- Bugs by status
-                    SELECT [statusId] AS [status], COUNT(*) AS count
-                    FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
-                    GROUP BY [statusId]
+                    SELECT 
+					statusId,
+					COUNT(1) AS count
+					FROM [' + @DBNAME + '].[dbo].[bug_Bugs] WITH (NOLOCK)
+					GROUP BY statusId;
 
                     -- Weekly trend (last 7 days)
-                    SELECT 
-                        DATEPART(WEEKDAY, createdAt) AS dayIndex,
-                        CAST(createdAt AS DATE) AS date,
-                        COUNT(*) AS bugs
-                    FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
-                    WHERE createdAt >= DATEADD(DAY, -7, GETDATE())
-                    GROUP BY CAST(createdAt AS DATE), DATEPART(WEEKDAY, createdAt)
-                    ORDER BY date ASC
+                     SELECT 
+					 CAST(createdAt AS DATE) AS date,
+					 DATEPART(WEEKDAY, createdAt) AS dayIndex,
+                     COUNT(1) AS bugs
+					 FROM [' + @DBNAME + '].[dbo].[bug_Bugs] WITH (NOLOCK)
+					 WHERE createdAt >= DATEADD(DAY, -7, CAST(GETDATE() AS DATE))
+					 GROUP BY CAST(createdAt AS DATE), DATEPART(WEEKDAY, createdAt)
+					 ORDER BY date ASC;
 
                     -- Recent activity (last 10 history entries)
-                    SELECT TOP 10 
+                    SELECT TOP (10)
                         bh.id,
                         bh.bugId,
                         bh.userId,
@@ -576,18 +598,19 @@ GO
                         bh.newValue,
                         bh.remark,
                         bh.createdAt
-                    FROM [' + @DBNAME + '].[dbo].[bug_BugHistory] bh
+                    FROM [' + @DBNAME + '].[dbo].[bug_BugHistory] bh WITH (NOLOCK)
                     ORDER BY bh.createdAt DESC
                 '
                 EXEC (@SQL)
             END
 
-            EXECUTE [GetTxLog] @spname, @FromDate, @DBNAME, @appuserid, @IPAddress, @FormName, 'Reportv4', @mode
 
-        END TRY
-        BEGIN CATCH
-            SELECT 0 stat,'"Contact your Admin"' stat_msg,1001 stat_code
-            EXECUTE [GetErrlog] @appuserid, @FromDate, @DBNAME, @spname, @IPAddress, @FormName, 'Reportv4', @mode
-        END CATCH
+    EXECUTE [GetTxLog] @spname, @FromDate, @DBNAME, @appuserid, @IPAddress, @FormName, 'bugv1', @mode
 
-    END
+END TRY
+BEGIN CATCH
+    SELECT 0 stat,'"Contact your Admin"' stat_msg,1001 stat_code
+    EXECUTE [GetErrlog] @appuserid, @FromDate, @DBNAME, @spname, @IPAddress, @FormName, 'bugv1', @mode
+END CATCH
+
+END

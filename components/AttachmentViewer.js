@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     Dialog,
     Box,
@@ -10,7 +10,9 @@ import {
     Button,
     Fade,
     Paper,
-    Tooltip
+    Tooltip,
+    Slide,
+    Divider
 } from '@mui/material';
 
 import {
@@ -23,18 +25,21 @@ import {
     File,
     ZoomIn,
     ZoomOut,
-    RotateCw
+    RotateCw,
+    Info,
+    MousePointer2,
+    Keyboard as KeyboardIcon,
+    Play,
+    Pause,
+    RefreshCcw
 } from 'lucide-react';
 
-import { handleImageError } from '@/utils/glocalfunc';
-
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Keyboard, Mousewheel } from 'swiper/modules';
-
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-
+/**
+ * Enhanced AttachmentViewer
+ * Features: Panning, Smooth Zoom, Keyboard Shortcuts, Info Panel, Slideshow
+ * Note: Swiper dependency removed and replaced with a custom native React slider
+ * for better environment compatibility.
+ */
 export default function AttachmentViewer({
     open,
     onClose,
@@ -45,511 +50,405 @@ export default function AttachmentViewer({
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
+    const [showInfo, setShowInfo] = useState(false);
+    const [isAutoplay, setIsAutoplay] = useState(false);
+    
+    // Drag/Pan State
+    const [isDragging, setIsDragging] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const dragStart = useRef({ x: 0, y: 0 });
 
-    // Map API attachment format to expected structure
-    const mappedAttachments = attachments.map(f => ({
+    // Map API attachment format
+    const mappedAttachments = useMemo(() => attachments.map(f => ({
         ...f,
-        name: f.name || f.fileName,
+        name: f.name || f.fileName || 'Untitled File',
         url: f.url || f.filePath,
-        type: f.type || f.mimeType
-    }));
-
-    if (!mappedAttachments.length) return null;
+        type: f.type || f.mimeType || 'application/octet-stream',
+        size: f.size || 'Unknown size',
+        uploadedAt: f.uploadedAt || new Date().toLocaleDateString()
+    })), [attachments]);
 
     const currentFile = mappedAttachments[currentIndex];
-    const isImage = (currentFile?.type || currentFile?.mimeType || '').toLowerCase().startsWith('image');
+    const isImage = currentFile?.type?.toLowerCase().startsWith('image');
 
+    // Reset view state
+    const resetView = useCallback(() => {
+        setZoom(1);
+        setRotation(0);
+        setPosition({ x: 0, y: 0 });
+    }, []);
+
+    // Navigation Handlers
+    const goToNext = useCallback(() => {
+        setCurrentIndex((prev) => (prev + 1) % mappedAttachments.length);
+        resetView();
+    }, [mappedAttachments.length, resetView]);
+
+    const goToPrev = useCallback(() => {
+        setCurrentIndex((prev) => (prev - 1 + mappedAttachments.length) % mappedAttachments.length);
+        resetView();
+    }, [mappedAttachments.length, resetView]);
+
+    // Zoom Handlers
+    const handleZoom = (delta) => {
+        setZoom(prev => {
+            const newZoom = Math.min(Math.max(prev + delta, 0.5), 5);
+            if (newZoom === 1) setPosition({ x: 0, y: 0 });
+            return newZoom;
+        });
+    };
+
+    // Pan Handlers
+    const handleMouseDown = (e) => {
+        if (zoom <= 1 || !isImage) return;
+        setIsDragging(true);
+        dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging || zoom <= 1) return;
+        setPosition({
+            x: e.clientX - dragStart.current.x,
+            y: e.clientY - dragStart.current.y
+        });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    // Wheel Zoom
+    const handleWheel = (e) => {
+        if (isImage) {
+            if (e.deltaY < 0) handleZoom(0.25);
+            else handleZoom(-0.25);
+        }
+    };
+
+    // Autoplay Timer
+    useEffect(() => {
+        let interval;
+        if (isAutoplay && open) {
+            interval = setInterval(goToNext, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [isAutoplay, open, goToNext]);
+
+    // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e) => {
-
-            if (!isImage) return;
-
+            if (!open) return;
+            
+            // Zoom: Ctrl + / Ctrl -
             if (e.ctrlKey || e.metaKey) {
-
-                if (["+", "=", "NumpadAdd"].includes(e.key)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setZoom(prev => Math.min(prev + 0.25, 3));
-                }
-
-                if (["-", "NumpadSubtract"].includes(e.key)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setZoom(prev => Math.max(prev - 0.25, 0.5));
-                }
-
-                if (["0", "Numpad0"].includes(e.key)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setZoom(1);
-                    setRotation(0);
-                }
-
+                if (e.key === '=' || e.key === '+') { e.preventDefault(); handleZoom(0.5); }
+                if (e.key === '-') { e.preventDefault(); handleZoom(-0.5); }
+                if (e.key === '0') { e.preventDefault(); resetView(); }
             }
-        };
-        if (open) {
-            window.addEventListener("keydown", handleKeyDown, { passive: false });
-        }
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
+
+            // Navigation
+            if (e.key === 'ArrowRight') goToNext();
+            if (e.key === 'ArrowLeft') goToPrev();
+
+            // Utils
+            if (e.key === 'r') setRotation(prev => (prev + 90) % 360);
+            if (e.key === 'i') setShowInfo(prev => !prev);
+            if (e.key === 'f') setFullMode(prev => !prev);
+            if (e.key === ' ') { e.preventDefault(); setIsAutoplay(prev => !prev); }
+            if (e.key === 'Escape' && !fullMode) onClose();
         };
 
-    }, [open, isImage]);
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [open, fullMode, isImage, resetView, onClose, goToNext, goToPrev]);
+
+    if (!mappedAttachments.length) return null;
 
     return (
         <Dialog
             open={open}
             onClose={onClose}
             fullScreen={fullMode}
-            maxWidth={fullMode ? false : 'lg'}
+            maxWidth="xl"
             fullWidth
-            TransitionProps={{
-                timeout: {
-                    enter: 400,
-                    exit: 300
-                }
-            }}
-            BackdropProps={{
-                sx: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                    backdropFilter: 'blur(8px)',
-                    transition: 'all 0.3s ease-in-out'
-                }
-            }}
+            TransitionProps={{ timeout: 400 }}
             PaperProps={{
-                elevation: 24,
                 sx: {
-                    bgcolor: '#FFFFFF',
-                    borderRadius: fullMode ? 0 : 3,
+                    bgcolor: '#f8fafc',
+                    borderRadius: fullMode ? 0 : 4,
                     overflow: 'hidden',
-                    backgroundImage: 'none',
-                    boxShadow: fullMode ? 'none' : '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    height: fullMode ? '100vh' : '90vh',
-                    border: fullMode ? 'none' : '1px solid #E2E8F0'
+                    height: fullMode ? '100vh' : '85vh',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }
             }}
         >
-
-            {/* Header - WhatsApp Style */}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    p: 2,
-                    zIndex: 10,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    background: 'rgba(248, 250, 252, 0.95)',
-                    backdropFilter: 'blur(12px)',
-                    borderBottom: '1px solid #E2E8F0',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-                }}
-            >
-
-                <Stack direction="row" spacing={1.5} alignItems="center">
-
-                    <Typography
-                        sx={{
-                            color: '#0F172A',
-                            fontWeight: 700,
-                            fontSize: '1rem',
-                            letterSpacing: '-0.01em'
-                        }}
-                    >
-                        Viewing Files
-                    </Typography>
-
-                    <Box
-                        sx={{
-                            px: 1.25,
-                            py: 0.5,
-                            bgcolor: '#E2E8F0',
-                            borderRadius: 1.5,
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        <Typography
-                            sx={{
-                                color: '#475569',
-                                fontWeight: 700,
-                                fontSize: '0.75rem',
-                                letterSpacing: '0.02em'
-                            }}
-                        >
-                            {currentIndex + 1} / {mappedAttachments.length}
+            {/* --- Top Header Bar --- */}
+            <Box sx={{ 
+                p: 1.5, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                bgcolor: 'white',
+                borderBottom: '1px solid #e2e8f0',
+                zIndex: 100
+            }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                    <IconButton onClick={onClose} size="small" sx={{ color: '#64748b' }}>
+                        <X size={20} />
+                    </IconButton>
+                    <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1 }}>
+                            {currentFile.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                            {currentIndex + 1} of {mappedAttachments.length}
                         </Typography>
                     </Box>
-
                 </Stack>
 
-                <Stack direction="row" spacing={1}>
-
+                <Stack direction="row" spacing={1} alignItems="center">
                     {isImage && (
-                        <>
-                            <Tooltip title="Zoom Out">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
-                                    sx={{
-                                        color: '#64748B',
-                                        bgcolor: '#FFFFFF',
-                                        border: '1px solid #E2E8F0',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            bgcolor: '#F8FAFC',
-                                            borderColor: '#CBD5E1',
-                                            color: '#0F172A'
-                                        }
-                                    }}
-                                >
-                                    <ZoomOut size={18} />
-                                </IconButton>
+                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
+                            <Tooltip title="Zoom Out (Ctrl -)">
+                                <IconButton size="small" onClick={() => handleZoom(-0.25)}><ZoomOut size={18} /></IconButton>
                             </Tooltip>
-
-                            <Tooltip title="Zoom In">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setZoom(Math.min(3, zoom + 0.25))}
-                                    sx={{
-                                        color: '#64748B',
-                                        bgcolor: '#FFFFFF',
-                                        border: '1px solid #E2E8F0',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            bgcolor: '#F8FAFC',
-                                            borderColor: '#CBD5E1',
-                                            color: '#0F172A'
-                                        }
-                                    }}
-                                >
-                                    <ZoomIn size={18} />
-                                </IconButton>
+                            <Tooltip title="Reset (Ctrl 0)">
+                                <IconButton size="small" onClick={resetView}><RefreshCcw size={16} /></IconButton>
                             </Tooltip>
-
-                            <Tooltip title="Rotate">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => setRotation((rotation + 90) % 360)}
-                                    sx={{
-                                        color: '#64748B',
-                                        bgcolor: '#FFFFFF',
-                                        border: '1px solid #E2E8F0',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            bgcolor: '#F8FAFC',
-                                            borderColor: '#CBD5E1',
-                                            color: '#0F172A'
-                                        }
-                                    }}
-                                >
-                                    <RotateCw size={18} />
-                                </IconButton>
+                            <Tooltip title="Zoom In (Ctrl +)">
+                                <IconButton size="small" onClick={() => handleZoom(0.25)}><ZoomIn size={18} /></IconButton>
                             </Tooltip>
-
-                            <Tooltip title="Download">
-                                <IconButton
-                                    size="small"
-                                    component="a"
-                                    href={currentFile.url}
-                                    download={currentFile.name}
-                                    sx={{
-                                        color: '#64748B',
-                                        bgcolor: '#FFFFFF',
-                                        border: '1px solid #E2E8F0',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            bgcolor: '#F8FAFC',
-                                            borderColor: '#CBD5E1',
-                                            color: '#0F172A'
-                                        }
-                                    }}
-                                >
-                                    <Download size={18} />
-                                </IconButton>
-                            </Tooltip>
-                        </>
+                        </Stack>
                     )}
 
-                    <Tooltip title={fullMode ? "Minimize" : "Full Screen"}>
-                        <IconButton
-                            size="small"
-                            onClick={() => setFullMode(!fullMode)}
-                            sx={{
-                                color: '#64748B',
-                                bgcolor: '#FFFFFF',
-                                border: '1px solid #E2E8F0',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                    bgcolor: '#F8FAFC',
-                                    borderColor: '#CBD5E1',
-                                    color: '#0F172A'
-                                }
-                            }}
-                        >
+                    <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+                    <Tooltip title={isAutoplay ? "Pause Slideshow" : "Start Slideshow"}>
+                        <IconButton size="small" onClick={() => setIsAutoplay(!isAutoplay)} color={isAutoplay ? "primary" : "default"}>
+                            {isAutoplay ? <Pause size={18} /> : <Play size={18} />}
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Rotate (R)">
+                        <IconButton size="small" onClick={() => setRotation(r => (r + 90) % 360)}><RotateCw size={18} /></IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="File Info (I)">
+                        <IconButton size="small" onClick={() => setShowInfo(!showInfo)} color={showInfo ? "primary" : "default"}>
+                            <Info size={18} />
+                        </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Toggle Fullscreen (F)">
+                        <IconButton size="small" onClick={() => setFullMode(!fullMode)}>
                             {fullMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                         </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Close">
-                        <IconButton
-                            size="small"
-                            onClick={onClose}
-                            sx={{
-                                color: '#64748B',
-                                bgcolor: '#FFFFFF',
-                                border: '1px solid #E2E8F0',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                    bgcolor: '#FEF2F2',
-                                    borderColor: '#FECACA',
-                                    color: '#EF4444',
-                                    transform: 'rotate(90deg)'
-                                }
-                            }}
-                        >
-                            <X size={18} />
-                        </IconButton>
-                    </Tooltip>
-
+                    <Button
+                        variant="contained"
+                        size="small"
+                        disableElevation
+                        startIcon={<Download size={16} />}
+                        href={currentFile.url}
+                        download={currentFile.name}
+                        sx={{ borderRadius: 2, textTransform: 'none', ml: 1 }}
+                    >
+                        Download
+                    </Button>
                 </Stack>
             </Box>
 
+            {/* --- Main Viewer Container --- */}
+            <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+                
+                {/* File Information Sidebar */}
+                <Slide direction="right" in={showInfo} mountOnEnter unmountOnExit>
+                    <Paper sx={{ 
+                        width: 280, 
+                        borderRight: '1px solid #e2e8f0', 
+                        zIndex: 50, 
+                        p: 3, 
+                        bgcolor: 'white',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3
+                    }}>
+                        <Box>
+                            <Typography variant="overline" color="text.secondary">File Details</Typography>
+                            <Stack spacing={1} mt={1}>
+                                <DetailItem label="Type" value={currentFile.type.split('/')[1]?.toUpperCase()} />
+                                <DetailItem label="Size" value={currentFile.size} />
+                                <DetailItem label="Date" value={currentFile.uploadedAt} />
+                            </Stack>
+                        </Box>
+                        
+                        <Divider />
+                        
+                        <Box>
+                            <Typography variant="overline" color="text.secondary">Shortcuts</Typography>
+                            <Stack spacing={1.5} mt={1}>
+                                <ShortcutItem icon={<MousePointer2 size={14}/>} text="Double Click" desc="Zoom Toggle" />
+                                <ShortcutItem icon={<KeyboardIcon size={14}/>} text="Space" desc="Play/Pause" />
+                                <ShortcutItem icon={<KeyboardIcon size={14}/>} text="Arrows" desc="Next/Prev" />
+                                <ShortcutItem icon={<KeyboardIcon size={14}/>} text="R" desc="Rotate" />
+                            </Stack>
+                        </Box>
+                    </Paper>
+                </Slide>
 
-            {/* Viewer Area */}
-            <Box
-                sx={{
-                    position: 'relative',
-                    height: fullMode ? "calc(100vh - 68px)" : "calc(90vh - 68px)",
-                    mt: "68px",
-                    bgcolor: '#F8FAFC'
-                }}
-            >
-
-                <Swiper
-                    initialSlide={initialIndex}
-                    modules={[Navigation, Pagination, Keyboard, Mousewheel]}
-                    navigation={{
-                        prevEl: '.viewer-prev',
-                        nextEl: '.viewer-next'
-                    }}
-                    pagination={{ clickable: true }}
-                    keyboard={{ enabled: true }}
-                    mousewheel
-                    onSlideChange={(swiper) => {
-                        setCurrentIndex(swiper.activeIndex);
-                        setZoom(1);
-                        setRotation(0);
-                    }}
-                    style={{ width: '100%', height: '100%' }}
-                    className="attachment-swiper-light"
-                >
-
-                    {mappedAttachments.map((file, idx) => (
-
-                        <SwiperSlide
-                            key={file.id || idx}
-                        >
-
+                <Box sx={{ 
+                    flex: 1, 
+                    position: 'relative', 
+                    cursor: isDragging ? 'grabbing' : (zoom > 1 ? 'grab' : 'default'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: '#f1f5f9'
+                }}>
+                    {/* Viewport for content */}
+                    <Box 
+                        onWheel={handleWheel}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        sx={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            position: 'relative'
+                        }}
+                    >
+                        {isImage ? (
                             <Box
+                                component="img"
+                                src={currentFile.url}
+                                alt={currentFile.name}
+                                onDoubleClick={() => zoom > 1 ? resetView() : setZoom(2.5)}
                                 sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    p: (file.type || file.mimeType || '').toLowerCase().startsWith('image') ? 0 : { xs: 2 }
+                                    maxWidth: '95%',
+                                    maxHeight: '95%',
+                                    objectFit: 'contain',
+                                    userSelect: 'none',
+                                    pointerEvents: 'auto',
+                                    transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0, 0.2, 1)',
+                                    transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
+                                    filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.1))'
                                 }}
-                            >
+                            />
+                        ) : (
+                            <Paper sx={{ p: 5, textAlign: 'center', maxWidth: 400, borderRadius: 4 }}>
+                                <File size={64} color="#6366f1" style={{ marginBottom: 16 }} />
+                                <Typography variant="h6" gutterBottom>{currentFile.name}</Typography>
+                                <Typography variant="body2" color="text.secondary" mb={3}>
+                                    This file type ({currentFile.type}) cannot be previewed directly.
+                                </Typography>
+                                <Button variant="outlined" href={currentFile.url} download>Download to View</Button>
+                            </Paper>
+                        )}
+                    </Box>
 
-                                {(file.type || file.mimeType || '').toLowerCase().startsWith('image') ? (
+                    {/* Progress Indicator */}
+                    <Box sx={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        height: 3, 
+                        bgcolor: 'rgba(0,0,0,0.05)',
+                        zIndex: 10
+                    }}>
+                        <Box sx={{ 
+                            height: '100%', 
+                            bgcolor: '#6366f1', 
+                            width: `${((currentIndex + 1) / mappedAttachments.length) * 100}%`,
+                            transition: 'width 0.3s ease'
+                        }} />
+                    </Box>
 
-                                    <Fade in timeout={500}>
+                    {/* Nav Arrows */}
+                    <IconButton onClick={goToPrev} sx={navBtnStyle('left')}>
+                        <ChevronLeft size={32} />
+                    </IconButton>
+                    <IconButton onClick={goToNext} sx={navBtnStyle('right')}>
+                        <ChevronRight size={32} />
+                    </IconButton>
 
-                                        <Box
-                                            sx={{
-                                                width: "100%",
-                                                height: "100%",
-                                                display: "flex",
-                                                alignItems: zoom > 1 ? "flex-start" : "center",
-                                                justifyContent: zoom > 1 ? "flex-start" : "center",
-                                                overflow: zoom > 1 ? 'auto' : 'hidden',
-                                                p: zoom > 1 ? 4 : 0,
-                                                '&::-webkit-scrollbar': {
-                                                    width: '8px',
-                                                    height: '8px',
-                                                },
-                                                '&::-webkit-scrollbar-track': {
-                                                    background: 'transparent',
-                                                },
-                                                '&::-webkit-scrollbar-thumb': {
-                                                    background: 'rgba(0,0,0,0.1)',
-                                                    borderRadius: '10px',
-                                                },
-                                                '&::-webkit-scrollbar-thumb:hover': {
-                                                    background: 'rgba(0,0,0,0.2)',
-                                                }
-                                            }}
-                                        >
-
-                                            <Box
-                                                component="img"
-                                                src={file.url}
-                                                alt={file.name}
-                                                onError={handleImageError}
-                                                sx={{
-                                                    maxWidth: zoom > 1 ? "none" : "100%",
-                                                    maxHeight: zoom > 1 ? "none" : "100%",
-                                                    objectFit: "contain",
-                                                    transform: `scale(${zoom}) rotate(${rotation}deg)`,
-                                                    transformOrigin: 'center center',
-                                                    transition: 'transform 0.2s ease',
-                                                    cursor: zoom > 1 ? "zoom-out" : "zoom-in",
-                                                    margin: zoom > 1 ? 'auto' : '0'
-                                                }}
-                                                onClick={() => {
-                                                    if (zoom > 1) setZoom(1);
-                                                    else setZoom(2);
-                                                }}
-                                            />
-
-                                        </Box>
-
-                                    </Fade>
-
-                                ) : (
-
-                                    <Paper
-                                        elevation={0}
-                                        sx={{
-                                            p: 6,
-                                            borderRadius: 4,
-                                            bgcolor: "#fff",
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            alignItems: "center",
-                                            gap: 3,
-                                            border: "1px solid #EEF2F7",
-                                            maxWidth: 400,
-                                            width: "100%"
-                                        }}
-                                    >
-
-                                        <Box
-                                            sx={{
-                                                width: 80,
-                                                height: 80,
-                                                borderRadius: 3,
-                                                bgcolor: "#EEF2FF",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center"
-                                            }}
-                                        >
-                                            <File size={40} color="#6366F1" />
-                                        </Box>
-
-                                        <Box textAlign="center">
-
-                                            <Typography
-                                                variant="h6"
-                                                sx={{ fontWeight: 800 }}
-                                            >
-                                                {file.name}
-                                            </Typography>
-
-                                            <Typography
-                                                variant="body2"
-                                                sx={{ color: "#64748B" }}
-                                            >
-                                                {file.size}
-                                            </Typography>
-
-                                        </Box>
-
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<Download size={18} />}
-                                            href={file.url}
-                                            download
-                                            fullWidth
-                                            sx={{
-                                                borderRadius: 2,
-                                                fontWeight: 700,
-                                                textTransform: "none"
-                                            }}
-                                        >
-                                            Download Attachment
-                                        </Button>
-
-                                    </Paper>
-                                )}
-
+                    {/* Zoom Mini Map (only if zoomed in) */}
+                    {zoom > 1 && isImage && (
+                        <Fade in>
+                            <Box sx={{
+                                position: 'absolute',
+                                bottom: 40,
+                                right: 40,
+                                width: 120,
+                                height: 80,
+                                bgcolor: 'rgba(255,255,255,0.8)',
+                                backdropFilter: 'blur(4px)',
+                                border: '2px solid white',
+                                borderRadius: 2,
+                                zIndex: 100,
+                                overflow: 'hidden',
+                                pointerEvents: 'none',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                            }}>
+                                <Box 
+                                    component="img" 
+                                    src={currentFile.url} 
+                                    sx={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }}
+                                />
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    width: `${100 / zoom}%`,
+                                    height: `${100 / zoom}%`,
+                                    border: '1px solid #6366f1',
+                                    bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                    transform: `translate(calc(-50% - ${position.x / (zoom * 5)}px), calc(-50% - ${position.y / (zoom * 5)}px))`
+                                }} />
                             </Box>
-
-                        </SwiperSlide>
-                    ))}
-
-
-                    {/* Navigation Buttons */}
-                    {mappedAttachments.length > 1 && (
-                        <>
-                            <IconButton
-                                className="viewer-prev"
-                                sx={{
-                                    position: "absolute",
-                                    left: 20,
-                                    top: "50%",
-                                    transform: "translateY(-50%)",
-                                    zIndex: 20,
-                                    bgcolor: "white"
-                                }}
-                            >
-                                <ChevronLeft size={28} />
-                            </IconButton>
-
-                            <IconButton
-                                className="viewer-next"
-                                sx={{
-                                    position: "absolute",
-                                    right: 20,
-                                    top: "50%",
-                                    transform: "translateY(-50%)",
-                                    zIndex: 20,
-                                    bgcolor: "white"
-                                }}
-                            >
-                                <ChevronRight size={28} />
-                            </IconButton>
-                        </>
+                        </Fade>
                     )}
-
-                </Swiper>
+                </Box>
             </Box>
-
-
-            <style jsx global>{`
-
-            .attachment-swiper-light .swiper-pagination-bullet {
-                background:#CBD5E1;
-                opacity:1;
-            }
-
-            .attachment-swiper-light .swiper-pagination-bullet-active {
-                background:#6366F1;
-                width:24px;
-                border-radius:4px;
-            }
-
-            .attachment-swiper-light .swiper-pagination {
-                bottom:20px !important;
-            }
-
-            `}</style>
-
         </Dialog>
     );
 }
+
+// Helper Components
+function DetailItem({ label, value }) {
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="body2" color="text.secondary">{label}</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>{value}</Typography>
+        </Box>
+    );
+}
+
+function ShortcutItem({ icon, text, desc }) {
+    return (
+        <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box sx={{ p: 0.5, bgcolor: '#f1f5f9', borderRadius: 1, display: 'flex' }}>{icon}</Box>
+            <Box>
+                <Typography variant="caption" display="block" sx={{ fontWeight: 700, lineHeight: 1 }}>{text}</Typography>
+                <Typography variant="caption" color="text.secondary">{desc}</Typography>
+            </Box>
+        </Stack>
+    );
+}
+
+const navBtnStyle = (dir) => ({
+    position: 'absolute',
+    [dir]: 20,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 10,
+    bgcolor: 'white',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    '&:hover': { bgcolor: '#f8fafc' },
+    display: { xs: 'none', md: 'flex' }
+});

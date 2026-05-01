@@ -5,25 +5,15 @@ import {
   Button,
   TextField,
   Grid,
-  MenuItem,
-  Select,
   Box,
   Typography,
   IconButton,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   Stack,
-  Divider,
   Drawer,
-  Paper,
-  Avatar,
-  Autocomplete,
   Tooltip,
   Chip
 } from '@mui/material';
 import { X, Upload, File as FileIcon, Edit2 } from 'lucide-react';
-import { permissions } from '@/utils/permissions';
 import { handleImageError } from '@/utils/glocalfunc';
 import { INITIAL_FORM_DATA, CATEGORY_OPTIONS, getCategoryOptions, getPriorityOptions, getStatusOptions } from './bugModal/constants';
 import { useUserSession, useAssignees } from './bugModal/useUserSession';
@@ -34,7 +24,7 @@ import CustomAutocomplete from './Common/CustomAutocomplete.jsx';
 import CustomDatePicker from './Common/CustomDatePicker.jsx';
 import ImageDrawEditor from './ImageDrawEditor.jsx';
 
-export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo = '', taskName = '', taskId = '', initialAttachment = null }) {
+export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo = '', taskName = '', taskId = '', initialAttachment = null, assigneeids = '', dueDate = '' }) {
   const isEdit = !!bug;
   const [attachments, setAttachments] = useState([]);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -48,6 +38,48 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const currentUser = useUserSession();
   const assignees = useAssignees(open);
   const [errors, setErrors] = useState({});
+
+  // Filter assignees based on assigneeids from URL
+  const filteredAssignees = (() => {
+    if (!assigneeids || isEdit) return assignees; // Don't filter if editing or no assigneeids
+    const assigneeIdArray = assigneeids.split(',').map(id => id.trim()).filter(id => id);
+    if (assigneeIdArray.length === 0) return assignees;
+    return assignees.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
+  })();
+
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+  const getNormalizedDueDate = (value) => {
+    if (!value) return getTodayDate();
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? getTodayDate() : parsedDate.toISOString().split('T')[0];
+  };
+
+  const getDefaultOptionId = (storageKey, preferredLabel) => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(parsed) || parsed.length === 0) return '';
+      const preferred = parsed.find((item) =>
+        String(item?.labelname || item?.label || item?.name || '').trim().toLowerCase() === preferredLabel
+      );
+      return preferred?.id || parsed[0]?.id || '';
+    } catch (error) {
+      console.error(`Error loading default option from ${storageKey}:`, error);
+      return '';
+    }
+  };
+
+  const getDefaultStatus = () => getDefaultOptionId('taskbugstatusData', 'new');
+  const getDefaultPriority = () => getDefaultOptionId('taskbugpriorityData', 'high');
+
+  // Auto-select assignee if only one filtered assignee and not editing
+  useEffect(() => {
+    if (!isEdit && assigneeids && filteredAssignees.length === 1 && !formData.assigneeId) {
+      const singleAssignee = filteredAssignees[0];
+      setFormData(prev => ({ ...prev, assigneeId: singleAssignee?.id || '' }));
+    }
+  }, [assigneeids, filteredAssignees, isEdit, formData.assigneeId]);
 
   const handleDrawEditorSave = (editedFile) => {
     if (editingImageIndex !== null) {
@@ -71,34 +103,55 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     }
   };
 
-  // Load priority and status options from session storage
+  // Load priority and status options from session storage and initialize form
   useEffect(() => {
     setCategoryOptions(getCategoryOptions());
     setPriorityOptions(getPriorityOptions());
     setStatusOptions(getStatusOptions());
   }, []);
 
-  // Set task info from props when modal opens
+  // Initialize form data when bug changes or modal opens
   useEffect(() => {
-    if (open && taskNo && taskName && taskId && !isEdit) {
-      setFormData(prev => ({
-        ...prev,
-        taskNo: taskNo,
-        taskName: taskName,
-        taskId: taskId
-      }));
+    if (open) {
+      if (bug) {
+        setFormData(initializeFormData(bug, taskNo, taskName, taskId, isEdit, INITIAL_FORM_DATA));
+        setAttachments(initializeAttachments(bug));
+      } else {
+        const defaultStatus = getDefaultStatus();
+        const defaultPriority = getDefaultPriority();
+        setFormData({
+          ...INITIAL_FORM_DATA,
+          taskNo,
+          taskName,
+          taskId,
+          status: defaultStatus,
+          priority: defaultPriority,
+          dueDate: getNormalizedDueDate(dueDate)
+        });
+        if (initialAttachment) {
+          setAttachments([{
+            file: initialAttachment,
+            name: initialAttachment.name,
+            type: initialAttachment.type.startsWith('image/') ? 'image' : 'file',
+            url: URL.createObjectURL(initialAttachment)
+          }]);
+        } else {
+          setAttachments([]);
+        }
+      }
     }
-  }, [open, taskNo, taskName, taskId, isEdit]);
+  }, [bug, open, taskNo, taskName, taskId, dueDate, isEdit, initialAttachment]);
 
   useEffect(() => {
     if (!open || isEdit) return;
     setFormData((prev) => ({
       ...prev,
-      category: prev.category || categoryOptions[0]?.value || '',
-      priority: prev.priority || priorityOptions[0]?.value || '',
-      status: prev.status || statusOptions[0]?.value || '',
+      category: prev.category || '',
+      priority: prev.priority || priorityOptions.find((option) => String(option?.label || '').toLowerCase() === 'high')?.value || priorityOptions[0]?.value || '',
+      status: prev.status || statusOptions.find((option) => String(option?.label || '').toLowerCase() === 'new')?.value || statusOptions[0]?.value || '',
+      dueDate: prev.dueDate || getNormalizedDueDate(dueDate),
     }));
-  }, [open, isEdit, categoryOptions, priorityOptions, statusOptions]);
+  }, [open, isEdit, categoryOptions, priorityOptions, statusOptions, dueDate]);
 
   const {
     dragActive,
@@ -116,32 +169,6 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   } = useAttachmentHandlers(attachments, setAttachments);
 
   useEffect(() => {
-    if (bug) {
-      setFormData(initializeFormData(bug, taskNo, taskName, taskId, isEdit, INITIAL_FORM_DATA));
-      setAttachments(initializeAttachments(bug));
-    } else {
-      setFormData({
-        ...INITIAL_FORM_DATA,
-        taskNo: taskNo || '',
-        taskName: taskName || '',
-        taskId: taskId || ''
-      });
-      // Add initial attachment from DrawEditor if provided
-      if (initialAttachment) {
-        setAttachments([{
-          file: initialAttachment,
-          name: initialAttachment.name,
-          type: initialAttachment.type.startsWith('image/') ? 'image' : 'file',
-          url: URL.createObjectURL(initialAttachment)
-        }]);
-      } else {
-        setAttachments([]);
-      }
-    }
-  }, [bug, open, taskNo, taskName, taskId, isEdit, initialAttachment]);
-
-
-  useEffect(() => {
     const handlePaste = (e) => {
       if (open) {
         const files = Array.from(e.clipboardData.files);
@@ -157,15 +184,38 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const validateForm = () => {
     let newErrors = {};
     if (!formData.title?.trim()) newErrors.title = 'Title is required';
-    // if (!formData.attachments?.length) newErrors.attachments = 'At least one attachment is required';
+    if (!attachments?.length) newErrors.attachments = 'At least one attachment is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleFormSubmit = (e) => {
+  useEffect(() => {
+    if (attachments?.length > 0 && errors.attachments) {
+      setErrors((prev) => ({ ...prev, attachments: null }));
+    }
+  }, [attachments, errors.attachments]);
+
+  const handleFormSubmit = (e, saveAndNew = false) => {
     e.preventDefault();
     if (validateForm()) {
-      handleSubmit(e, formData, attachments, currentUser, isEdit, bug, onClose, onSuccess);
+      handleSubmit(e, formData, attachments, currentUser, isEdit, bug, onClose, (newBug, shouldSaveAndNew) => {
+        if (shouldSaveAndNew) {
+          const defaultStatus = getDefaultStatus();
+          const defaultPriority = getDefaultPriority();
+          setFormData({
+            ...INITIAL_FORM_DATA,
+            taskNo,
+            taskName,
+            taskId,
+            status: defaultStatus,
+            priority: defaultPriority,
+            dueDate: getNormalizedDueDate(dueDate)
+          });
+          setAttachments([]);
+          setErrors({});
+        }
+        if (onSuccess) onSuccess(newBug, shouldSaveAndNew);
+      }, saveAndNew);
     }
   };
 
@@ -238,7 +288,6 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               <Typography variant="h6" sx={{
                 fontWeight: 700,
                 fontSize: '1.05rem',
-                color: '#0F172A',
                 letterSpacing: '-0.01em'
               }}>
                 {isEdit ? 'Edit Bug' : 'Create New Bug'}
@@ -276,7 +325,6 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               transition: 'all 0.2s',
               '&:hover': {
                 bgcolor: '#F1F5F9',
-                color: '#0F172A',
                 transform: 'rotate(90deg)'
               },
               opacity: 0.7,
@@ -339,7 +387,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             {/* Description */}
             <Grid size={{ xs: 12 }} sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 1, display: 'block' }}>
-                DESCRIPTION <span style={{ color: '#EF4444' }}>*</span>
+                DESCRIPTION
               </Typography>
               <TextField
                 fullWidth
@@ -368,14 +416,14 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}>ASSIGNEE</Typography>
               {(() => {
-                const selectedAssignee = assignees.find((a) => {
+                const selectedAssignee = filteredAssignees.find((a) => {
                   const currentAssigneeId = String(formData.assigneeId || '');
                   return String(a?.id || '') === currentAssigneeId || String(a?.userid || '') === currentAssigneeId;
                 }) || null;
 
                 return (
               <DepartmentAssigneeAutocomplete
-                options={assignees}
+                options={filteredAssignees}
                 label=""
                 placeholder="Search and select assignee..."
                 multiple={false}
@@ -669,13 +717,18 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                 <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: dragActive ? '#6366F1' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1, border: '1px solid #EEF2F7', transition: 'all 0.2s ease' }}>
                   <Upload size={20} color={dragActive ? '#FFFFFF' : '#64748B'} />
                 </Box>
-                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>
+                <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700 }}>
                   Click to upload or drag and drop
                 </Typography>
                 <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: '#64748B', mt: 0.25 }}>
                   PDF, DOC, PNG, JPG (max. 10MB)
                 </Typography>
               </Box>
+              {!!errors.attachments && (
+                <Typography sx={{ mt: 0.75, fontSize: '0.75rem', color: '#DC2626', fontWeight: 600 }}>
+                  {errors.attachments}
+                </Typography>
+              )}
             </Grid>
           </Grid>
         </Box>
@@ -696,29 +749,25 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
           <Button
             className="secondaryBtnClassname"
             onClick={onClose}
-            sx={{
-              px: 3,
-              bgcolor: '#f3f4f6 !important',
-              color: '#475569 !important',
-              '&:hover': { bgcolor: '#e5e7eb !important' }
-            }}
           >
             Cancel
           </Button>
+          {!isEdit && (
+            <Button
+              className="buttonClassname"
+              type="button"
+              variant="contained"
+              onClick={(e) => {
+                handleFormSubmit(e, true);
+              }}
+            >
+              Save & New
+            </Button>
+          )}
           <Button
             className="buttonClassname"
             type="submit"
             variant="contained"
-            sx={{
-              px: 4,
-              bgcolor: '#6366f1 !important',
-              color: '#ffffff !important',
-              boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1)',
-              '&:hover': {
-                bgcolor: '#4f46e5 !important',
-                boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)'
-              }
-            }}
           >
             {isEdit ? 'Update Bug' : 'Create Bug'}
           </Button>

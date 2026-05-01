@@ -1,8 +1,9 @@
 import { uploadFilesForBug } from '@/src/utils/bugAttachmentApi';
 import { saveBugApi } from '@/app/api/bugsaveApi';
 import { updateBugApi } from '@/app/api/bugupdateApi';
+import toast from 'react-hot-toast';
 
-export const handleSubmit = async (e, formData, attachments, currentUser, isEdit, bug, onClose, onSuccess) => {
+export const handleSubmit = async (e, formData, attachments, currentUser, isEdit, bug, onClose, onSuccess, saveAndNew = false) => {
   e.preventDefault();
 
   const bugIdForSubmit = isEdit
@@ -28,8 +29,9 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
     uploadedAttachments = uploadResult.attachments;
   }
 
+  const { status, priority, category, ...formDataWithoutIds } = formData;
   const payload = {
-    ...formData,
+    ...formDataWithoutIds,
     id: bugIdForSubmit,
     reporterId: isEdit ? (bug?.reporterId || currentUser?.id) : currentUser?.id,
     userId: currentUser?.id,
@@ -43,13 +45,20 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
   try {
     if (isEdit) {
       await updateBugApi(payload);
+      toast.success('Bug updated successfully');
     } else {
       await saveBugApi(payload);
+      toast.success('Bug created successfully');
     }
-    onClose();
-    if (onSuccess) onSuccess(isEdit ? undefined : payload);
+
+    if (!saveAndNew) {
+      onClose();
+    }
+
+    if (onSuccess) onSuccess(isEdit ? undefined : payload, saveAndNew);
   } catch (error) {
     console.error('Failed to save bug:', error);
+    toast.error(isEdit ? 'Failed to update bug' : 'Failed to create bug');
   }
 };
 

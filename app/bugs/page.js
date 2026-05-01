@@ -5,7 +5,6 @@ import {
   Box, Typography, Button, Avatar, Stack, IconButton, CircularProgress, MenuItem,
   Tooltip,
   Select,
-  Dialog,
 } from '@mui/material';
 import {
   Edit2, AlertCircle, Paperclip,
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
-import BugModal from '@/components/BugModal';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import AttachmentViewer from '@/components/AttachmentViewer';
 import CommentInput from '@/components/CommentInput';
@@ -28,7 +26,6 @@ import { getBugDetailApi } from '@/app/api/bugdetailApi';
 import { updateBugApi } from '@/app/api/bugupdateApi';
 import { STATUS, slimScroll, formatDateTime, formatDate } from './constants';
 import { normalizeBugList, normalizeBugData } from '@/utils/normalizeBugData';
-import DrawEditor from '@/components/draw/DrawEditor';
 import StatusBadge from './components/StatusBadge';
 import PriorityBadge from './components/PriorityBadge';
 import IssueCard from './components/IssueCard';
@@ -39,14 +36,23 @@ import BugDetailSkeleton from './components/BugDetailSkeleton';
 import EmptyStateSkeleton from './components/EmptyStateSkeleton';
 import TimelineSection from '@/components/TimelineSection';
 import IssueDetailPanel from './components/IssueDetailPanel';
+import ReportBugFlow from './components/ReportBugFlow';
+import { decodeUrlParams } from '@/utils/urlParams';
+import { useBugContext } from '@/contexts/BugContext';
 
 // ─── Main Page Component ─────────────────────────────────────────────────────
 function BugsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const taskNoParam = searchParams.get('taskno');
-  const taskNameParam = searchParams.get('taskname');
-  const taskIdParam = searchParams.get('taskid');
+  const dataParam = searchParams.get('data');
+  const openReportParam = searchParams.get('openReport');
+  const decodedParams = decodeUrlParams(dataParam);
+  const taskNoParam = decodedParams.taskno;
+  const taskNameParam = decodedParams.taskname;
+  const taskIdParam = decodedParams.taskid;
+  const assigneeIdsParam = decodedParams.assigneeids;
+  const dueDateParam = decodedParams.duedate;
+  const { setBugs: setBugsContext } = useBugContext();
 
   const [bugs, setBugs] = useState([]);
   const [search, setSearch] = useState('');
@@ -147,10 +153,17 @@ function BugsPageContent() {
   }, []);
 
   useEffect(() => {
-    if (taskNoParam && taskNameParam && taskIdParam && permissions.canReportBug(currentUser)) {
+    if (!openReportParam || !currentUser) return;
+
+    if (openReportParam === '1' && permissions.canReportBug(currentUser)) {
       setDrawEditorOpen(true);
     }
-  }, [taskNoParam, taskNameParam, taskIdParam, currentUser]);
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete('openReport');
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `/bugs?${nextQuery}` : '/bugs');
+  }, [openReportParam, currentUser, router, searchParams]);
 
   const fetchBugs = useCallback(async () => {
     // Don't fetch if currentUser is not available yet
@@ -164,13 +177,15 @@ function BugsPageContent() {
         assigneeId: ''
       });
       const data = response?.rd || response?.rd1 || [];
-      setBugs(normalizeBugList(data));
+      const normalizedBugs = normalizeBugList(data);
+      setBugs(normalizedBugs);
+      setBugsContext(normalizedBugs);
       // Auto-select first bug only if no bug is currently selected
       if (data.length > 0 && !selectedId) setSelectedId(data[0].id);
     } catch (err) {
       setError('Connection failed. Check your database status.');
     } finally { setIsLoading(false); }
-  }, [taskIdParam, currentUser?.id]);
+  }, [taskIdParam, currentUser?.id, setBugsContext]);
 
   useEffect(() => { fetchBugs(); }, [fetchBugs]);
 
@@ -214,6 +229,10 @@ function BugsPageContent() {
       setSelectedId(filteredBugs[0].id);
     }
   }, [filteredBugs, selectedId]);
+
+  const selectedIndex = filteredBugs.findIndex((bug) => bug.id === selectedId);
+  const hasPrev = selectedIndex > 0;
+  const hasNext = selectedIndex >= 0 && selectedIndex < filteredBugs.length - 1;
 
   const handleConfirmDelete = async () => {
     if (!bugToDelete) return;
@@ -396,6 +415,18 @@ function BugsPageContent() {
               onViewDetails={() => router.push(`/bugs/${selectedId}`)}
               onBack={() => setSelectedId(null)}
               onReassign={(info) => setReassignInfo(info)}
+              onPrev={() => {
+                if (hasPrev) {
+                  setSelectedId(filteredBugs[selectedIndex - 1]?.id || null);
+                }
+              }}
+              onNext={() => {
+                if (hasNext) {
+                  setSelectedId(filteredBugs[selectedIndex + 1]?.id || null);
+                }
+              }}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
             />
           ) : (
             <EmptyStateSkeleton
@@ -413,29 +444,20 @@ function BugsPageContent() {
       </Box>
 
       {/* Modals */}
-      <Dialog
-        open={drawEditorOpen}
-        onClose={() => setDrawEditorOpen(false)}
-        fullScreen
-        PaperProps={{ sx: { bgcolor: 'transparent' } }}
-      >
-        <DrawEditor
-          onClose={() => setDrawEditorOpen(false)}
-          onSave={(file) => {
-            if (file) {
-              setEditedImage(file);
-            }
-            setDrawEditorOpen(false);
-            if (permissions.canReportBug(currentUser)) {
-              setModalOpen(true);
-            }
-          }}
-        />
-      </Dialog>
-      <BugModal
-        open={modalOpen}
-        onClose={() => { setModalOpen(false); setEditedImage(null); }}
-        onSuccess={async (newBug) => {
+      <ReportBugFlow
+        canReportBug={permissions.canReportBug(currentUser)}
+        drawEditorOpen={drawEditorOpen}
+        setDrawEditorOpen={setDrawEditorOpen}
+        modalOpen={modalOpen}
+        setModalOpen={setModalOpen}
+        editedImage={editedImage}
+        setEditedImage={setEditedImage}
+        taskNo={taskNoParam || ''}
+        taskName={taskNameParam || ''}
+        taskId={taskIdParam || ''}
+        assigneeids={assigneeIdsParam || ''}
+        dueDate={dueDateParam || ''}
+        onSuccess={async (newBug, saveAndNew) => {
           if (newBug?.id) {
             const normalizedBug = normalizeBugData({
               ...newBug,
@@ -458,18 +480,12 @@ function BugsPageContent() {
           }
 
           await fetchBugs();
-          setTimeout(() => {
-            fetchBugs();
-          }, 500);
 
-          setModalOpen(false);
-          setEditedImage(null);
+          if (!saveAndNew) {
+            setModalOpen(false);
+            setEditedImage(null);
+          }
         }}
-        bug={null}
-        taskNo={taskNoParam || ''}
-        taskName={taskNameParam || ''}
-        taskId={taskIdParam || ''}
-        initialAttachment={editedImage}
       />
       <ConfirmationDialog
         open={confirmOpen}

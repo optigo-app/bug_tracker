@@ -6,7 +6,7 @@ import {
   Tooltip, Select, MenuItem, Dialog
 } from '@mui/material';
 import {
-  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen, AlertCircle
+  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen, AlertCircle, ChevronLeft, ChevronRight, Paperclip
 } from 'lucide-react';
 import { getRandomAvatarColor, ImageUrl, formatDateTime, formatDate, STATUS } from '@/utils/glocalfunc';
 import { slimScroll } from '../constants';
@@ -25,7 +25,7 @@ import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
 import BugDetailSkeleton from './BugDetailSkeleton';
 
-export default function IssueDetailPanel({ bugId, currentUser, developers, taskAssignees, onRefreshList, onViewDetails, onBack, onReassign }) {
+export default function IssueDetailPanel({ bugId, currentUser, developers, taskAssignees, onRefreshList, onViewDetails, onBack, onReassign, onPrev, onNext, hasPrev = false, hasNext = false }) {
   const [bug, setBug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +41,46 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
   const [error, setError] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showFullTimeline, setShowFullTimeline] = useState(false);
+  const [statusData, setStatusData] = useState([]);
+  const [priorityData, setPriorityData] = useState([]);
+
+  // Load status and priority data from session storage
+  useEffect(() => {
+    const loadStatusData = () => {
+      const data = sessionStorage.getItem('taskbugstatusData');
+      if (data) {
+        try {
+          setStatusData(JSON.parse(data));
+        } catch (error) {
+          console.error('Error parsing taskbugstatusData:', error);
+          setStatusData([]);
+        }
+      }
+    };
+
+    const loadPriorityData = () => {
+      const data = sessionStorage.getItem('taskbugpriorityData');
+      if (data) {
+        try {
+          setPriorityData(JSON.parse(data));
+        } catch (error) {
+          console.error('Error parsing taskbugpriorityData:', error);
+          setPriorityData([]);
+        }
+      }
+    };
+
+    loadStatusData();
+    loadPriorityData();
+
+    // Listen for changes in session storage
+    const handleStorageChange = () => {
+      loadStatusData();
+      loadPriorityData();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const fetchBug = useCallback(async (silent = false) => {
     if (!bugId) return;
@@ -88,7 +128,8 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
   const patch = async (payload) => {
     setSaving(true);
     try {
-      await updateBugApi({ ...payload, id: bugId, userId: currentUser?.id, reporterId: bug.reporterId });
+      const { status, priority, category, ...payloadWithoutIds } = payload;
+      await updateBugApi({ ...payloadWithoutIds, id: bugId, userId: currentUser?.id, reporterId: bug.reporterId });
       fetchBug(true);
       onRefreshList();
     } catch (e) { console.error(e); }
@@ -123,6 +164,16 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
     if (typeof status === 'object' && status?.label) return status.label;
     return status;
   };
+
+  const getStatusById = (id) => (statusData || []).find((s) => String(s?.id) === String(id));
+  const getStatusByLabel = (label) => (statusData || []).find((s) => String(s?.labelname || '').toLowerCase() === String(label || '').toLowerCase());
+
+  const currentStatusLabel = (() => {
+    if (bug?.statusId) {
+      return getStatusById(bug.statusId)?.labelname || getStatusValue(bug.status);
+    }
+    return getStatusValue(bug.status);
+  })();
 
   const getMemberByRef = (userRef) => {
     if (!userRef) return null;
@@ -183,7 +234,6 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                 fontWeight: 700, letterSpacing: '-0.01em',
                 lineHeight: 1.25, fontSize: '1.1rem',
                 overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                color: '#0F172A'
               }}>
                 {bug.bugNo ? (
                   <>
@@ -204,6 +254,30 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
             </Box>
 
             <Stack direction="row" spacing={0.75} alignItems="center">
+              <Tooltip title="Previous">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={onPrev}
+                    disabled={!hasPrev}
+                    sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}
+                  >
+                    <ChevronLeft size={15} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Next">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={onNext}
+                    disabled={!hasNext}
+                    sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}
+                  >
+                    <ChevronRight size={15} />
+                  </IconButton>
+                </span>
+              </Tooltip>
               {permissions.canEditBug(currentUser) && (
                 <Tooltip title="Edit Bug">
                   <IconButton size="small" onClick={() => setEditOpen(true)}
@@ -229,71 +303,48 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
 
           {/* Action Buttons */}
           <Stack direction="row" spacing={0.75} sx={{ mt: 1, justifyContent: 'flex-end' }}>
-            {permissions.canVerifyBug(currentUser) && getStatusValue(bug.status) === 'TESTING' && (
+            {permissions.canVerifyBug(currentUser) && currentStatusLabel === 'Ready For Test' && (
               <>
                 <Button size="small" variant="contained" startIcon={<CheckCircle2 size={14} />}
-                  onClick={() => { setPendingStatus('CLOSED'); setStatusOpen(true); }} disabled={saving}
-                  sx={{
-                    fontWeight: 700, borderRadius: 2, fontSize: '0.7rem', height: 28, px: 1.5,
-                    background: 'linear-gradient(270deg, rgba(40, 199, 111, 1) 0%, #28C76F 100%)',
-                    boxShadow: '0 2px 8px 0 rgba(40, 199, 111, 0.3)',
-                    '&:hover': {
-                      opacity: 0.9,
-                      boxShadow: '0 4px 12px 0 rgba(40, 199, 111, 0.4)',
-                      transform: 'translateY(-1px)'
-                    },
-                    textTransform: 'none', transition: 'all 0.2s ease-in-out'
-                  }}>
+                  onClick={() => {
+                    const closedStatus = getStatusByLabel('Verified');
+                    if (closedStatus) { setPendingStatus(closedStatus.id); setStatusOpen(true); }
+                  }} disabled={saving}
+                  className='buttonClassname'
+                  sx={{ padding: '0px 10px' }}
+                >
                   Verify
                 </Button>
                 <Button size="small" variant="contained" startIcon={<RotateCcw size={14} />}
-                  onClick={() => { setPendingStatus('REOPENED'); setStatusOpen(true); }} disabled={saving}
-                  sx={{
-                    fontWeight: 700, borderRadius: 2, fontSize: '0.7rem', height: 28, px: 1.5,
-                    background: 'linear-gradient(270deg, rgba(234, 84, 85, 1) 0%, #EA5455 100%)',
-                    boxShadow: '0 2px 8px 0 rgba(234, 84, 85, 0.3)',
-                    '&:hover': {
-                      opacity: 0.9,
-                      boxShadow: '0 4px 12px 0 rgba(234, 84, 85, 0.4)',
-                      transform: 'translateY(-1px)'
-                    },
-                    textTransform: 'none', transition: 'all 0.2s ease-in-out'
-                  }}>
+                  onClick={() => {
+                    const reopenStatus = getStatusByLabel('Reopen');
+                    if (reopenStatus) { setPendingStatus(reopenStatus.id); setStatusOpen(true); }
+                  }} disabled={saving}
+                  className='dangerbtnClassname'
+                >
                   Reopen
                 </Button>
               </>
             )}
-            {permissions.canChangeBugStatus(currentUser) && ['OPEN', 'IN_PROGRESS', 'REOPENED'].includes(getStatusValue(bug.status)) && (
+            {permissions.canChangeBugStatus(currentUser) && ['In Progress'].includes(currentStatusLabel) && (
               <Button size="small" variant="contained" startIcon={<CheckCircle2 size={14} />}
-                onClick={() => { setPendingStatus('TESTING'); setStatusOpen(true); }} disabled={saving}
-                sx={{
-                  fontWeight: 700, borderRadius: 2, fontSize: '0.7rem', height: 28, px: 1.5,
-                  background: 'linear-gradient(270deg, rgba(115, 103, 240, 1) 0%, #7367f0 100%)',
-                  boxShadow: '0 2px 8px 0 rgba(115, 103, 240, 0.3)',
-                  '&:hover': {
-                    opacity: 0.9,
-                    boxShadow: '0 4px 12px 0 rgba(115, 103, 240, 0.4)',
-                    transform: 'translateY(-1px)'
-                  },
-                  textTransform: 'none', transition: 'all 0.2s ease-in-out'
-                }}>
+                onClick={() => {
+                  const readyTestStatus = getStatusByLabel('Fixed');
+                  if (readyTestStatus) { setPendingStatus(readyTestStatus.id); setStatusOpen(true); }
+                }} disabled={saving}
+                className='buttonClassname'
+              >
                 Resolve
               </Button>
             )}
-            {permissions.canChangeBugStatus(currentUser) && getStatusValue(bug.status) === 'CLOSED' && (
+            {permissions.canChangeBugStatus(currentUser) && ['Verified', 'Closed'].includes(currentStatusLabel) && (
               <Button size="small" variant="contained" startIcon={<RotateCcw size={14} />}
-                onClick={() => { setPendingStatus('REOPENED'); setStatusOpen(true); }} disabled={saving}
-                sx={{
-                  fontWeight: 700, borderRadius: 2, fontSize: '0.7rem', height: 28, px: 1.5,
-                  background: 'linear-gradient(270deg, rgba(115, 103, 240, 1) 0%, #7367f0 100%)',
-                  boxShadow: '0 2px 8px 0 rgba(115, 103, 240, 0.3)',
-                  '&:hover': {
-                    opacity: 0.9,
-                    boxShadow: '0 4px 12px 0 rgba(115, 103, 240, 0.4)',
-                    transform: 'translateY(-1px)'
-                  },
-                  textTransform: 'none', transition: 'all 0.2s ease-in-out'
-                }}>
+                onClick={() => {
+                  const reopenStatus = getStatusByLabel('Reopen');
+                  if (reopenStatus) { setPendingStatus(reopenStatus.id); setStatusOpen(true); }
+                }} disabled={saving}
+                className='buttonClassname'
+              >
                 Reopen
               </Button>
             )}
@@ -317,17 +368,18 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
         {/* Padded Content Area */}
         <Box sx={{ p: 2, pt: 0.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           {/* Description Section */}
-          <Box sx={{ mb: 0.5 }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1, letterSpacing: '0.08em' }}>
-              Description
-            </Typography>
-            <Box sx={{ bgcolor: '#F8FAFC', p: 2.25, borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
-                {bug.description || <em style={{ color: '#94A3B8' }}>No description provided.</em>}
+          {bug?.description && (
+            <Box sx={{ mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1, letterSpacing: '0.08em' }}>
+                Description
               </Typography>
+              <Box sx={{ bgcolor: '#F8FAFC', p: 2.25, borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
+                  {bug.description || <em style={{ color: '#94A3B8' }}>No description provided.</em>}
+                </Typography>
+              </Box>
             </Box>
-          </Box>
-
+          )}
           {/* Activity Section */}
           <Box>
             <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#444050', mb: 0.25, lineHeight: 1.3, letterSpacing: '-0.01em' }}>
@@ -461,36 +513,104 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                       <Select
                         fullWidth
                         size="small"
-                        value={getStatusValue(bug.status) ?? 'OPEN'}
+                        value={bug.statusId || getStatusByLabel(currentStatusLabel)?.id || ''}
                         onChange={e => {
                           const next = e.target.value;
-                          if (['TESTING', 'REOPENED', 'CLOSED'].includes(next)) {
-                            setPendingStatus(next);
-                            setStatusOpen(true);
-                          } else {
-                            patch({ statusId: next });
-                          }
+                          const current = bug.statusId || getStatusByLabel(currentStatusLabel)?.id || '';
+                          if (String(next) === String(current)) return;
+
+                          setPendingStatus(next);
+                          setStatusOpen(true);
                         }}
                         disabled={saving}
                         sx={{
-                          borderRadius: 1, fontWeight: 600, fontSize: '0.8rem', height: 32,
-                          bgcolor: ss.bg, color: ss.color,
-                          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
-                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: ss.border }
+                          height: 32,
+                          borderRadius: 1,
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
+
+                          bgcolor: ss.bg,
+                          color: ss.color,
+
+                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'transparent'
+                          },
+
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: ss.border
+                          },
+
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: ss.border
+                          }
+                        }}
+
+                        // 🔥 Dropdown container styling (Paper root)
+                        MenuProps={{
+                          PaperProps: {
+                            elevation: 0,
+                            sx: {
+                              mt: 1,
+                              borderRadius: 2,
+                              overflow: 'hidden',
+
+                              border: '1px solid #E2E8F0',
+                              boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+
+                              backdropFilter: 'blur(6px)',
+
+                              py: 0.5
+                            }
+                          },
+                          MenuListProps: {
+                            sx: {
+                              py: 0.5
+                            }
+                          }
                         }}
                       >
-                        {Object.keys(STATUS).map(s => <MenuItem key={s} value={s} sx={{ fontWeight: 600, fontSize: '0.8rem' }}>{STATUS[s].label}</MenuItem>)}
+                        {statusData.map(s => (
+                          <MenuItem
+                            key={s.id}
+                            value={s.id}
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: '0.8rem',
+                              textTransform: 'capitalize',
+                              borderRadius: 1,
+                              mx: 0.5,
+                              my: 0.25,
+                              transition: 'all 0.15s ease',
+                              '&:hover': {
+                                backgroundColor: '#F1F5F9'
+                              },
+                              '&.Mui-selected': {
+                                backgroundColor: '#EEF2FF',
+                                color: '#4F46E5'
+                              },
+                              '&.Mui-selected:hover': {
+                                backgroundColor: '#E0E7FF'
+                              }
+                            }}
+                          >
+                            {s.labelname}
+                          </MenuItem>
+                        ))}
                       </Select>
                     ) : <StatusBadge status={bug.status} />}
                   </Box>
 
                   {/* Priority */}
-                  <Box>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
-                      PRIORITY LEVEL
-                    </Typography>
-                    <PriorityBadge priority={bug.priority} />
-                  </Box>
+                  {bug.priority && (
+                    <Box>
+                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                        PRIORITY LEVEL
+                      </Typography>
+                      <PriorityBadge priority={bug.priority} />
+                    </Box>
+                  )}
                 </Stack>
               </Box>
 
@@ -688,15 +808,12 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
       <StatusDialog
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
-        newStatus={pendingStatus}
-        role={currentUser?.role}
-        saving={saving}
+        statusLabel={getStatusById(pendingStatus)?.labelname || ''}
         onConfirm={async (remark) => {
           await patch({ statusId: pendingStatus, remark: remark });
           setStatusOpen(false);
-          fetchBug();
-          onRefreshList();
         }}
+        saving={saving}
       />
       <AttachmentViewer
         open={viewerOpen}

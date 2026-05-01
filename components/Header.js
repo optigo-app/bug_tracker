@@ -15,7 +15,6 @@ import {
     ListItemText,
     ListItemAvatar,
     Divider,
-    Chip,
     Button,
     CircularProgress,
     MenuItem
@@ -23,6 +22,7 @@ import {
 import { getNotificationsApi } from '@/app/api/notificationgetApi';
 import { markNotificationReadApi } from '@/app/api/notificationmarkreadApi';
 import { permissions } from '@/utils/permissions';
+import { useBugContext } from '@/contexts/BugContext';
 import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
 import {
     Bell,
@@ -34,10 +34,8 @@ import {
 } from 'lucide-react';
 import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { getAvatarColor, getInitials } from '@/utils/glocalfunc';
-import BugModal from './BugModal';
-import ConfirmationDialog from './ConfirmationDialog';
-
+import { decodeUrlParams } from '@/utils/urlParams';
+    
 const NOTIFICATION_ICONS = {
     BUG_ASSIGNED: <Bug size={16} color="#6366F1" />,
     COMMENT_ADDED: <MessageSquare size={16} color="#10B981" />,
@@ -71,36 +69,62 @@ export default function Header() {
 function HeaderContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const router = useRouter(); 
-    const taskNoParam = searchParams.get('taskno');
-    const taskNameParam = searchParams.get('taskname');
-    const taskIdParam = searchParams.get('taskid');
+    const router = useRouter();
+    const dataParam = searchParams.get('data');
+    const decodedParams = decodeUrlParams(dataParam);
+    const taskNoParam = decodedParams.taskno;
+    const taskNameParam = decodedParams.taskname;
+    const { totalBugCount, todayBugCount } = useBugContext();
     const [currentUser, setCurrentUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const [profileAnchorEl, setProfileAnchorEl] = useState(null);
     const [loading, setLoading] = useState(false);
-    const pollRef = useRef(null);
+    const lastUserProfileRawRef = useRef('');
 
     useEffect(() => {
-        // Get user profile from sessionStorage
-        const userProfileData = sessionStorage.getItem('UserProfileData');
-        if (userProfileData) {
+        const syncUserProfile = () => {
+            const rawProfile = sessionStorage.getItem('UserProfileData') || '';
+            if (rawProfile === lastUserProfileRawRef.current) return;
+            lastUserProfileRawRef.current = rawProfile;
+            if (!rawProfile) {
+                setCurrentUser(null);
+                return;
+            }
             try {
-                const profile = JSON.parse(userProfileData);
-                setCurrentUser({
-                    id: profile.id,
-                    name: `${profile.firstname} ${profile.lastname}`.trim() || profile.id,
-                    role: profile.designation || 'User',
-                    email: profile.userid,
-                    photo: profile.empphoto,
-                    ...profile
+                const profile = JSON.parse(rawProfile);
+                setCurrentUser((prev) => {
+                    const nextUser = {
+                        id: profile.id,
+                        name: `${profile.firstname} ${profile.lastname}`.trim() || profile.id,
+                        role: profile.designation || 'User',
+                        designation: profile.designation,
+                        email: profile.userid,
+                        photo: profile.empphoto,
+                        ...profile
+                    };
+
+                    if (
+                        prev?.id === nextUser.id &&
+                        prev?.designation === nextUser.designation &&
+                        prev?.email === nextUser.email &&
+                        prev?.photo === nextUser.photo &&
+                        prev?.name === nextUser.name
+                    ) {
+                        return prev;
+                    }
+
+                    return nextUser;
                 });
             } catch (error) {
                 console.error('Error parsing UserProfileData:', error);
                 setCurrentUser(null);
             }
-        }
+        };
+
+        syncUserProfile();
+        const checkInterval = setInterval(syncUserProfile, 500);
+        return () => clearInterval(checkInterval);
     }, []);
 
     const fetchNotifications = useCallback(async (userId) => {
@@ -114,7 +138,7 @@ function HeaderContent() {
     useEffect(() => {
         if (!currentUser?.id) return;
         fetchNotifications(currentUser.id);
-    }, [currentUser, fetchNotifications]);
+    }, [currentUser?.id, fetchNotifications]);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -183,23 +207,13 @@ function HeaderContent() {
     const open = Boolean(anchorEl);
     const profileOpen = Boolean(profileAnchorEl);
 
-    // Add state for BugModal and Task Selection Dialog
-    const [modalOpen, setModalOpen] = useState(false);
-    const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-
     const handleReportBugClick = () => {
-        if (!taskNoParam) {
-            setTaskDialogOpen(true);
-        } else {
-            setModalOpen(true);
+        const params = new URLSearchParams();
+        if (dataParam) {
+            params.set('data', dataParam);
         }
-    };
-
-    const handleTaskDialogConfirm = () => {
-        setTaskDialogOpen(false);
-        setTimeout(() => {
-            router.push('/tasks');
-        }, 100);
+        params.set('openReport', '1');
+        router.push(`/bugs?${params.toString()}`);
     };
 
     return (
@@ -223,7 +237,7 @@ function HeaderContent() {
                             <Typography variant="h6" sx={{ fontWeight: 850, color: '#7367f0', letterSpacing: '-0.02em', fontSize: '0.9rem', lineHeight: 1.1 }}>
                                 {taskNoParam}
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
                                 {taskNameParam}
                             </Typography>
                         </Stack>
@@ -259,18 +273,49 @@ function HeaderContent() {
                                                 {crumb}
                                             </Typography>
                                         ) : (
-                                            <Typography
-                                                variant="h6"
-                                                sx={{
-                                                    fontWeight: 850,
-                                                    color: '#0F172A',
-                                                    letterSpacing: '-0.02em',
-                                                    fontSize: '1.05rem',
-                                                    lineHeight: 1.1
-                                                }}
-                                            >
-                                                {crumb}
-                                            </Typography>
+                                            <Stack direction="row" spacing={1.5} alignItems="center">
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 850,
+                                                        letterSpacing: '-0.02em',
+                                                        fontSize: '1.05rem',
+                                                        lineHeight: 1.1
+                                                    }}
+                                                >
+                                                    {crumb}
+                                                </Typography>
+                                                {pathname.includes('/bugs') && (totalBugCount > 0 || todayBugCount > 0) && (
+                                                    <Stack direction="row" spacing={0.75} alignItems="center">
+                                                        {totalBugCount > 0 && (
+                                                            <Box sx={{
+                                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                                                color: '#6366F1',
+                                                                px: 0.75,
+                                                                py: 0.25,
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 700
+                                                            }}>
+                                                                {totalBugCount} total
+                                                            </Box>
+                                                        )}
+                                                        {todayBugCount > 0 && (
+                                                            <Box sx={{
+                                                                bgcolor: 'rgba(16, 185, 129, 0.1)',
+                                                                color: '#10B981',
+                                                                px: 0.75,
+                                                                py: 0.25,
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 700
+                                                            }}>
+                                                                {todayBugCount} today
+                                                            </Box>
+                                                        )}
+                                                    </Stack>
+                                                )}
+                                            </Stack>
                                         )}
                                         {index < (getBreadcrumbs()?.length || 0) - 1 && (
                                             <Typography sx={{ color: '#CBD5E1', fontSize: '0.9rem' }}>/</Typography>
@@ -279,54 +324,58 @@ function HeaderContent() {
                                 ))}
                             </Stack>
                         ) : (
-                            <Typography variant="h6" sx={{ fontWeight: 850, color: '#0F172A', letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
-                                {getPageTitle()}
-                            </Typography>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                                <Typography variant="h6" sx={{ fontWeight: 850, letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
+                                    {getPageTitle()}
+                                </Typography>
+                                {pathname.includes('/bugs') && (totalBugCount > 0 || todayBugCount > 0) && (
+                                    <Stack direction="row" spacing={0.75} alignItems="center">
+                                        {totalBugCount > 0 && (
+                                            <Box sx={{
+                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
+                                                color: '#6366F1',
+                                                px: 0.75,
+                                                py: 0.25,
+                                                borderRadius: '6px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700
+                                            }}>
+                                                {totalBugCount} total
+                                            </Box>
+                                        )}
+                                        {todayBugCount > 0 && (
+                                            <Box sx={{
+                                                bgcolor: 'rgba(16, 185, 129, 0.1)',
+                                                color: '#10B981',
+                                                px: 0.75,
+                                                py: 0.25,
+                                                borderRadius: '6px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 700
+                                            }}>
+                                                {todayBugCount} today
+                                            </Box>
+                                        )}
+                                    </Stack>
+                                )}
+                            </Stack>
                         )}
                     </Box>
                 )}
             </Box>
 
-            <BugModal
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-                onSuccess={() => {
-                    setModalOpen(false);
-                    if (pathname === '/bugs') router.refresh();
-                }}
-                taskNo={taskNoParam || ''}
-                taskName={taskNameParam || ''}
-                taskId={taskIdParam || ''}
-            />
-
             {/* Actions & User Profile */}
             <Stack direction="row" spacing={2} alignItems="center">
                 {pathname.includes('/bugs') && permissions.canReportBug(currentUser) && (
                     <Button
-                        variant="contained"
-                        size="small"
                         startIcon={<Plus size={16} />}
                         onClick={handleReportBugClick}
-                        sx={{
-                            borderRadius: 2,
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            height: 32,
-                            px: 2,
-                            background: 'linear-gradient(270deg, #7367f0 0%, #8e85f3 100%)',
-                            boxShadow: '0 4px 12px 0 rgba(115, 103, 240, 0.3)',
-                            textTransform: 'none',
-                            '&:hover': {
-                                boxShadow: '0 6px 16px 0 rgba(115, 103, 240, 0.4)',
-                                transform: 'translateY(-1px)'
-                            },
-                            transition: 'all 0.2s'
-                        }}
+                        className='buttonClassname'
                     >
                         Report Bug
                     </Button>
                 )}
-                
+
                 <Stack direction="row" spacing={0.25}>
                     <Tooltip title="Notifications">
                         <IconButton
@@ -365,7 +414,7 @@ function HeaderContent() {
                     {/* Header */}
                     <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid #F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#FAFBFF' }}>
                         <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0F172A' }}>Notifications</Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Notifications</Typography>
                             {unreadCount > 0 && (
                                 <Typography variant="caption" sx={{ color: '#64748B' }}>
                                     {unreadCount} unread
@@ -453,10 +502,10 @@ function HeaderContent() {
                 {/* User Profile */}
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 0.5, cursor: 'pointer', borderRadius: 2, p: 0.5, '&:hover': { bgcolor: '#F8FAFC' } }} onClick={handleProfileClick}>
                     <Box sx={{ textAlign: 'right', display: { xs: 'none', md: 'block' } }}>
-                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.1 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.1, textTransform: 'capitalize' }}>
                             {currentUser?.name || 'User'}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <Typography sx={{ fontSize: '0.62rem', letterSpacing: '0.04em' }}>
                             {currentUser?.role?.replace(/_/g, ' ') || 'Guest'}
                         </Typography>
                     </Box>
@@ -510,7 +559,7 @@ function HeaderContent() {
                             {!userImageSrc && currentUser?.name?.charAt(0)}
                         </Avatar>
                         <Box sx={{ minWidth: 0 }}>
-                            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {currentUser?.name || 'User'}
                             </Typography>
                             <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -535,22 +584,11 @@ function HeaderContent() {
                             }
                         }}
                     >
-                        Logout
-                    </MenuItem>
-                </Box>
-            </Popover>
+            Logout
+        </MenuItem>
+    </Box>
+</Popover>
 
-            {/* Task Selection Dialog */}
-            <ConfirmationDialog
-                open={taskDialogOpen}
-                onClose={() => setTaskDialogOpen(false)}
-                onConfirm={handleTaskDialogConfirm}
-                title="No Task Selected"
-                message="To report a bug, you need to select a task first. Would you like to continue to the Tasks page to select a task?"
-                confirmText="Continue to Tasks"
-                cancelText="Cancel"
-                type="info"
-            />
         </Box>
     );
 }

@@ -17,12 +17,13 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { getRandomAvatarColor, getInitials, ImageUrl } from '@/utils/glocalfunc';
-import { 
-  Search, Calendar, Building2, 
+import {
+  Search, Calendar, Building2,
   Clock, CheckCircle2, AlertCircle, TrendingUp, BarChart3
 } from 'lucide-react';
 import { fetchTaskDataFullApi } from '@/src/utils/taskApi';
 import { statusColors, priorityColors } from '@/utils/glocalfunc';
+import { encodeUrlParams } from '@/utils/urlParams';
 
 export default function TasksPage() {
   const router = useRouter();
@@ -139,7 +140,14 @@ export default function TasksPage() {
             <Typography
               onClick={() => {
                 if (params.row.taskno) {
-                  router.push(`/bugs?taskno=${encodeURIComponent(params.row.taskno)}&taskname=${encodeURIComponent(params.row.taskname || '')}&taskid=${encodeURIComponent(params.row.taskid || params.row.id || '')}`);
+                  const encodedParams = encodeUrlParams({
+                    taskno: params.row.taskno,
+                    taskname: params.row.taskname || '',
+                    taskid: params.row.taskid || params.row.id || '',
+                    assigneeids: params.row.assigneids || '',
+                    dueDate: params.row.DeadLineDate || ''
+                  });
+                  router.push(`/bugs?data=${encodedParams}`);
                 }
               }}
               sx={{

@@ -142,7 +142,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                 whiteSpace: 'nowrap',
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '1.05rem', lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.2 }}>
                 BugTrackr
               </Typography>
             </Box>

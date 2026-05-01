@@ -74,7 +74,7 @@ export default function ConfirmationDialog({
                         <AlertTriangle size={32} />
                     </Box>
                     <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
                             {title}
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, px: 2, lineHeight: 1.6 }}>
@@ -100,7 +100,6 @@ export default function ConfirmationDialog({
                         '&:hover': {
                             bgcolor: '#F8FAFC',
                             borderColor: '#CBD5E1',
-                            color: '#0F172A'
                         }
                     }}
                 >

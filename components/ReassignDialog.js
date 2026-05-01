@@ -116,7 +116,6 @@ export default function ReassignDialog({
         >
             <DialogTitle sx={{
                 fontWeight: 700,
-                color: '#0F172A',
                 pb: 1,
                 pt: 3,
                 px: 3,
@@ -125,7 +124,7 @@ export default function ReassignDialog({
                 bgcolor: '#F8FAFC',
                 borderBottom: '1px solid #E2E8F0'
             }}>
-                Reassign Bug
+                forward Bug
                 {bug && (
                     <Typography sx={{
                         fontSize: '0.85rem',
@@ -144,7 +143,6 @@ export default function ReassignDialog({
                         <Typography sx={{
                             fontSize: '0.875rem',
                             fontWeight: 700,
-                            color: '#0F172A',
                             mb: 0.75,
                             display: 'flex',
                             alignItems: 'center',
@@ -180,7 +178,6 @@ export default function ReassignDialog({
                         <Typography sx={{
                             fontSize: '0.875rem',
                             fontWeight: 700,
-                            color: '#0F172A',
                             mb: 0.75
                         }}>
                             Quick Remark (Optional)
@@ -197,30 +194,9 @@ export default function ReassignDialog({
             </DialogContent>
             <DialogActions sx={{ p: 3, pt: 1, gap: 1.5 }}>
                 <Button
-                    variant="outlined"
                     onClick={handleClose}
                     disabled={saving}
-                    sx={{
-                        fontWeight: 600,
-                        color: '#64748B',
-                        borderColor: '#E2E8F0',
-                        px: 3,
-                        py: 1,
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        transition: 'all 0.2s',
-                        backgroundColor: '#FFFFFF',
-                        '&:hover': {
-                            backgroundColor: '#F1F5F9',
-                            borderColor: '#CBD5E1',
-                            color: '#0F172A'
-                        },
-                        '&.Mui-disabled': {
-                            backgroundColor: '#F8FAFC',
-                            borderColor: '#E2E8F0',
-                            color: '#94A3B8'
-                        }
-                    }}
+                    className='secondaryBtnClassname'
                 >
                     Cancel
                 </Button>
@@ -228,30 +204,9 @@ export default function ReassignDialog({
                     variant="contained" 
                     onClick={handleConfirm}
                     disabled={!selectedDev || saving} 
-                    sx={{ 
-                        fontWeight: 700,
-                        borderRadius: 1.5,
-                        background: '#6366F1',
-                        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)',
-                        px: 4,
-                        py: 1,
-                        textTransform: 'none',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                            background: '#4F46E5',
-                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                        },
-                        '&:active': {
-                            background: '#4338CA',
-                        },
-                        '&.Mui-disabled': {
-                            background: '#E2E8F0',
-                            color: '#94A3B8',
-                            boxShadow: 'none'
-                        }
-                    }}
+                    className='buttonClassname'
                 >
-                    {saving ? <CircularProgress size={18} color="inherit" /> : 'Reassign'}
+                    {saving ? <CircularProgress size={18} color="inherit" /> : 'forward'}
                 </Button>
             </DialogActions>
         </Dialog>

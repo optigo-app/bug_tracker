@@ -25,9 +25,6 @@ import { checkAuth } from '@/utils/authCheck';
 import { getDashboardApi } from '@/app/api/dashboardApi';
 import {
   Bug,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
   ArrowUpRight,
   TrendingUp,
 } from 'lucide-react';
@@ -43,7 +40,6 @@ import {
   Pie,
   Cell
 } from 'recharts';
-
 
 const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
   <Card sx={{
@@ -72,7 +68,7 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
       borderRadius: '50%',
       transform: 'translate(40%, -40%)'
     }} />
-    
+
     <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
         <Box sx={{
@@ -120,7 +116,6 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
       <Typography variant="h3" sx={{
         fontWeight: 800,
         letterSpacing: '-0.02em',
-        color: '#0F172A',
         mb: 0.5
       }}>
         {value}
@@ -160,40 +155,22 @@ export default function Home() {
     try {
       setLoading(true);
       const response = await getDashboardApi();
-      
-      // The API returns data in rd, rd1, rd2, rd3 format
       const totalBugsResult = response?.rd || [];
       const statusCountsResult = response?.rd1 || [];
       const weeklyTrendResult = response?.rd2 || [];
       const recentActivityResult = response?.rd3 || [];
-
       const totalBugs = totalBugsResult[0]?.totalBugs || 0;
-
-      // Count bugs by status from SP result
-      const statusMap = {
-        OPEN: 0,
-        IN_PROGRESS: 0,
-        TESTING: 0,
-        CLOSED: 0,
-        REOPENED: 0
-      };
-
+      const statusMap = {};
       statusCountsResult.forEach(row => {
-        const status = row.status?.toUpperCase();
-        if (statusMap.hasOwnProperty(status)) {
-          statusMap[status] = row.count;
+        const statusId = row.statusId;
+        if (statusId) {
+          statusMap[statusId] = row.count;
         }
       });
-
-      // Calculate weekly trend from SP result
       const recentBugsCount = weeklyTrendResult.reduce((sum, row) => sum + row.bugs, 0);
       const bugsTrend = recentBugsCount > 0 ? `+${recentBugsCount}` : null;
-
-      // Generate weekly data from SP result
       const weeklyData = [];
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-      // Initialize all 7 days with 0
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
@@ -202,8 +179,6 @@ export default function Home() {
           bugs: 0
         });
       }
-
-      // Fill in actual counts from SP result
       weeklyTrendResult.forEach(row => {
         const date = new Date(row.date);
         const dayIndex = date.getDay();
@@ -212,34 +187,20 @@ export default function Home() {
           matchingDay.bugs = row.bugs;
         }
       });
-
-      // Prepare status distribution data
-      const statusData = [
-        { 
-          name: 'Open', 
-          value: statusMap.OPEN, 
-          color: '#6366F1' 
-        },
-        { 
-          name: 'In Progress', 
-          value: statusMap.IN_PROGRESS, 
-          color: '#818CF8' 
-        },
-        { 
-          name: 'Testing', 
-          value: statusMap.TESTING, 
-          color: '#C7D2FE' 
-        },
-        { 
-          name: 'Closed', 
-          value: statusMap.CLOSED, 
-          color: '#10B981' 
-        }
-      ];
-
-      // Get recent activity from bug history
+      const taskBugStatusData = JSON?.parse(sessionStorage.getItem('taskbugstatusData'));
+      const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', '#64748B'];
+      const statusData = Object.entries(statusMap)
+        .map(([statusId, count], index) => {
+          const label = taskBugStatusData?.find(item => item.id == statusId);
+          return {
+            name: label?.labelname || `Status ${statusId}`,
+            value: Number(count || 0),
+            color: colors[index % colors.length],
+            statusId
+          };
+        })
+        .sort((a, b) => b.value - a.value);
       const recentActivity = [];
-      
       recentActivityResult.forEach(history => {
         const date = new Date(history.createdAt);
         const now = new Date();
@@ -247,7 +208,6 @@ export default function Home() {
         const diffMins = Math.floor(diffMs / 60000);
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
-
         let timeStr;
         if (diffMins < 1) {
           timeStr = 'Just now';
@@ -263,35 +223,29 @@ export default function Home() {
           timeStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
 
-        // Determine action string based on field
         let action = '';
-        if (history.field === 'status') {
-          action = `Status changed from ${history.oldValue} to ${history.newValue}`;
+        let badge = null;
+        if (history.field === 'statusId') {
+          const oldStatusLabel = taskBugStatusData?.find(item => item.id == history.oldValue)?.labelname || history.oldValue;
+          const newStatusLabel = taskBugStatusData?.find(item => item.id == history.newValue)?.labelname || history.newValue;
+          action = `Status changed from ${oldStatusLabel} to ${newStatusLabel}`;
+          const newValueLower = newStatusLabel?.toLowerCase() || '';
+          if (newValueLower === 'new') {
+            badge = { bg: '#FEF2F2', color: '#EF4444', label: 'NEW' };
+          } else if (newValueLower === 'fixed' || newValueLower === 'closed') {
+            badge = { bg: '#F0FDF4', color: '#16A34A', label: 'RESOLVED' };
+          } else if (newValueLower === 'reopen') {
+            badge = { bg: '#FEF3C7', color: '#D97706', label: 'REOPEN' };
+          }
         } else if (history.field === 'assigneeId') {
           action = `Assigned to ${history.newValue}`;
         } else if (history.field === 'priority') {
           action = `Priority changed to ${history.newValue}`;
         } else if (history.field === 'attachments') {
           action = 'Attachment added';
+          badge = { bg: '#EFF6FF', color: '#3B82F6', label: 'ATTACHMENT' };
         } else {
           action = `${history.field} updated`;
-        }
-
-        // Determine badge based on field/value
-        let badge = null;
-        const fieldLower = history.field?.toLowerCase() || '';
-        const newValueLower = history.newValue?.toLowerCase() || '';
-        
-        if (newValueLower === 'open') {
-          badge = { bg: '#FEF2F2', color: '#EF4444', label: 'NEW' };
-        } else if (newValueLower === 'closed') {
-          badge = { bg: '#F0FDF4', color: '#16A34A', label: 'RESOLVED' };
-        } else if (fieldLower === 'attachments') {
-          badge = { bg: '#EFF6FF', color: '#3B82F6', label: 'ATTACHMENT' };
-        } else if (newValueLower === 'in_progress') {
-          badge = { bg: '#FEF3C7', color: '#D97706', label: 'IN PROGRESS' };
-        } else if (newValueLower === 'testing') {
-          badge = { bg: '#FFFBEB', color: '#D97706', label: 'TESTING' };
         }
 
         recentActivity.push({
@@ -302,17 +256,12 @@ export default function Home() {
           badge
         });
       });
-
-      // Prepare stats object
       const stats = {
         totalBugs,
-        totalProjects: totalBugs, // Using bugs count for compatibility with frontend
-        inProgress: statusMap.IN_PROGRESS,
-        openBugs: statusMap.OPEN,
-        closedBugs: statusMap.CLOSED,
+        totalProjects: totalBugs,
+        statusCounts: statusMap,
         bugsTrend
       };
-
       setStats(stats);
       setWeeklyData(weeklyData);
       setStatusData(statusData);
@@ -323,6 +272,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -338,67 +288,98 @@ export default function Home() {
   return (
     <Box sx={{
       p: { xs: 2, md: 3 },
-      bgcolor: '#F8FAFC',
-      minHeight: '100vh',
       overflowY: 'auto',
-      '&::-webkit-scrollbar': {
-        width: '8px'
-      },
-      '&::-webkit-scrollbar-track': {
-        bgcolor: '#E2E8F0',
-        borderRadius: '10px'
-      },
-      '&::-webkit-scrollbar-thumb': {
-        bgcolor: '#94A3B8',
-        borderRadius: '10px',
-        '&:hover': {
-          bgcolor: '#64748B'
-        }
-      },
-      scrollbarWidth: 'thin',
-      scrollbarColor: '#94A3B8 #E2E8F0'
     }}>
       {/* Stats Grid */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4, lg: 3 }}>
           <StatCard
             title="Total Bugs"
             value={stats?.totalBugs || 0}
-            subvalue={`Across ${stats?.totalProjects || 0} projects`}
+            subvalue="Across all projects"
             icon={<Bug size={24} />}
             color="#4F46E5"
             trend={stats?.bugsTrend}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="In Progress"
-            value={stats?.inProgress || 0}
-            subvalue="Currently being fixed"
-            icon={<Clock size={24} />}
-            color="#06B6D4"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Open Issues"
-            value={stats?.openBugs || 0}
-            subvalue="Needs attention"
-            icon={<AlertCircle size={24} />}
-            color="#F59E0B"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Resolved"
-            value={stats?.closedBugs || 0}
-            subvalue="Successfully fixed"
-            icon={<CheckCircle2 size={24} />}
-            color="#10B981"
-          />
+
+        <Grid size={{ xs: 12, md: 8, lg: 9 }}>
+          <Paper sx={{
+            p: { xs: 2, md: 2.5 },
+            borderRadius: 3,
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+            border: '1px solid #E2E8F0',
+            background: 'white',
+            height: '100%'
+          }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Status Breakdown
+              </Typography>
+              <Chip
+                label={`${statusData.length} statuses`}
+                size="small"
+                sx={{ fontWeight: 700, bgcolor: '#F1F5F9', color: '#475569' }}
+              />
+            </Stack>
+
+            {statusData.length > 0 ? (
+              <Grid container spacing={1.5}>
+                {statusData.map((status) => (
+                  <Grid key={status.statusId} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
+                    <Box sx={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: 2,
+                      px: 1.5,
+                      py: 1.25,
+                      minHeight: 84,
+                      background: `linear-gradient(135deg, ${status.color}10 0%, #FFFFFF 70%)`,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: status.color,
+                        boxShadow: `0 6px 16px ${status.color}22`,
+                        transform: 'translateY(-2px)'
+                      }
+                    }}>
+                      <Stack direction="row" alignItems="center" spacing={0.8} sx={{ minWidth: 0 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: status.color, flexShrink: 0 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: '#334155',
+                            fontWeight: 700,
+                            lineHeight: 1.2,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}
+                          title={status.name}
+                        >
+                          {status.name}
+                        </Typography>
+                      </Stack>
+
+                      <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', mt: 1 }}>
+                        {status.value}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box sx={{ py: 3, textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ color: '#94A3B8', fontWeight: 600 }}>
+                  No status data available
+                </Typography>
+              </Box>
+            )}
+          </Paper>
         </Grid>
       </Grid>
-
       {/* Main Content Grid */}
       <Grid container spacing={3}>
         {/* Weekly Activity Chart */}
@@ -420,7 +401,6 @@ export default function Home() {
                 <Typography variant="h6" sx={{
                   fontWeight: 700,
                   mb: 0.5,
-                  color: '#0F172A',
                   fontSize: '1.15rem'
                 }}>
                   Weekly Activity
@@ -515,7 +495,6 @@ export default function Home() {
             <Typography variant="h6" sx={{
               fontWeight: 700,
               mb: 0.5,
-              color: '#0F172A',
               fontSize: '1.15rem'
             }}>
               Issue Distribution
@@ -590,7 +569,6 @@ export default function Home() {
               <Box>
                 <Typography variant="h6" sx={{
                   fontWeight: 700,
-                  color: '#0F172A',
                   fontSize: '1.15rem'
                 }}>
                   Recent Activity
@@ -649,7 +627,7 @@ export default function Home() {
                         sx={{ flex: 1, minWidth: 0, mr: 2 }}
                         primary={
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>{activity.user}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{activity.user}</Typography>
                             {activity.badge && (
                               <Chip label={activity.badge.label} size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: activity.badge.bg, color: activity.badge.color, letterSpacing: '0.04em' }} />
                             )}

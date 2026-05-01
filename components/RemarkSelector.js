@@ -11,7 +11,7 @@ import {
 import { commonTextFieldProps } from '@/utils/glocalfunc';
 
 const REMARKS_DATA = {
-    DEVELOPER: [
+    developer: [
         "Fixed branch merged to dev",
         "Performance optimization completed",
         "Backend API integrated",
@@ -19,7 +19,7 @@ const REMARKS_DATA = {
         "Partial fix - handling edge cases",
         "Code refactored for clarity"
     ],
-    TESTER: [
+    tester: [
         "Verified on Staging environment",
         "Bug reproduced successfully",
         "Regression tests passed",
@@ -27,13 +27,13 @@ const REMARKS_DATA = {
         "Needs screen recording/logs",
         "Inconsistent behavior observed"
     ],
-    ADMIN: [
+    admin: [
         "Priority reassessed",
         "Project scope adjusted",
         "Awaiting client approval",
         "Duplicate of another issue"
     ],
-    REOPENED: [
+    reopened: [
         "Issue persists in live environment",
         "Found new edge case in same module",
         "Fix causes regression in other features",

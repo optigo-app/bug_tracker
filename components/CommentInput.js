@@ -159,16 +159,7 @@ export default function CommentInput({ bugId, currentUser, onCommentAdded }) {
                         onClick={handleSubmit}
                         disabled={isSubmitting || !text.trim()}
                         endIcon={isSubmitting ? <CircularProgress size={14} color="inherit" /> : <Send size={14} />}
-                        sx={{
-                            fontWeight: 700,
-                            borderRadius: 1.5,
-                            fontSize: '0.8rem',
-                            px: 2,
-                            py: 0.75,
-                            background: text.trim() ? 'linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)' : undefined,
-                            boxShadow: text.trim() ? '0 1px 4px rgba(115,103,240,0.15)' : 'none',
-                            transition: 'all 0.2s',
-                        }}
+                        className={text.trim() ? 'buttonClassname' : 'disablebuttonClassanme'}
                     >
                         {isSubmitting ? 'Sending…' : 'Send'}
                     </Button>

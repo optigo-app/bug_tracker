@@ -3,26 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     Button,
     Typography,
     Box,
-    Divider,
-    Stack,
     CircularProgress
 } from '@mui/material';
 import { AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 import RemarkSelector from './RemarkSelector';
 
-export default function StatusDialog({ 
-    open, 
-    onClose, 
-    newStatus, 
-    onConfirm, 
-    saving, 
-    role 
+export default function StatusDialog({
+    open,
+    onClose,
+    statusLabel,
+    onConfirm,
+    saving
 }) {
     const [remark, setRemark] = useState('');
     const [customRemark, setCustomRemark] = useState('');
@@ -35,42 +31,106 @@ export default function StatusDialog({
     }, [open]);
 
     const getDialogConfig = () => {
-        switch (newStatus) {
-            case 'TESTING':
+        switch (statusLabel) {
+            case 'Assigned':
                 return {
-                    title: 'Move to Testing',
-                    message: 'Are you sure this issue is ready for QA? This will notify the testing team.',
+                    title: 'Approve & Assign Bug',
+                    message: 'This bug will be approved and assigned to the developer.',
                     icon: <AlertCircle size={32} color="#7367f0" />,
                     color: '#7367f0',
                     showRemarks: false,
-                    confirmText: 'Move to Testing'
+                    confirmText: 'Assign Bug',
+                    remarkRole: 'DEFAULT'
                 };
-            case 'REOPENED':
+            case 'In Progress':
                 return {
-                    title: 'Reopen Bug',
-                    message: 'Please provide a reason for reopening this bug to help the developer understand the regression.',
-                    icon: <RotateCcw size={32} color="#E11D48" />,
-                    color: '#E11D48',
-                    showRemarks: true,
-                    confirmText: 'Reopen Bug'
+                    title: 'Accept Bug',
+                    message: 'Developer is accepting this bug and starting work.',
+                    icon: <AlertCircle size={32} color="#7367f0" />,
+                    color: '#7367f0',
+                    showRemarks: false,
+                    confirmText: 'Start Progress',
+                    remarkRole: 'DEFAULT'
                 };
-            case 'CLOSED':
+            case 'Ready For Test':
                 return {
-                    title: 'Verify & Close',
-                    message: 'Has this issue been fully verified in the target environments? This will sign off the bug.',
+                    title: 'Move to Ready For Test',
+                    message: 'Fix is done and this bug will be moved to testing for QA verification.',
+                    icon: <AlertCircle size={32} color="#7367f0" />,
+                    color: '#7367f0',
+                    showRemarks: false,
+                    confirmText: 'Send to Testing',
+                    remarkRole: 'developer'
+                };
+            case 'Fixed':
+                return {
+                    title: 'Mark as Fixed',
+                    message: 'Are you sure you want to mark this bug as fixed?',
                     icon: <CheckCircle2 size={32} color="#16A34A" />,
                     color: '#16A34A',
                     showRemarks: false,
-                    confirmText: 'Verify & Close'
+                    confirmText: 'Mark as Fixed',
+                    remarkRole: 'developer'
+                };
+            case 'Verified':
+                return {
+                    title: 'Verify Bug Fix',
+                    message: 'Tester confirms the fix works as expected and marks this bug as verified.',
+                    icon: <CheckCircle2 size={32} color="#16A34A" />,
+                    color: '#16A34A',
+                    showRemarks: false,
+                    confirmText: 'Mark as Verified',
+                    remarkRole: 'tester'
+                };
+            case 'Rejected':
+                return {
+                    title: 'Reject Bug',
+                    message: 'Please provide a reason for rejecting this bug to help the developer understand the issue.',
+                    icon: <AlertCircle size={32} color="#E11D48" />,
+                    color: '#E11D48',
+                    showRemarks: true,
+                    confirmText: 'Reject Bug',
+                    remarkRole: 'admin'
+                };
+            case 'Reopen':
+                return {
+                    title: 'Reopen Bug',
+                    message: 'Please provide a reason for reopening. This bug will return to the development cycle.',
+                    icon: <RotateCcw size={32} color="#E11D48" />,
+                    color: '#E11D48',
+                    showRemarks: true,
+                    confirmText: 'Reopen Bug',
+                    remarkRole: 'reopened'
+                };
+            case 'Deferred':
+                return {
+                    title: 'Defer Bug',
+                    message: 'This bug will be deferred and moved out of the active fixing cycle for now.',
+                    icon: <AlertCircle size={32} color="#F59E0B" />,
+                    color: '#F59E0B',
+                    showRemarks: true,
+                    confirmText: 'Defer Bug',
+                    remarkRole: 'admin'
+                };
+            case 'Closed':
+                return {
+                    title: 'Close Bug',
+                    message: 'Bug is verified and will now be marked as completed (closed).',
+                    icon: <CheckCircle2 size={32} color="#16A34A" />,
+                    color: '#16A34A',
+                    showRemarks: false,
+                    confirmText: 'Close Bug',
+                    remarkRole: 'DEFAULT'
                 };
             default:
                 return {
                     title: 'Change Status',
-                    message: 'Are you sure you want to change the status?',
+                    message: `Are you sure you want to change the status to ${statusLabel}?`,
                     icon: <AlertCircle size={32} color="#7D7f85" />,
                     color: '#7367f0',
                     showRemarks: false,
-                    confirmText: 'Confirm'
+                    confirmText: 'Confirm',
+                    remarkRole: 'DEFAULT'
                 };
         }
     };
@@ -78,9 +138,11 @@ export default function StatusDialog({
     const config = getDialogConfig();
 
     const handleConfirm = () => {
-        const finalRemark = remark === 'Other' ? customRemark : remark;
+        const finalRemark = remark === 'Other' ? customRemark.trim() : remark;
         onConfirm(finalRemark);
     };
+
+    const isRemarkInvalid = config.showRemarks && (!remark || (remark === 'Other' && !customRemark.trim()));
 
     return (
         <Dialog 
@@ -128,7 +190,7 @@ export default function StatusDialog({
                 }}>
                     {config.icon}
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
                     {config.title}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, px: 2, mb: 3, lineHeight: 1.6 }}>
@@ -138,7 +200,7 @@ export default function StatusDialog({
                 {config.showRemarks && (
                     <Box sx={{ textAlign: 'left', mb: 2 }}>
                         <RemarkSelector
-                            role="REOPENED" // Specialized role for reopening reasons
+                            role={config.remarkRole}
                             value={remark}
                             customValue={customRemark}
                             onChange={setRemark}
@@ -164,7 +226,6 @@ export default function StatusDialog({
                         '&:hover': {
                             borderColor: '#CBD5E1',
                             bgcolor: '#F8FAFC',
-                            color: '#0F172A'
                         }
                     }}
                 >
@@ -174,7 +235,7 @@ export default function StatusDialog({
                     fullWidth 
                     variant="contained" 
                     onClick={handleConfirm}
-                    disabled={saving || (config.showRemarks && !remark)}
+                    disabled={saving || isRemarkInvalid}
                     sx={{ 
                         borderRadius: 2, 
                         fontWeight: 700, 

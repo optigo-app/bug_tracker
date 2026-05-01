@@ -88,8 +88,6 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
           throw new Error("Canvas context unavailable.");
         }
 
-        context.fillStyle = "#f1f3f5";
-        context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
         context.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
 
         let pngBlob = null;
@@ -178,6 +176,7 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
           handleCanvasPointerUp={editor.handleCanvasPointerUp}
           handleWheel={editor.handleWheel}
           selectedBounds={editor.selectedBounds}
+          selectedShape={editor.selectedShape}
           setDraftText={editor.setDraftText}
           setEditingText={editor.setEditingText}
           shapes={editor.shapes}

@@ -19,7 +19,8 @@ export default function PriorityBadge({ priority }) {
       <Typography sx={{
         fontSize: '0.68rem', fontWeight: 600,
         color: colorConfig.color,
-        lineHeight: 1, letterSpacing: '0.05em'
+        lineHeight: 1, letterSpacing: '0.05em',
+        textTransform: 'capitalize'
       }}>
         {priorityLabel}
       </Typography>

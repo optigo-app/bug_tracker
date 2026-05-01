@@ -301,7 +301,7 @@ export default function ReportsPage() {
                     {/* Header */}
                     <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 2 }}>
                         <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
                                 Reports & Analytics
                             </Typography>
                             <Typography variant="body1" sx={{ color: '#64748B', mt: 1, fontWeight: 500 }}>
@@ -423,7 +423,7 @@ export default function ReportsPage() {
                                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                                             <Box>
                                                 <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', letterSpacing: '0.05em' }}>TOTAL ISSUES</Typography>
-                                                <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', mt: 0.5 }}>{stats.total}</Typography>
+                                                <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>{stats.total}</Typography>
                                             </Box>
                                             <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#EEF2FF', color: '#6366F1' }}><Activity size={24} /></Box>
                                         </Stack>
@@ -445,7 +445,7 @@ export default function ReportsPage() {
                                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                                             <Box>
                                                 <Typography variant="caption" sx={{ fontWeight: 800, color: '#64748B', letterSpacing: '0.05em' }}>AVG RESOLUTION</Typography>
-                                                <Typography variant="h4" sx={{ fontWeight: 800, color: '#0F172A', mt: 0.5 }}>2.4d</Typography>
+                                                <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>2.4d</Typography>
                                             </Box>
                                             <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: '#FFF7ED', color: '#F97316' }}><Clock size={24} /></Box>
                                         </Stack>
