@@ -22,7 +22,7 @@ export function normalizeBugData(bug) {
     try {
       statusData = JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]');
       priorityData = JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]');
-      categoryData = JSON.parse(sessionStorage.getItem('taskbugcategoryData') || '[]');
+      categoryData = JSON.parse(sessionStorage.getItem('taskworkcategoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]');
       assigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
     } catch (error) {
       console.error('Error loading reference data for bug normalization:', error);

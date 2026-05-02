@@ -166,9 +166,7 @@ function BugsPageContent() {
   }, [openReportParam, currentUser, router, searchParams]);
 
   const fetchBugs = useCallback(async () => {
-    // Don't fetch if currentUser is not available yet
     if (!currentUser?.id) return;
-
     setIsLoading(true); setError(null);
     try {
       const response = await fetchBugListApi({
@@ -180,7 +178,6 @@ function BugsPageContent() {
       const normalizedBugs = normalizeBugList(data);
       setBugs(normalizedBugs);
       setBugsContext(normalizedBugs);
-      // Auto-select first bug only if no bug is currently selected
       if (data.length > 0 && !selectedId) setSelectedId(data[0].id);
     } catch (err) {
       setError('Connection failed. Check your database status.');
@@ -203,8 +200,7 @@ function BugsPageContent() {
     const matchStatus = statusFilter === 'ALL' || getStatusValue(bug.status) === statusFilter;
     return matchSearch && matchStatus;
   }).filter(bug => {
-    // Show bug if it's assigned to current user OR created by current user
-    const isAdmin = currentUser?.designation?.toUpperCase() === 'ADMIN';
+    const isAdmin = currentUser?.designation?.includes('admin');
     if (isAdmin) return true;
     const isAssigned = String(bug.assigneeId) === String(currentUser?.id) || String(bug.assignee) === String(currentUser?.id);
     const isReporter = String(bug.reporterId) === String(currentUser?.id) || String(bug.reporter) === String(currentUser?.id);

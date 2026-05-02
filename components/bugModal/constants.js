@@ -9,8 +9,8 @@ export const CATEGORY_OPTIONS = [
 export const getCategoryOptions = () => {
   if (typeof window === 'undefined') return CATEGORY_OPTIONS;
   try {
-    const data = sessionStorage.getItem('taskbugcategoryData')
-      || sessionStorage.getItem('taskworkcategoryData');
+    const data = sessionStorage.getItem('taskworkcategoryData')
+      || sessionStorage.getItem('taskbugcategoryData');
     if (data) {
       const parsed = JSON.parse(data);
       const mapped = parsed.map(item => ({

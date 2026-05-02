@@ -41,16 +41,15 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
         px: 2.5,
         py: 2,
         cursor: 'pointer',
+        borderLeft: isSelected ? '3px solid #6366f1' : 'none',
         bgcolor: isSelected
           ? '#eef2ff'
           : isHighPriority
             ? 'rgba(239, 68, 68, 0.03)'
             : 'white',
+        borderBottom: '1px solid #e5e7eb',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
-        ...(isSelected && {
-          boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.1)'
-        }),
         '&:hover': {
           bgcolor: isSelected
             ? '#e0e7ff'

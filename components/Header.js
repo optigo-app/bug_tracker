@@ -206,6 +206,48 @@ function HeaderContent() {
     const userImageSrc = ImageUrl(currentUser);
     const open = Boolean(anchorEl);
     const profileOpen = Boolean(profileAnchorEl);
+    const totalCount = Number(totalBugCount || 0);
+    const todayCount = Number(todayBugCount || 0);
+
+    const bugCountSummary = pathname.includes('/bugs') && (
+        <Stack direction="row" spacing={0.75} alignItems="center">
+            <Box sx={{
+                bgcolor: 'rgba(99, 102, 241, 0.12)',
+                color: '#4338CA',
+                px: 1,
+                py: 0.55,
+                borderRadius: '8px',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                minWidth: 60,
+                textAlign: 'center'
+            }}>
+                <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
+                    {totalCount}
+                    <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
+                        Total
+                    </Box>
+                </Typography>
+            </Box>
+
+            <Box sx={{
+                bgcolor: 'rgba(16, 185, 129, 0.12)',
+                color: '#047857',
+                px: 1,
+                py: 0.55,
+                borderRadius: '8px',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                minWidth: 60,
+                textAlign: 'center'
+            }}>
+                <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
+                    {todayCount}
+                    <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
+                        Today
+                    </Box>
+                </Typography>
+            </Box>
+        </Stack>
+    );
 
     const handleReportBugClick = () => {
         const params = new URLSearchParams();
@@ -233,13 +275,14 @@ function HeaderContent() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {pathname.includes('/bugs') && taskNoParam && taskNameParam ? (
                     <Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1.25} alignItems="center">
                             <Typography variant="h6" sx={{ fontWeight: 850, color: '#7367f0', letterSpacing: '-0.02em', fontSize: '0.9rem', lineHeight: 1.1 }}>
                                 {taskNoParam}
                             </Typography>
                             <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
                                 {taskNameParam}
                             </Typography>
+                            {bugCountSummary}
                         </Stack>
                     </Box>
                 ) : (
@@ -285,36 +328,7 @@ function HeaderContent() {
                                                 >
                                                     {crumb}
                                                 </Typography>
-                                                {pathname.includes('/bugs') && (totalBugCount > 0 || todayBugCount > 0) && (
-                                                    <Stack direction="row" spacing={0.75} alignItems="center">
-                                                        {totalBugCount > 0 && (
-                                                            <Box sx={{
-                                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
-                                                                color: '#6366F1',
-                                                                px: 0.75,
-                                                                py: 0.25,
-                                                                borderRadius: '6px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: 700
-                                                            }}>
-                                                                {totalBugCount} total
-                                                            </Box>
-                                                        )}
-                                                        {todayBugCount > 0 && (
-                                                            <Box sx={{
-                                                                bgcolor: 'rgba(16, 185, 129, 0.1)',
-                                                                color: '#10B981',
-                                                                px: 0.75,
-                                                                py: 0.25,
-                                                                borderRadius: '6px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: 700
-                                                            }}>
-                                                                {todayBugCount} today
-                                                            </Box>
-                                                        )}
-                                                    </Stack>
-                                                )}
+                                                {bugCountSummary}
                                             </Stack>
                                         )}
                                         {index < (getBreadcrumbs()?.length || 0) - 1 && (
@@ -328,36 +342,7 @@ function HeaderContent() {
                                 <Typography variant="h6" sx={{ fontWeight: 850, letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
                                     {getPageTitle()}
                                 </Typography>
-                                {pathname.includes('/bugs') && (totalBugCount > 0 || todayBugCount > 0) && (
-                                    <Stack direction="row" spacing={0.75} alignItems="center">
-                                        {totalBugCount > 0 && (
-                                            <Box sx={{
-                                                bgcolor: 'rgba(99, 102, 241, 0.1)',
-                                                color: '#6366F1',
-                                                px: 0.75,
-                                                py: 0.25,
-                                                borderRadius: '6px',
-                                                fontSize: '0.7rem',
-                                                fontWeight: 700
-                                            }}>
-                                                {totalBugCount} total
-                                            </Box>
-                                        )}
-                                        {todayBugCount > 0 && (
-                                            <Box sx={{
-                                                bgcolor: 'rgba(16, 185, 129, 0.1)',
-                                                color: '#10B981',
-                                                px: 0.75,
-                                                py: 0.25,
-                                                borderRadius: '6px',
-                                                fontSize: '0.7rem',
-                                                fontWeight: 700
-                                            }}>
-                                                {todayBugCount} today
-                                            </Box>
-                                        )}
-                                    </Stack>
-                                )}
+                                {bugCountSummary}
                             </Stack>
                         )}
                     </Box>

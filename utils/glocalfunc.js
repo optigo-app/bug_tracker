@@ -14,23 +14,45 @@ export const PRIORITY = {
 };
 
 /**
+ * Parses a date value safely.
+ * @param {Date|string|number} value - Date input value
+ * @returns {Date|null} Parsed date or null when invalid
+ */
+export const parseDateValue = (value) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+};
+
+/**
  * Formats date time to human readable format
  * @param {Date|string} d - Date object or string
+ * @param {object} options - Intl formatting options
  * @returns {string} Formatted date time
  */
-export const formatDateTime = (d) => {
-  if (!d) return '';
-  const date = new Date(d);
+export const formatDateTime = (d, options = {}) => {
+  const date = parseDateValue(d);
+  if (!date) return '';
+
+  const { locale = 'en-US', timeZone } = options;
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
+  const dateDay = date.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
+  const todayDay = now.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
+  const isToday = dateDay === todayDay;
+
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
+  const yesterdayDay = yesterday.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
+  const isYesterday = dateDay === yesterdayDay;
 
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true, ...(timeZone ? { timeZone } : {}) };
+  const dateOptions = { month: 'short', day: 'numeric', year: 'numeric', ...(timeZone ? { timeZone } : {}) };
+
+  const time = date.toLocaleTimeString(locale, timeOptions);
   if (isToday) return `Today at ${time}`;
   if (isYesterday) return `Yesterday at ${time}`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` · ${time}`;
+  return `${date.toLocaleDateString(locale, dateOptions)} · ${time}`;
 };
 
 /**
@@ -40,7 +62,8 @@ export const formatDateTime = (d) => {
  */
 export const formatDate = (d) => {
   if (!d || d === 'Not set') return 'Not set';
-  const date = new Date(d);
+  const date = parseDateValue(d);
+  if (!date || date.getFullYear() === 1900) return 'Not set';
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 

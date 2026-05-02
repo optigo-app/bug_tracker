@@ -9,23 +9,8 @@ import {
     Divider
 } from '@mui/material';
 import { MessageSquare, File } from 'lucide-react';
-import { getAvatarColor, getInitials, handleImageError } from '@/utils/glocalfunc';
+import { getAvatarColor, getInitials, handleImageError, formatDateTime } from '@/utils/glocalfunc';
 import CommentInput from '@/components/CommentInput';
-
-function formatDateTime(d) {
-    if (!d) return '';
-    const date = new Date(d);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    if (isToday) return `Today at ${time}`;
-    if (isYesterday) return `Yesterday at ${time}`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` · ${time}`;
-}
 
 export default function CommentSection({
     comments = [],

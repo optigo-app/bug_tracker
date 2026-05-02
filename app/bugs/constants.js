@@ -1,3 +1,5 @@
+import { formatDateTime as formatDateTimeFromGlobal, formatDate as formatDateFromGlobal } from '@/utils/glocalfunc';
+
 export const STATUS = {
   OPEN: { label: 'Open', bg: '#EFF6FF', color: '#6366F1', border: '#C7D2FE', dot: '#6366F1' },
   IN_PROGRESS: { label: 'In Progress', bg: '#FEF3C7', color: '#D97706', border: '#FDE68A', dot: '#F59E0B' },
@@ -34,20 +36,9 @@ export const slimScroll = {
 };
 
 export function formatDateTime(d) {
-  if (!d) return '';
-  const date = new Date(d);
-  if (isNaN(date.getTime())) return '';
-  const now = new Date();
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  if (date.toDateString() === now.toDateString()) return `Today at ${time}`;
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` · ${time}`;
+  return formatDateTimeFromGlobal(d);
 }
 
 export function formatDate(d) {
-  if (!d) return 'Not set';
-  const date = new Date(d);
-  if (isNaN(date.getTime()) || date.getFullYear() === 1900) return 'Not set';
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDateFromGlobal(d);
 }

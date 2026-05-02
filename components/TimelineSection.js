@@ -9,21 +9,7 @@ import {
     Paper
 } from '@mui/material';
 import { History } from 'lucide-react';
-
-function formatDateTime(d) {
-    if (!d) return '';
-    const date = new Date(d);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    if (isToday) return `Today at ${time}`;
-    if (isYesterday) return `Yesterday at ${time}`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` · ${time}`;
-}
+import { formatDateTime } from '@/utils/glocalfunc';
 
 function getLabelById(id, data, fallbackKey = 'labelname') {
     if (!id || !data || data.length === 0) return id;
@@ -55,7 +41,7 @@ export default function TimelineSection({ timeline = [], getUserName, showFullTi
             try {
                 setStatusData(JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]'));
                 setPriorityData(JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]'));
-                setCategoryData(JSON.parse(sessionStorage.getItem('taskbugcategoryData') || sessionStorage.getItem('taskworkcategoryData') || '[]'));
+                setCategoryData(JSON.parse(sessionStorage.getItem('taskworkcategoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]'));
             } catch (error) {
                 console.error('Error loading reference data for timeline:', error);
             }
