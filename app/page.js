@@ -191,7 +191,7 @@ export default function Home() {
       const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', '#64748B'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
-          const label = taskBugStatusData?.find(item => item.id == statusId);
+          const label = taskBugStatusData?.find(item => String(item?.id) === String(statusId));
           return {
             name: label?.labelname || `Status ${statusId}`,
             value: Number(count || 0),

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Chip, Menu, MenuItem, ListItemIcon, ListItemText, IconButton } from "@mui/material";
-import { Download, FileImage, FileJson, FileType2, MoreVertical, Share2, X } from "lucide-react";
+import { Download, FileImage, FileType2, MoreVertical, Share2, X } from "lucide-react";
 import styles from "./draw-editor.module.css";
 
-export default function DrawTopbar({ onExportJson, onExportPng, onExportSvg, onSave, onClose }) {
+export default function DrawTopbar({ onExportPng, onExportSvg, onSave, onSaveAndNew, onClose }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const isOpen = Boolean(anchorEl);
 
@@ -54,9 +54,9 @@ export default function DrawTopbar({ onExportJson, onExportPng, onExportSvg, onS
           variant="contained"
           className={styles.continueButton}
           disableElevation
-          onClick={onSave}
+          onClick={onSaveAndNew || onSave}
         >
-          Continue
+          {onSaveAndNew ? 'Save & New' : 'Continue'}
         </Button>
         <Menu
           anchorEl={anchorEl}
@@ -92,17 +92,6 @@ export default function DrawTopbar({ onExportJson, onExportPng, onExportSvg, onS
               <FileType2 size={16} />
             </ListItemIcon>
             <ListItemText>Export SVG</ListItemText>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleClose();
-              onExportJson();
-            }}
-          >
-            <ListItemIcon>
-              <FileJson size={16} />
-            </ListItemIcon>
-            <ListItemText>Export JSON</ListItemText>
           </MenuItem>
         </Menu>
       </div>

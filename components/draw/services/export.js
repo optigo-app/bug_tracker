@@ -7,15 +7,15 @@ function downloadBlob(filename, blob) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-export function exportEditorStateAsJson({ shapes, viewport }) {
+export function exportEditorStateAsJson({ shapes, viewport }, filename = "custom-draw-export.json") {
   const blob = new Blob(
     [JSON.stringify({ shapes, viewport }, null, 2)],
     { type: "application/json" }
   );
-  downloadBlob("custom-draw-export.json", blob);
+  downloadBlob(filename, blob);
 }
 
-export function exportCanvasAsSvg(canvasElement) {
+export function exportCanvasAsSvg(canvasElement, filename = "custom-draw-export.svg") {
   const svg = canvasElement?.querySelector("svg");
   if (!svg) {
     throw new Error("Canvas SVG not found.");
@@ -23,10 +23,10 @@ export function exportCanvasAsSvg(canvasElement) {
 
   const serialized = new XMLSerializer().serializeToString(svg);
   const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-  downloadBlob("custom-draw-export.svg", blob);
+  downloadBlob(filename, blob);
 }
 
-export async function exportCanvasAsPng(canvasElement) {
+export async function exportCanvasAsPng(canvasElement, filename = "custom-draw-export.png") {
   const svg = canvasElement?.querySelector("svg");
   if (!svg) {
     throw new Error("Canvas SVG not found.");
@@ -69,7 +69,7 @@ export async function exportCanvasAsPng(canvasElement) {
       throw new Error("Failed to build PNG.");
     }
 
-    downloadBlob("custom-draw-export.png", pngBlob);
+    downloadBlob(filename, pngBlob);
   } finally {
     URL.revokeObjectURL(url);
   }

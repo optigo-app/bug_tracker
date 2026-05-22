@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog } from '@mui/material';
 import DrawEditor from '@/components/draw/DrawEditor';
 import BugModal from '@/components/BugModal';
@@ -20,6 +20,23 @@ export default function ReportBugFlow({
   assigneeids = '',
   dueDate = ''
 }) {
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const userProfile = sessionStorage.getItem('UserProfileData');
+        if (userProfile) {
+          const parsed = JSON.parse(userProfile);
+          const name = `${parsed.firstname || ''} ${parsed.lastname || ''}`.trim();
+          setUsername(name);
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    }
+  }, []);
+
   return (
     <>
       <Dialog
@@ -30,6 +47,8 @@ export default function ReportBugFlow({
       >
         <DrawEditor
           onClose={() => setDrawEditorOpen(false)}
+          taskNo={taskNo}
+          username={username}
           onSave={(file) => {
             if (file) {
               setEditedImage(file);
@@ -48,7 +67,14 @@ export default function ReportBugFlow({
           setModalOpen(false);
           setEditedImage(null);
         }}
-        onSuccess={onSuccess}
+        onSuccess={(newBug, shouldSaveAndNew) => {
+          if (shouldSaveAndNew) {
+            setModalOpen(false);
+            setEditedImage(null);
+            setDrawEditorOpen(true);
+          }
+          onSuccess?.(newBug, shouldSaveAndNew);
+        }}
         bug={null}
         taskNo={taskNo}
         taskName={taskName}

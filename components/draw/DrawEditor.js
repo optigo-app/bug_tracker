@@ -12,14 +12,16 @@ import { useDrawEditor } from "./hooks/useDrawEditor";
 import {
   exportCanvasAsPng,
   exportCanvasAsSvg,
-  exportEditorStateAsJson,
 } from "./services/export";
+import { getShapeBounds } from "./utils";
+import { generateExportFileName } from "@/utils/glocalfunc";
 
-export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
+export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImageSrc = "", taskNo = "", username = "" }) {
   const editor = useDrawEditor();
   const [shapeMenuAnchor, setShapeMenuAnchor] = useState(null);
   const editorShellRef = useRef(null);
   const initializedImageRef = useRef("");
+  const { setSelectedId } = editor;
 
   useEffect(() => {
     if (!initialImageSrc) {
@@ -46,6 +48,94 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
     return () => clearTimeout(timer);
   }, [initialImageSrc, editor]);
 
+  const exportCanvas = async (canvasElement) => {
+    setSelectedId(null);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    
+    const svg = canvasElement.querySelector("svg");
+    if (!svg) return null;
+
+    // Compute content bounds from shapes to crop out empty header space
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let hasContent = false;
+    editor.shapes.forEach((shape) => {
+      const bounds = getShapeBounds(shape);
+      if (!bounds || (bounds.w === 0 && bounds.h === 0)) return;
+      hasContent = true;
+      minX = Math.min(minX, bounds.x);
+      minY = Math.min(minY, bounds.y);
+      maxX = Math.max(maxX, bounds.x + bounds.w);
+      maxY = Math.max(maxY, bounds.y + bounds.h);
+    });
+
+    const padding = 0;
+    const contentX = hasContent ? Math.max(0, minX - padding) : 0;
+    const contentY = hasContent ? Math.max(0, minY - padding) : 0;
+    const contentW = hasContent
+      ? Math.max(1, Math.round(maxX - minX + padding * 2))
+      : 800;
+    const contentH = hasContent
+      ? Math.max(1, Math.round(maxY - minY + padding * 2))
+      : 600;
+
+    const svgClone = svg.cloneNode(true);
+    svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    svgClone.setAttribute("width", `${contentW}`);
+    svgClone.setAttribute("height", `${contentH}`);
+    svgClone.setAttribute("viewBox", `${contentX} ${contentY} ${contentW} ${contentH}`);
+
+    // Strip viewport transform so shapes render at their raw coordinates
+    const g = svgClone.querySelector("g[transform]");
+    if (g) {
+      g.removeAttribute("transform");
+    }
+
+    const serialized = new XMLSerializer().serializeToString(svgClone);
+    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Failed to render SVG."));
+        img.src = url;
+      });
+
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = contentW;
+      exportCanvas.height = contentH;
+
+      const context = exportCanvas.getContext("2d");
+      if (!context) {
+        throw new Error("Canvas context unavailable.");
+      }
+
+      context.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
+
+      let pngBlob = null;
+      try {
+        pngBlob = await new Promise((resolve) =>
+          exportCanvas.toBlob(resolve, "image/png")
+        );
+      } catch (error) {
+        if (error?.name === "SecurityError") {
+          return new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
+        }
+        throw error;
+      }
+
+      if (!pngBlob) {
+        return new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
+      }
+
+      return new File([pngBlob], "bug-screenshot.png", { type: "image/png" });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const handleContinueSave = async () => {
     const canvasElement = editor.canvasRef.current;
     if (!canvasElement) {
@@ -54,70 +144,31 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
     }
 
     try {
-      const svg = canvasElement.querySelector("svg");
-      if (!svg) {
-        onSave?.(null);
-        return;
-      }
-
-      const rect = canvasElement.getBoundingClientRect();
-      const svgClone = svg.cloneNode(true);
-      svgClone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-      svgClone.setAttribute("width", `${Math.max(1, Math.round(rect.width))}`);
-      svgClone.setAttribute("height", `${Math.max(1, Math.round(rect.height))}`);
-
-      const serialized = new XMLSerializer().serializeToString(svgClone);
-      const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      try {
-        const image = await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => resolve(img);
-          img.onerror = () => reject(new Error("Failed to render SVG."));
-          img.src = url;
-        });
-
-        const exportCanvas = document.createElement("canvas");
-        exportCanvas.width = Math.max(1, Math.round(rect.width));
-        exportCanvas.height = Math.max(1, Math.round(rect.height));
-
-        const context = exportCanvas.getContext("2d");
-        if (!context) {
-          throw new Error("Canvas context unavailable.");
-        }
-
-        context.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
-
-        let pngBlob = null;
-        try {
-          pngBlob = await new Promise((resolve) =>
-            exportCanvas.toBlob(resolve, "image/png")
-          );
-        } catch (error) {
-          if (error?.name === "SecurityError") {
-            const svgFile = new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
-            onSave?.(svgFile);
-            return;
-          }
-          throw error;
-        }
-
-        if (!pngBlob) {
-          const svgFile = new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
-          onSave?.(svgFile);
-          return;
-        }
-
-        const file = new File([pngBlob], "bug-screenshot.png", { type: "image/png" });
-        onSave?.(file);
-      } finally {
-        URL.revokeObjectURL(url);
-      }
+      const file = await exportCanvas(canvasElement);
+      onSave?.(file);
     } catch (e) {
       console.error("Failed to export canvas:", e);
       onSave?.(null);
+    }
+  };
+
+  const handleSaveAndNew = async () => {
+    const canvasElement = editor.canvasRef.current;
+    if (!canvasElement) {
+      onSaveAndNew?.(null);
+      return;
+    }
+
+    try {
+      const file = await exportCanvas(canvasElement);
+      if (file) {
+        editor.clearCanvas();
+        initializedImageRef.current = "";
+      }
+      onSaveAndNew?.(file);
+    } catch (e) {
+      console.error("Failed to export canvas:", e);
+      onSaveAndNew?.(null);
     }
   };
 
@@ -135,28 +186,23 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
     setShapeMenuAnchor(null);
   };
 
-  const handleExportJson = () => {
-    exportEditorStateAsJson({
-      shapes: editor.shapes,
-      viewport: editor.viewport,
-    });
-  };
-
   const handleExportSvg = () => {
-    exportCanvasAsSvg(editor.canvasRef.current);
+    const filename = generateExportFileName(username, taskNo, 'svg');
+    exportCanvasAsSvg(editor.canvasRef.current, filename);
   };
 
   const handleExportPng = async () => {
-    await exportCanvasAsPng(editor.canvasRef.current);
+    const filename = generateExportFileName(username, taskNo, 'png');
+    await exportCanvasAsPng(editor.canvasRef.current, filename);
   };
 
   return (
     <div className={styles.editorShell} ref={editorShellRef}>
       <DrawTopbar
-        onExportJson={handleExportJson}
         onExportPng={handleExportPng}
         onExportSvg={handleExportSvg}
         onSave={handleContinueSave}
+        onSaveAndNew={onSaveAndNew ? handleSaveAndNew : null}
         onClose={onClose}
       />
 
@@ -196,6 +242,7 @@ export default function DrawEditor({ onSave, onClose, initialImageSrc = "" }) {
         <DrawPropertiesPanel
           activeTool={editor.activeTool}
           applyStylesToSelected={editor.applyStylesToSelected}
+          applyColorToMode={editor.applyColorToMode}
           createMediaShape={editor.createMediaShape}
           currentAlign={editor.currentAlign}
           currentColor={editor.currentColor}

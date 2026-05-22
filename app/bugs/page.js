@@ -75,6 +75,8 @@ function BugsPageContent() {
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'priority-high', 'priority-low'
+  const [priorityMap, setPriorityMap] = useState({});
+  const [statusOptions, setStatusOptions] = useState([]);
   const [isResizing, setIsResizing] = useState(false);
   const [listWidth, setListWidth] = useState(320);
 
@@ -150,29 +152,64 @@ function BugsPageContent() {
         console.error('Error parsing taskAssigneeData:', error);
       }
     }
+
+    // Load priority data from sessionStorage for sorting
+    const priorityData = sessionStorage.getItem('taskbugpriorityData');
+    if (priorityData) {
+      try {
+        const parsed = JSON.parse(priorityData);
+        const map = {};
+        parsed.forEach((item, index) => {
+          map[String(item.id)] = parsed.length - index; // Higher index = higher priority
+        });
+        setPriorityMap(map);
+      } catch (error) {
+        console.error('Error parsing priority data:', error);
+      }
+    }
+
+    // Load status options from sessionStorage for filtering
+    const statusData = sessionStorage.getItem('taskbugstatusData');
+    if (statusData) {
+      try {
+        const parsed = JSON.parse(statusData);
+        setStatusOptions(parsed.map(item => ({
+          id: String(item.id),
+          label: item.labelname || item.label || item.name || item.id
+        })));
+      } catch (error) {
+        console.error('Error parsing status data:', error);
+      }
+    }
   }, []);
 
   useEffect(() => {
     if (!openReportParam || !currentUser) return;
 
     if (openReportParam === '1' && permissions.canReportBug(currentUser)) {
-      setDrawEditorOpen(true);
+      if (taskNoParam) {
+        setDrawEditorOpen(true);
+      } else {
+        setTaskSelectOpen(true);
+      }
     }
 
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.delete('openReport');
     const nextQuery = nextParams.toString();
     router.replace(nextQuery ? `/bugs?${nextQuery}` : '/bugs');
-  }, [openReportParam, currentUser, router, searchParams]);
+  }, [openReportParam, currentUser, router, searchParams, taskNoParam]);
 
   const fetchBugs = useCallback(async () => {
     if (!currentUser?.id) return;
     setIsLoading(true); setError(null);
     try {
+      const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
       const response = await fetchBugListApi({
         taskId: taskIdParam || '',
         status: '',
-        assigneeId: ''
+        assigneeId: shouldFilter ? currentUser?.id : '',
+        reporterId: shouldFilter ? currentUser?.id : ''
       });
       const data = response?.rd || response?.rd1 || [];
       const normalizedBugs = normalizeBugList(data);
@@ -197,24 +234,26 @@ function BugsPageContent() {
       id.includes(query) ||
       taskNo.includes(query) ||
       bugNo.includes(query);
-    const matchStatus = statusFilter === 'ALL' || getStatusValue(bug.status) === statusFilter;
+    const matchStatus = statusFilter === 'ALL' || String(bug?.statusId || bug?.status) === statusFilter;
     return matchSearch && matchStatus;
   }).filter(bug => {
-    const isAdmin = currentUser?.designation?.includes('admin');
-    if (isAdmin) return true;
+    const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
+    if (!shouldFilter) return true;
     const isAssigned = String(bug.assigneeId) === String(currentUser?.id) || String(bug.assignee) === String(currentUser?.id);
-    const isReporter = String(bug.reporterId) === String(currentUser?.id) || String(bug.reporter) === String(currentUser?.id);
+    const isReporter = String(bug.reporterId) === String(currentUser?.id) || String(bug.reporter?.id || bug.reporter) === String(currentUser?.id);
     return isAssigned || isReporter;
   }).sort((a, b) => {
     if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
     if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
     if (sortBy === 'priority-high') {
-      const pMap = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-      return (pMap[b.priority] || 0) - (pMap[a.priority] || 0);
+      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+      return pB - pA;
     }
     if (sortBy === 'priority-low') {
-      const pMap = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-      return (pMap[a.priority] || 0) - (pMap[b.priority] || 0);
+      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+      return pA - pB;
     }
     return 0;
   });
@@ -325,6 +364,7 @@ function BugsPageContent() {
             setStatusFilter={setStatusFilter}
             setFilterAnchorEl={setFilterAnchorEl}
             setSortAnchorEl={setSortAnchorEl}
+            statusOptions={statusOptions}
           />
 
           <Box
@@ -497,6 +537,7 @@ function BugsPageContent() {
         onConfirm={() => { setTaskSelectOpen(false); router.push('/tasks'); }}
         title="No Task Selected"
         message="Please select a task first to create a bug. You will be redirected to the tasks page."
+        type="info"
       />
     </Box>
   );

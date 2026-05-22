@@ -7,7 +7,8 @@ export default function BugListHeader({
   statusFilter,
   setStatusFilter,
   setFilterAnchorEl,
-  setSortAnchorEl
+  setSortAnchorEl,
+  statusOptions = []
 }) {
   return (
     <Box sx={{
@@ -112,7 +113,7 @@ export default function BugListHeader({
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
           {statusFilter !== 'ALL' && (
             <Chip
-              label={`Status: ${statusFilter.replace('_', ' ')}`}
+              label={`Status: ${statusOptions.find(opt => opt.id === statusFilter)?.label || statusFilter}`}
               size="small"
               onDelete={() => setStatusFilter('ALL')}
               sx={{

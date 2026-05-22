@@ -7,7 +7,6 @@
  * @returns {Object} Normalized bug object with enriched fields
  */
 export function normalizeBugData(bug) {
-  console.log("normalizeBugData", bug);
   if (!bug) return null;
 
   const normalized = { ...bug };
@@ -22,7 +21,7 @@ export function normalizeBugData(bug) {
     try {
       statusData = JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]');
       priorityData = JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]');
-      categoryData = JSON.parse(sessionStorage.getItem('taskworkcategoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]');
+      categoryData = JSON.parse(sessionStorage.getItem('bug_categoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]');
       assigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
     } catch (error) {
       console.error('Error loading reference data for bug normalization:', error);

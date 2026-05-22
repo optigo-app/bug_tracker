@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   TextField,
@@ -34,17 +34,29 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const [editingImage, setEditingImage] = useState(null);
   const [editingImageIndex, setEditingImageIndex] = useState(null);
   const [drawEditorOpen, setDrawEditorOpen] = useState(false);
+  const environments = ["local", "alpha", "beta", "live"];
 
   const currentUser = useUserSession();
   const assignees = useAssignees(open);
   const [errors, setErrors] = useState({});
 
-  // Filter assignees based on assigneeids from URL
+  // Filter assignees based on assigneeids from URL and ensure only developers are selected
   const filteredAssignees = (() => {
-    if (!assigneeids || isEdit) return assignees; // Don't filter if editing or no assigneeids
-    const assigneeIdArray = assigneeids.split(',').map(id => id.trim()).filter(id => id);
-    if (assigneeIdArray.length === 0) return assignees;
-    return assignees.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
+    if (isEdit) return assignees; // Don't filter if editing
+    let result = assignees;
+    
+    // First, filter by assigneeids from URL
+    if (assigneeids) {
+      const assigneeIdArray = assigneeids.split(',').map(id => id.trim()).filter(id => id);
+      if (assigneeIdArray.length > 0) {
+        result = result.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
+      }
+    }
+    
+    // Then, filter to only show developers
+    const developers = result.filter(a => (a?.designation || '').toLowerCase().includes('developer'));
+    
+    return developers.length > 0 ? developers : result;
   })();
 
   const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -73,13 +85,22 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const getDefaultStatus = () => getDefaultOptionId('taskbugstatusData', 'new');
   const getDefaultPriority = () => getDefaultOptionId('taskbugpriorityData', 'high');
 
-  // Auto-select assignee if only one filtered assignee and not editing
+  const hasAutoSelected = React.useRef(false);
+
   useEffect(() => {
-    if (!isEdit && assigneeids && filteredAssignees.length === 1 && !formData.assigneeId) {
-      const singleAssignee = filteredAssignees[0];
-      setFormData(prev => ({ ...prev, assigneeId: singleAssignee?.id || '' }));
+    if (!open) {
+      hasAutoSelected.current = false;
     }
-  }, [assigneeids, filteredAssignees, isEdit, formData.assigneeId]);
+  }, [open]);
+
+  // Auto-select the top assignee if not editing
+  useEffect(() => {
+    if (open && !isEdit && assigneeids && filteredAssignees.length > 0 && !formData.assigneeId && !hasAutoSelected.current) {
+      const topAssignee = filteredAssignees[0];
+      setFormData(prev => ({ ...prev, assigneeId: topAssignee?.id || '' }));
+      hasAutoSelected.current = true;
+    }
+  }, [open, assigneeids, filteredAssignees, isEdit, formData.assigneeId]);
 
   const handleDrawEditorSave = (editedFile) => {
     if (editingImageIndex !== null) {
@@ -100,6 +121,18 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
       }));
       setEditingImageIndex(null);
       setEditingImage(null);
+    }
+  };
+
+  const handleDrawEditorSaveAndNew = (editedFile) => {
+    if (editedFile) {
+      setAttachments(prev => [...prev, {
+        file: editedFile,
+        name: editedFile.name || 'bug-screenshot.png',
+        type: editedFile.type.startsWith('image/') ? 'image' : 'file',
+        url: URL.createObjectURL(editedFile),
+        isEdited: true,
+      }]);
     }
   };
 
@@ -167,6 +200,16 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     onButtonClick,
     addFiles
   } = useAttachmentHandlers(attachments, setAttachments);
+
+  const imageAttachments = useMemo(
+    () => attachments.filter(att => (att?.type || att?.mimeType || '').toLowerCase().startsWith('image')),
+    [attachments]
+  );
+
+  const nonImageAttachments = useMemo(
+    () => attachments.filter(att => !(att?.type || att?.mimeType || '').toLowerCase().startsWith('image')),
+    [attachments]
+  );
 
   useEffect(() => {
     const handlePaste = (e) => {
@@ -292,6 +335,20 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               }}>
                 {isEdit ? 'Edit Bug' : 'Create New Bug'}
               </Typography>
+              {isEdit && bug?.bugNo && (
+                <Chip
+                  label={bug.bugNo}
+                  sx={{
+                    fontWeight: 850,
+                    fontSize: '0.85rem',
+                    color: '#7367f0',
+                    bgcolor: '#EEF2FF',
+                    border: '1px solid #C7D2FE',
+                    borderRadius: 1.5,
+                    height: 28
+                  }}
+                />
+              )}
               {formData.taskNo && (
                 <Tooltip title={formData.taskName || ''} arrow>
                   <Chip
@@ -299,15 +356,15 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                     sx={{
                       fontWeight: 850,
                       fontSize: '0.85rem',
-                      color: '#7367f0',
-                      bgcolor: '#EEF2FF',
-                      border: '1px solid #C7D2FE',
+                      color: '#64748B',
+                      bgcolor: '#F1F5F9',
+                      border: '1px solid #E2E8F0',
                       borderRadius: 1.5,
                       height: 28,
                       cursor: 'help',
                       '&:hover': {
-                        bgcolor: '#E0E7FF',
-                        borderColor: '#A5B4FC'
+                        bgcolor: '#E5E7EB',
+                        borderColor: '#CBD5E1'
                       }
                     }}
                   />
@@ -422,17 +479,17 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                 }) || null;
 
                 return (
-              <DepartmentAssigneeAutocomplete
-                options={filteredAssignees}
-                label=""
-                placeholder="Search and select assignee..."
-                multiple={false}
-                value={selectedAssignee}
-                onChange={(newValue) => {
-                  setFormData(prev => ({ ...prev, assigneeId: newValue?.id || '' }));
-                }}
-                minWidth="100%"
-              />
+                  <DepartmentAssigneeAutocomplete
+                    options={filteredAssignees}
+                    label=""
+                    placeholder="Search and select assignee..."
+                    multiple={false}
+                    value={selectedAssignee}
+                    onChange={(newValue) => {
+                      setFormData(prev => ({ ...prev, assigneeId: newValue?.id || '' }));
+                    }}
+                    minWidth="100%"
+                  />
                 );
               })()}
             </Grid>
@@ -450,42 +507,46 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
             {/* Environment */}
             <Grid size={{ xs: 12 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}>ENVIRONMENT</Typography>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}
+              >
+                ENVIRONMENT
+              </Typography>
+
               <Stack direction="row" spacing={1}>
-                <Chip
-                  label="Local Version"
-                  onClick={() => setFormData(prev => ({ ...prev, environment: { ...prev.environment, local: !prev.environment.local } }))}
-                  sx={{
-                    bgcolor: formData.environment.local ? '#7367f0' : '#F1F5F9',
-                    color: formData.environment.local ? '#fff' : '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    borderRadius: 1.5,
-                    px: 1,
-                    py: 0.75,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      bgcolor: formData.environment.local ? '#6366f1' : '#E2E8F0'
-                    }
-                  }}
-                />
-                <Chip
-                  label="Live Version"
-                  onClick={() => setFormData(prev => ({ ...prev, environment: { ...prev.environment, live: !prev.environment.live } }))}
-                  sx={{
-                    bgcolor: formData.environment.live ? '#7367f0' : '#F1F5F9',
-                    color: formData.environment.live ? '#fff' : '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    borderRadius: 1.5,
-                    px: 1,
-                    py: 0.75,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      bgcolor: formData.environment.live ? '#6366f1' : '#E2E8F0'
-                    }
-                  }}
-                />
+                {environments.map((env) => {
+                  const isActive = formData.environment[env];
+
+                  return (
+                    <Chip
+                      key={env}
+                      label={`${env.charAt(0).toUpperCase() + env.slice(1)} Version`}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          environment: {
+                            ...prev.environment,
+                            [env]: !prev.environment[env]
+                          }
+                        }))
+                      }
+                      sx={{
+                        bgcolor: isActive ? '#7367f0' : '#F1F5F9',
+                        color: isActive ? '#fff' : '#475569',
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        borderRadius: 1.5,
+                        px: 1,
+                        py: 0.75,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: isActive ? '#6366f1' : '#E2E8F0'
+                        }
+                      }}
+                    />
+                  );
+                })}
               </Stack>
             </Grid>
 
@@ -545,9 +606,9 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               />
 
               {/* Image Previews Grid */}
-              {attachments.filter(att => (att?.type || att?.mimeType || '').toLowerCase().startsWith('image')).length > 0 && (
+              {imageAttachments.length > 0 && (
                 <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-                  {attachments.filter(att => (att?.type || att?.mimeType || '').toLowerCase().startsWith('image')).map((att, index) => {
+                  {imageAttachments.map((att, index) => {
                     const originalIndex = attachments.indexOf(att);
                     return (
                       <Grid key={originalIndex} size={{ xs: 4, sm: 3, md: 2 }}>
@@ -570,7 +631,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                         >
                           <Box
                             component="img"
-                            src={att.previewUrl || att.url || att.filePath || (att.file ? URL.createObjectURL(att.file) : '')}
+                            src={att.previewUrl || att.url || att.filePath || ''}
                             onError={handleImageError}
                             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
@@ -632,9 +693,9 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               )}
 
               {/* Non-image attachments */}
-              {attachments.filter(att => !(att?.type || att?.mimeType || '').toLowerCase().startsWith('image')).length > 0 && (
+              {nonImageAttachments.length > 0 && (
                 <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-                  {attachments.filter(att => !(att?.type || att?.mimeType || '').toLowerCase().startsWith('image')).map((att, index) => {
+                  {nonImageAttachments.map((att, index) => {
                     const originalIndex = attachments.indexOf(att);
                     return (
                       <Grid key={originalIndex} size={{ xs: 12 }}>
@@ -779,6 +840,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
         onClose={() => { setDrawEditorOpen(false); setEditingImage(null); setEditingImageIndex(null); }}
         imageSrc={editingImage?.previewUrl || editingImage?.url || editingImage?.filePath || (editingImage?.file ? URL.createObjectURL(editingImage.file) : '')}
         onSave={handleDrawEditorSave}
+        onSaveAndNew={handleDrawEditorSaveAndNew}
       />
     </Drawer>
   );

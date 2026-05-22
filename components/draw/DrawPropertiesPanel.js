@@ -2,12 +2,9 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
-  Circle,
-  Diamond,
   Minus,
   Plus,
   Square,
-  Triangle,
 } from "lucide-react";
 import { useState } from "react";
 import DrawShapeMenu from "./DrawShapeMenu";
@@ -25,6 +22,7 @@ const SIZE_OPTIONS = [
 export default function DrawPropertiesPanel({
   activeTool,
   applyStylesToSelected,
+  applyColorToMode,
   createMediaShape,
   currentAlign,
   currentColor,
@@ -59,6 +57,11 @@ export default function DrawPropertiesPanel({
   const handleStyleChange = (partial) => {
     if (selectedShape) {
       applyStylesToSelected(partial);
+      return;
+    }
+
+    if (partial.color !== undefined && ["text", "note", "draw"].includes(mode) && applyColorToMode) {
+      applyColorToMode(mode, partial.color);
       return;
     }
 
@@ -148,10 +151,8 @@ export default function DrawPropertiesPanel({
               <button
                 key={color}
                 className={`${styles.colorDot} ${colorMode === "stroke"
-                  ? getActiveValue("color", currentColor) === color
-                  : getActiveValue("backgroundColor", currentBackgroundColor) === color
-                    ? styles.colorDotActive
-                    : ""
+                  ? (getActiveValue("color", currentColor) === color ? styles.colorDotActive : "")
+                  : (getActiveValue("backgroundColor", currentBackgroundColor) === color ? styles.colorDotActive : "")
                   }`}
                 onClick={() => {
                   if (colorMode === "stroke") {
@@ -279,24 +280,6 @@ export default function DrawPropertiesPanel({
           </div>
         </div>
 
-        {/* {showFontRow ? (
-          <div className={styles.compactSection}>
-            <div className={styles.iconGrid}>
-              {FONT_FAMILIES.map((font) => (
-                <button
-                  key={font}
-                  className={`${styles.gridIconButton} ${
-                    getActiveValue("font", currentFont) === font ? styles.gridIconButtonActive : ""
-                  }`}
-                  onClick={() => handleStyleChange({ font })}
-                >
-                  <FontIcon type={font} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null} */}
-
         {showTextTransformRow ? (
           <div className={styles.compactSection}>
             <div className={styles.iconGrid}>
@@ -334,7 +317,7 @@ export default function DrawPropertiesPanel({
               {TEXT_ALIGNMENTS.map((align) => (
                 <button
                   key={align}
-                  className={`${styles.gridIconButton} ${getActiveValue("align", currentAlign) === align ? styles.gridIconButtonActive : ""
+                  className={`${styles.gridIconButton} ${(getActiveValue("align", currentAlign) || TEXT_ALIGNMENTS[0]) === align ? styles.gridIconButtonActive : ""
                     }`}
                   onClick={() => handleStyleChange({ align })}
                 >
@@ -415,17 +398,6 @@ function DashIcon({ type }) {
       <line x1="3" y1="12" x2="21" y2="12" strokeDasharray={type === "dashed" ? "5 5" : type === "dotted" ? "1 5" : "none"} />
     </svg>
   );
-}
-
-function FontIcon({ type }) {
-  const fontStyles = {
-    draw: { fontFamily: "cursive", fontWeight: "bold" },
-    sans: { fontFamily: "sans-serif" },
-    serif: { fontFamily: "serif" },
-    mono: { fontFamily: "monospace" },
-  };
-
-  return <span style={{ ...fontStyles[type], fontSize: 13, userSelect: "none" }}>Aa</span>;
 }
 
 function AlignIcon({ type }) {

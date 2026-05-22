@@ -9,7 +9,7 @@ export const CATEGORY_OPTIONS = [
 export const getCategoryOptions = () => {
   if (typeof window === 'undefined') return CATEGORY_OPTIONS;
   try {
-    const data = sessionStorage.getItem('taskworkcategoryData')
+    const data = sessionStorage.getItem('bug_categoryData')
       || sessionStorage.getItem('taskbugcategoryData');
     if (data) {
       const parsed = JSON.parse(data);
@@ -33,7 +33,12 @@ export const INITIAL_FORM_DATA = {
   status: '',
   dueDate: '',
   category: '',
-  environment: { local: false, live: false },
+  environment: {
+    local: true,
+    alpha: false,
+    beta: false,
+    live: false
+  },
   taskNo: '',
   taskName: '',
   taskId: ''

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, Button, Box } from '@mui/material';
 import DrawEditor from './draw/DrawEditor';
 import { Download } from 'lucide-react';
 
-export default function ImageDrawEditor({ open, onClose, imageSrc, onSave }) {
+export default function ImageDrawEditor({ open, onClose, imageSrc, onSave, onSaveAndNew }) {
   const handleEditorSave = (file) => {
     if (file) {
       // Convert SVG to PNG for ImageDrawEditor
@@ -103,7 +103,7 @@ export default function ImageDrawEditor({ open, onClose, imageSrc, onSave }) {
           </Box>
         </Box>
         <Box sx={{ flex: 1, width: '100%', overflow: 'hidden' }}>
-          <DrawEditor onSave={handleEditorSave} onClose={onClose} initialImageSrc={imageSrc} />
+          <DrawEditor onSave={handleEditorSave} onSaveAndNew={onSaveAndNew} onClose={onClose} initialImageSrc={imageSrc} />
         </Box>
       </DialogContent>
     </Dialog>

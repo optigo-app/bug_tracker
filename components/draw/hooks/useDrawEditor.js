@@ -27,7 +27,7 @@ export function useDrawEditor() {
   const [currentBackgroundColor, setCurrentBackgroundColor] = useState("#ffffff");
   const [currentDash, setCurrentDash] = useState("solid");
   const [currentFont, setCurrentFont] = useState("draw");
-  const [currentAlign, setCurrentAlign] = useState("middle");
+  const [currentAlign, setCurrentAlign] = useState("start");
   const [currentFontSize, setCurrentFontSize] = useState(18);
   const [currentTextTransform, setCurrentTextTransform] = useState("none");
   const [currentShapeType, setCurrentShapeType] = useState("rect");
@@ -199,6 +199,17 @@ export function useDrawEditor() {
     setViewport(DEFAULT_VIEWPORT);
   }, []);
 
+  const clearCanvas = useCallback(() => {
+    setShapes([]);
+    shapesRef.current = [];
+    setHistory({ past: [], future: [] });
+    setSelectedId(null);
+    setDraftText("");
+    setEditingText(null);
+    setPanelMessage("");
+    resetViewport();
+  }, [resetViewport]);
+
   const toCanvasPoint = useCallback((clientX, clientY) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0 };
@@ -309,6 +320,29 @@ export function useDrawEditor() {
     shapesRef.current = nextShapes;
     recordHistory(previousShapes, nextShapes);
   }, [recordHistory, selectedId]);
+
+  const applyColorToMode = useCallback((mode, color) => {
+    if (!color) return;
+
+    const previousShapes = shapesRef.current;
+    const targetTypes = mode === "draw"
+      ? ["draw"]
+      : mode === "text" || mode === "note"
+        ? ["text", "note"]
+        : [mode];
+
+    const nextShapes = previousShapes.map((shape) =>
+      targetTypes.includes(shape.type) ? { ...shape, color } : shape
+    );
+
+    setCurrentColor(color);
+
+    if (JSON.stringify(previousShapes) === JSON.stringify(nextShapes)) return;
+
+    setShapes(nextShapes);
+    shapesRef.current = nextShapes;
+    recordHistory(previousShapes, nextShapes);
+  }, [recordHistory]);
 
   const duplicateSelectedShape = useCallback(() => {
     if (!selectedShape) return;
@@ -1269,8 +1303,11 @@ export function useDrawEditor() {
     panelMessage,
     pasteCopiedShape,
     resetViewport,
+    clearCanvas,
+    applyColorToMode,
     selectedBounds,
     selectedId,
+    setSelectedId,
     selectedShape,
     setActiveTool,
     setCurrentColor,

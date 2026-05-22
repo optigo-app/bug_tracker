@@ -3,13 +3,11 @@
 import React from 'react';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     Button,
     Typography,
     Box,
-    IconButton,
     Stack
 } from '@mui/material';
 import { AlertTriangle, X } from 'lucide-react';

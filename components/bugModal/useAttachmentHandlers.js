@@ -74,7 +74,8 @@ export const useAttachmentHandlers = (attachments, setAttachments) => {
       file,
       name: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      url: file.type?.startsWith('image/') ? URL.createObjectURL(file) : ''
     }));
     setAttachments(prev => [...prev, ...newAttachments]);
   };

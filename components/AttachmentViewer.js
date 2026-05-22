@@ -46,7 +46,7 @@ export default function AttachmentViewer({
     attachments = [],
     initialIndex = 0
 }) {
-    const [fullMode, setFullMode] = useState(false);
+    const [fullMode, setFullMode] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
@@ -57,6 +57,7 @@ export default function AttachmentViewer({
     const [isDragging, setIsDragging] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const dragStart = useRef({ x: 0, y: 0 });
+    const viewerRef = useRef(null);
 
     // Map API attachment format
     const mappedAttachments = useMemo(() => attachments.map(f => ({
@@ -99,21 +100,22 @@ export default function AttachmentViewer({
     };
 
     // Pan Handlers
-    const handleMouseDown = (e) => {
+    const handlePointerDown = useCallback((e) => {
         if (zoom <= 1 || !isImage) return;
+        if (e.button !== 0) return; // Only left click
         setIsDragging(true);
         dragStart.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-    };
+    }, [zoom, isImage, position.x, position.y]);
 
-    const handleMouseMove = (e) => {
+    const handlePointerMove = useCallback((e) => {
         if (!isDragging || zoom <= 1) return;
         setPosition({
             x: e.clientX - dragStart.current.x,
             y: e.clientY - dragStart.current.y
         });
-    };
+    }, [isDragging, zoom]);
 
-    const handleMouseUp = () => setIsDragging(false);
+    const handlePointerUp = useCallback(() => setIsDragging(false), []);
 
     // Wheel Zoom
     const handleWheel = (e) => {
@@ -122,6 +124,19 @@ export default function AttachmentViewer({
             else handleZoom(-0.25);
         }
     };
+
+    // Window-level pointer listeners for panning outside viewer
+    useEffect(() => {
+        if (!isDragging) return;
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        window.addEventListener('pointercancel', handlePointerUp);
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerUp);
+        };
+    }, [isDragging, handlePointerMove, handlePointerUp]);
 
     // Autoplay Timer
     useEffect(() => {
@@ -307,11 +322,9 @@ export default function AttachmentViewer({
                 }}>
                     {/* Viewport for content */}
                     <Box 
+                        ref={viewerRef}
                         onWheel={handleWheel}
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
+                        onPointerDown={handlePointerDown}
                         sx={{ 
                             width: '100%', 
                             height: '100%', 
@@ -325,12 +338,14 @@ export default function AttachmentViewer({
                         {isImage ? (
                             <Box
                                 component="img"
+                                draggable={false}
                                 src={currentFile.url}
                                 alt={currentFile.name}
+                                onDragStart={(e) => e.preventDefault()}
                                 onDoubleClick={() => zoom > 1 ? resetView() : setZoom(2.5)}
                                 sx={{
-                                    maxWidth: '95%',
-                                    maxHeight: '95%',
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
                                     objectFit: 'contain',
                                     userSelect: 'none',
                                     pointerEvents: 'auto',

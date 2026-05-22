@@ -1,6 +1,5 @@
-USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 01-05-2026 16:59:59 ******/
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 22-05-2026 13:51:13 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -32,9 +31,6 @@ BEGIN
 	--SET @spname=concat('exec [',DB_NAME(),'].[dbo].',@ProcedureName,' ',@spname)	
 -------------
 	SET @spname=concat('exec [404146_CentralUser].[dbo].',OBJECT_NAME(@@PROCID),' ',@spname)
-
-
-     
 
         DECLARE
             @DBNAME        NVARCHAR(50)  = ''
@@ -170,7 +166,12 @@ BEGIN
                     FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
                     WHERE (''' + @bug_taskId + ''' = '''' OR taskId = ''' + @bug_taskId + ''')
                     AND (''' + @bug_statusId + ''' = '''' OR statusId = ''' + @bug_statusId + ''')
-                    AND (''' + @bug_assigneeId + ''' = '''' OR assigneeId = ''' + @bug_assigneeId + ''')
+                    AND (''' + @bug_categoryId + ''' = '''' OR categoryId = ''' + @bug_categoryId + ''')
+                    AND (
+                        (''' + @bug_assigneeId + ''' = '''' AND ''' + @bug_reporterId + ''' = '''')
+                        OR (''' + @bug_assigneeId + ''' <> '''' AND assigneeId = ''' + @bug_assigneeId + ''')
+                        OR (''' + @bug_reporterId + ''' <> '''' AND reporterId = ''' + @bug_reporterId + ''')
+                    )
                     ORDER BY createdAt DESC
                 '
                 EXEC (@SQL)
@@ -197,9 +198,9 @@ BEGIN
                         0
                     ) FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
 
-                    -- Generate next bug number (BT001, BT002, etc.)
+                    -- Generate next bug number (BT1, BT2, etc.)
                     SET @next_num = @next_num + 1
-                    SET @bug_no = ''BT'' + RIGHT(''000'' + CAST(@next_num AS NVARCHAR), 3)
+					SET @bug_no = ''BT'' + CAST(@next_num AS NVARCHAR(10))
 
                     INSERT INTO [' + @DBNAME + '].[dbo].[bug_Bugs]
                     (
@@ -331,15 +332,15 @@ BEGIN
                     SET
                         title       = @newTitle
                         ,description = @newDescription
-                        ,taskId      = ''' + @bug_taskId + '''
-                        ,taskNo      = ''' + @bug_taskNo + '''
-                        ,taskName    = ''' + REPLACE(@bug_taskName, '''', '''''') + '''
+                        ,taskId      = IIF(''' + @bug_taskId + ''' = '''', taskId, ''' + @bug_taskId + ''')
+                        ,taskNo      = IIF(''' + @bug_taskNo + ''' = '''', taskNo, ''' + @bug_taskNo + ''')
+                        ,taskName    = IIF(''' + REPLACE(@bug_taskName, '''', '''''') + ''' = '''', taskName, ''' + REPLACE(@bug_taskName, '''', '''''') + ''')
                         ,assigneeId  = @newAssigneeId
-                        ,reporterId  = ''' + @bug_reporterId + '''
+                        ,reporterId  = IIF(''' + @bug_reporterId + ''' = '''', reporterId, ''' + @bug_reporterId + ''')
                         ,priorityId  = @newPriorityId
-                        ,dueDate     = ''' + @bug_dueDate + '''
+                        ,dueDate     = IIF(''' + @bug_dueDate + ''' = '''', dueDate, ''' + @bug_dueDate + ''')
                         ,categoryId  = @newCategoryId
-                        ,environment = ''' + REPLACE(@bug_environment, '''', '''''') + '''
+                        ,environment = IIF(''' + REPLACE(@bug_environment, '''', '''''') + ''' = '''', environment, ''' + REPLACE(@bug_environment, '''', '''''') + ''')
                         ,statusId    = @newStatusId
                         ,updatedAt   = @now
                     WHERE id = ''' + @bug_id + '''

@@ -68,8 +68,8 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
               fontSize: '0.65rem',
               fontWeight: 800,
               color: '#7367f0',
-              bgcolor: 'rgba(115, 103, 240, 0.1)',
-              px: 0.6, py: 0.15, borderRadius: '4px',
+              bgcolor: '#EEF2FF',
+              px: 0.6, py: 0.15, borderRadius: '6px',
               fontFamily: 'monospace'
             }}>
               {bug.bugNo ?? ''}
@@ -80,9 +80,9 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
               <Typography sx={{
                 fontSize: '0.65rem',
                 fontWeight: 800,
-                color: '#6b7280',
-                bgcolor: '#e5e7eb',
-                px: 0.6, py: 0.15, borderRadius: '4px',
+                color: '#64748B',
+                bgcolor: '#F1F5F9',
+                px: 0.6, py: 0.15, borderRadius: '6px',
                 fontFamily: 'monospace',
                 cursor: 'help'
               }}>

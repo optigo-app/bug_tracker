@@ -35,13 +35,15 @@ export default function TimelineSection({ timeline = [], getUserName, showFullTi
     const [statusData, setStatusData] = useState([]);
     const [priorityData, setPriorityData] = useState([]);
     const [categoryData, setCategoryData] = useState([]);
+    const [assigneeData, setAssigneeData] = useState([]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             try {
                 setStatusData(JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]'));
                 setPriorityData(JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]'));
-                setCategoryData(JSON.parse(sessionStorage.getItem('taskworkcategoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]'));
+                setCategoryData(JSON.parse(sessionStorage.getItem('bug_categoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]'));
+                setAssigneeData(JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]'));
             } catch (error) {
                 console.error('Error loading reference data for timeline:', error);
             }
@@ -60,6 +62,13 @@ export default function TimelineSection({ timeline = [], getUserName, showFullTi
         }
         if (lowerField.includes('category')) {
             return getLabelById(value, categoryData, 'labelname');
+        }
+        if (lowerField.includes('assignee')) {
+            const user = assigneeData.find(u => String(u?.id) === String(value) || String(u?.userid) === String(value));
+            if (user) {
+                return `${user.firstname || ''} ${user.lastname || ''}`.trim() || value;
+            }
+            return value;
         }
         return value;
     };

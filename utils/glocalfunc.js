@@ -413,6 +413,25 @@ export const PriorityBadge = ({ priority }) => {
 };
 
 
+/**
+ * Generates export filename in format: [initials]_[taskno]_[date].[extension]
+ * Example: vs_tt001_06052026.png
+ * @param {string} username - Full username (e.g., "Vidhi Shah")
+ * @param {string} taskNo - Task number (e.g., "TT001")
+ * @param {string} extension - File extension (e.g., "png", "svg")
+ * @returns {string} Formatted filename
+ */
+export const generateExportFileName = (username = '', taskNo = '', extension = 'png') => {
+  const initials = getInitials(username).toLowerCase();
+  const date = new Date();
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear());
+  const dateStr = `${day}${month}${year}`;
+  const cleanTaskNo = taskNo ? taskNo.toLowerCase().replace(/[^a-z0-9]/g, '') : 'task';
+  return `${initials}_${cleanTaskNo}_${dateStr}.${extension}`;
+};
+
 //Selectmenu custom styles
 export const commonSelectProps = {
     select: true,
