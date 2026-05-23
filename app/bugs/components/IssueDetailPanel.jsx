@@ -3,12 +3,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box, Typography, Stack, Button, Avatar, IconButton, CircularProgress,
-  Tooltip, Select, MenuItem, Dialog
+  Tooltip, Select, MenuItem, Divider, Paper, Card
 } from '@mui/material';
 import {
-  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen, AlertCircle, ChevronLeft, ChevronRight, Paperclip
+  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen,
+  AlertCircle, ChevronLeft, ChevronRight, Paperclip, MessageSquare, Calendar, Clock,
+  User, ShieldAlert, Sparkles, Download, Eye, FileText, Send, Info
 } from 'lucide-react';
-import { getRandomAvatarColor, ImageUrl, formatDateTime, formatDate, STATUS } from '@/utils/glocalfunc';
+import { getRandomAvatarColor, ImageUrl, formatCommentDate, formatDate, STATUS } from '@/utils/glocalfunc';
 import { slimScroll } from '../constants';
 import { getBugDetailApi } from '@/app/api/bugdetailApi';
 import { updateBugApi } from '@/app/api/bugupdateApi';
@@ -25,7 +27,20 @@ import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
 import BugDetailSkeleton from './BugDetailSkeleton';
 
-export default function IssueDetailPanel({ bugId, currentUser, developers, taskAssignees, onRefreshList, onViewDetails, onBack, onReassign, onPrev, onNext, hasPrev = false, hasNext = false }) {
+export default function IssueDetailPanel({
+  bugId,
+  currentUser,
+  developers,
+  taskAssignees,
+  onRefreshList,
+  onViewDetails,
+  onBack,
+  onReassign,
+  onPrev,
+  onNext,
+  hasPrev = false,
+  hasNext = false
+}) {
   const [bug, setBug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -84,7 +99,11 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
 
   const fetchBug = useCallback(async (silent = false) => {
     if (!bugId) return;
-    if (!silent) { setLoading(true); setError(null); setVisibleComments(8); }
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+      setVisibleComments(8);
+    }
     try {
       const response = await getBugDetailApi(bugId);
 
@@ -121,10 +140,6 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
     fetchBug();
   }, [fetchBug]);
 
-  if (loading) {
-    return <BugDetailSkeleton />;
-  }
-
   const patch = async (payload) => {
     setSaving(true);
     try {
@@ -132,26 +147,28 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
       await updateBugApi({ ...payloadWithoutIds, id: bugId, userId: currentUser?.id, reporterId: bug.reporterId });
       fetchBug(true);
       onRefreshList();
-    } catch (e) { console.error(e); }
-    finally { setSaving(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!bugId) return null;
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, height: '100%', bgcolor: '#FAFBFC' }}>
-      <Stack alignItems="center" spacing={2}>
-        <CircularProgress size={32} thickness={4} sx={{ color: '#4F46E5' }} />
-        <Typography variant="body2" color="text.disabled" sx={{ fontWeight: 600 }}>Loading issue…</Typography>
-      </Stack>
-    </Box>
-  );
+  if (loading) {
+    return <BugDetailSkeleton />;
+  }
 
   if (error || !bug) return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, flexDirection: 'column', gap: 2, bgcolor: '#FAFBFC' }}>
-      <AlertCircle size={28} color="#EF4444" />
-      <Typography variant="body2" color="text.secondary">Failed to load issue</Typography>
-      <Button size="small" onClick={() => fetchBug()} sx={{ fontWeight: 700 }}>Retry</Button>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, flexDirection: 'column', gap: 2, bgcolor: '#FAFBFD', height: '100%' }}>
+      <Box sx={{ p: 2, bgcolor: '#FFF1F2', borderRadius: '8px', boxShadow: '0 2px 8px rgba(234, 84, 85, 0.1)' }}>
+        <AlertCircle size={28} color="#EA5455" />
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Failed to load issue</Typography>
+      <Button variant="outlined" size="small" onClick={() => fetchBug()} sx={{ fontWeight: 700, borderRadius: '8px', textTransform: 'none' }}>
+        Retry Loading
+      </Button>
     </Box>
   );
 
@@ -210,7 +227,7 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
   const rImageSrc = ImageUrl(reporterMember);
 
   return (
-    <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: 'white' }}>
+    <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', bgcolor: '#FAFBFD' }}>
       {/* ─── Center Column: Content & Conversations ─── */}
       <Box
         sx={{
@@ -219,31 +236,48 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
           overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          borderLeft: '1px solid #E5E7EB',
-          bgcolor: '#FFFFFF',
+          bgcolor: '#FAFBFD',
           ...slimScroll
         }}
       >
-
         {/* Header Section */}
-        <Box sx={{ p: 2, pb: 1.5, borderBottom: '1px solid #E5E7EB', bgcolor: '#FFFFFF' }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Box sx={{
+          p: 2,
+          borderBottom: '1px solid #EAECEF',
+          bgcolor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+        }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {/* Title with bugNo inline */}
               <Typography sx={{
-                fontWeight: 700, letterSpacing: '-0.01em',
-                lineHeight: 1.25, fontSize: '1.1rem',
-                overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.3,
+                fontSize: '1.25rem',
+                color: '#1E293B',
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
               }}>
                 {bug.bugNo ? (
                   <>
                     <Typography component="span" sx={{
                       fontSize: '0.85rem',
                       fontWeight: 800,
-                      color: '#6366F1',
+                      color: '#7367f0',
                       fontFamily: 'monospace',
-                      letterSpacing: '0.02em',
-                      mr: 0.5
+                      letterSpacing: '0.05em',
+                      mr: 1,
+                      bgcolor: 'rgba(115, 103, 240, 0.08)',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '8px'
                     }}>
                       {bug.bugNo}
                     </Typography>
@@ -253,97 +287,248 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Tooltip title="Previous">
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0 }}>
+              <Tooltip title="Previous Issue">
                 <span>
                   <IconButton
                     size="small"
                     onClick={onPrev}
                     disabled={!hasPrev}
-                    sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}
+                    sx={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      width: 32,
+                      height: 32,
+                      color: '#64748B',
+                      bgcolor: '#FFFFFF',
+                      transition: 'all 0.2s',
+                      '&:hover:not(:disabled)': {
+                        bgcolor: '#F8FAFC',
+                        borderColor: '#7367f0',
+                        color: '#7367f0',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
                   >
-                    <ChevronLeft size={15} />
+                    <ChevronLeft size={16} />
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title="Next">
+              <Tooltip title="Next Issue">
                 <span>
                   <IconButton
                     size="small"
                     onClick={onNext}
                     disabled={!hasNext}
-                    sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}
+                    sx={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      width: 32,
+                      height: 32,
+                      color: '#64748B',
+                      bgcolor: '#FFFFFF',
+                      transition: 'all 0.2s',
+                      '&:hover:not(:disabled)': {
+                        bgcolor: '#F8FAFC',
+                        borderColor: '#7367f0',
+                        color: '#7367f0',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
                   >
-                    <ChevronRight size={15} />
+                    <ChevronRight size={16} />
                   </IconButton>
                 </span>
               </Tooltip>
               {permissions.canEditBug(currentUser) && (
-                <Tooltip title="Edit Bug">
-                  <IconButton size="small" onClick={() => setEditOpen(true)}
-                    sx={{ borderRadius: '8px', color: '#6366F1', bgcolor: 'rgba(99, 102, 241, 0.08)', width: 32, height: 32, '&:hover': { bgcolor: 'rgba(99, 102, 241, 0.12)' } }}>
-                    <Edit2 size={15} />
+                <Tooltip title="Edit Issue Details">
+                  <IconButton
+                    size="small"
+                    onClick={() => setEditOpen(true)}
+                    sx={{
+                      borderRadius: '8px',
+                      color: '#7367f0',
+                      bgcolor: 'rgba(115, 103, 240, 0.08)',
+                      width: 32,
+                      height: 32,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: 'rgba(115, 103, 240, 0.15)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
+                  >
+                    <Edit2 size={16} />
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title={showSidebar ? 'Hide Sidebar' : 'Show Sidebar'}>
-                <IconButton size="small" onClick={() => setShowSidebar(!showSidebar)}
-                  sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}>
-                  {showSidebar ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+              <Tooltip title={showSidebar ? 'Collapse Info Sidebar' : 'Expand Info Sidebar'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowSidebar(!showSidebar)}
+                  sx={{
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    width: 32,
+                    height: 32,
+                    color: '#64748B',
+                    bgcolor: '#FFFFFF',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      bgcolor: '#F8FAFC',
+                      borderColor: '#7367f0',
+                      color: '#7367f0',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  {showSidebar ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
                 </IconButton>
               </Tooltip>
-              <Tooltip title="View Details">
-                <IconButton size="small" onClick={onViewDetails}
-                  sx={{ border: '1px solid #E5E7EB', borderRadius: '8px', width: 32, height: 32, color: '#64748B', '&:hover': { bgcolor: '#F8FAFC', borderColor: '#CBD5E1' } }}>
-                  <ExternalLink size={15} />
+              <Tooltip title="Open in Full Page">
+                <IconButton
+                  size="small"
+                  onClick={onViewDetails}
+                  sx={{
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    width: 32,
+                    height: 32,
+                    color: '#64748B',
+                    bgcolor: '#FFFFFF',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      bgcolor: '#F8FAFC',
+                      borderColor: '#7367f0',
+                      color: '#7367f0',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  <ExternalLink size={16} />
                 </IconButton>
               </Tooltip>
             </Stack>
           </Stack>
 
-          {/* Action Buttons */}
-          <Stack direction="row" spacing={0.75} sx={{ mt: 1, justifyContent: 'flex-end' }}>
+          {/* Action Buttons Section */}
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5, justifyContent: 'flex-end' }}>
             {permissions.canVerifyBug(currentUser) && currentStatusLabel === 'Ready For Test' && (
               <>
-                <Button size="small" variant="contained" startIcon={<CheckCircle2 size={14} />}
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<CheckCircle2 size={15} />}
                   onClick={() => {
                     const closedStatus = getStatusByLabel('Verified');
                     if (closedStatus) { setPendingStatus(closedStatus.id); setStatusOpen(true); }
-                  }} disabled={saving}
-                  className='buttonClassname'
-                  sx={{ padding: '0px 10px' }}
+                  }}
+                  disabled={saving}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontSize: '0.78rem',
+                    px: 2,
+                    py: 0.5,
+                    boxShadow: '0 2px 8px rgba(40, 199, 111, 0.2)',
+                    background: 'linear-gradient(135deg, #28C76F 0%, #48DA89 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #20a65b 0%, #3ebd7b 100%)',
+                      boxShadow: '0 4px 12px rgba(40, 199, 111, 0.3)',
+                      transform: 'translateY(-1px)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
                 >
-                  Verify
+                  Verify & Close
                 </Button>
-                <Button size="small" variant="contained" startIcon={<RotateCcw size={14} />}
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<RotateCcw size={15} />}
                   onClick={() => {
                     const reopenStatus = getStatusByLabel('Reopen');
                     if (reopenStatus) { setPendingStatus(reopenStatus.id); setStatusOpen(true); }
-                  }} disabled={saving}
-                  className='dangerbtnClassname'
+                  }}
+                  disabled={saving}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontSize: '0.78rem',
+                    px: 2,
+                    py: 0.5,
+                    boxShadow: '0 2px 8px rgba(234, 84, 85, 0.2)',
+                    background: 'linear-gradient(135deg, #EA5455 0%, #F27879 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #c73c3d 0%, #e25c5d 100%)',
+                      boxShadow: '0 4px 12px rgba(234, 84, 85, 0.3)',
+                      transform: 'translateY(-1px)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
                 >
                   Reopen
                 </Button>
               </>
             )}
             {permissions.canChangeBugStatus(currentUser) && ['In Progress'].includes(currentStatusLabel) && (
-              <Button size="small" variant="contained" startIcon={<CheckCircle2 size={14} />}
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<CheckCircle2 size={15} />}
                 onClick={() => {
                   const readyTestStatus = getStatusByLabel('Fixed');
                   if (readyTestStatus) { setPendingStatus(readyTestStatus.id); setStatusOpen(true); }
-                }} disabled={saving}
-                className='buttonClassname'
+                }}
+                disabled={saving}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  px: 2,
+                  py: 0.5,
+                  boxShadow: '0 2px 8px rgba(115, 103, 240, 0.2)',
+                  background: 'linear-gradient(135deg, #7367f0 0%, #9E95F5 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5b50d6 0%, #857bf2 100%)',
+                    boxShadow: '0 4px 12px rgba(115, 103, 240, 0.3)',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
               >
                 Resolve
               </Button>
             )}
             {permissions.canChangeBugStatus(currentUser) && ['Verified', 'Closed'].includes(currentStatusLabel) && (
-              <Button size="small" variant="contained" startIcon={<RotateCcw size={14} />}
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<RotateCcw size={15} />}
                 onClick={() => {
                   const reopenStatus = getStatusByLabel('Reopen');
                   if (reopenStatus) { setPendingStatus(reopenStatus.id); setStatusOpen(true); }
-                }} disabled={saving}
-                className='buttonClassname'
+                }}
+                disabled={saving}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  px: 2,
+                  py: 0.5,
+                  boxShadow: '0 2px 8px rgba(115, 103, 240, 0.2)',
+                  background: 'linear-gradient(135deg, #7367f0 0%, #9E95F5 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5b50d6 0%, #857bf2 100%)',
+                    boxShadow: '0 4px 12px rgba(115, 103, 240, 0.3)',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
               >
                 Reopen
               </Button>
@@ -351,42 +536,128 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
           </Stack>
         </Box>
 
-        {/* Attachment Slider (Full-Width, No Padding) */}
-        {bug.attachments?.length > 0 && (
-          <Box sx={{ width: '100%' }}>
-            <AttachmentSlider
-              attachments={bug.attachments}
-              onImageClick={(idx) => {
-                setViewerAttachments(bug.attachments || []);
-                setViewerIndex(idx);
-                setViewerOpen(true);
-              }}
-            />
-          </Box>
-        )}
+        {/* Scrollable Main Content Pane */}
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-        {/* Padded Content Area */}
-        <Box sx={{ p: 2, pt: 0.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Description Section */}
-          {bug?.description && (
-            <Box sx={{ mb: 0.5 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1, letterSpacing: '0.08em' }}>
-                Description
-              </Typography>
-              <Box sx={{ bgcolor: '#F8FAFC', p: 2.25, borderRadius: 2 }}>
-                <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
-                  {bug.description || <em style={{ color: '#94A3B8' }}>No description provided.</em>}
+          {/* Attachment Slider (Images) FIRST */}
+          {bug.attachments?.length > 0 && (
+            <Card sx={{
+              borderRadius: '16px',
+              border: '1px solid #EAECEF',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+              bgcolor: '#FFFFFF',
+              overflow: 'hidden'
+            }}>
+              <Box sx={{
+                px: 2,
+                py: 1.25,
+                borderBottom: '1px solid #F1F5F9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <Typography sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  color: '#94A3B8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75
+                }}>
+                  <Paperclip size={14} color="#7367f0" /> Attachments ({bug.attachments.length})
                 </Typography>
               </Box>
-            </Box>
+              <Box sx={{ p: 1.5, bgcolor: '#FAFBFD' }}>
+                <AttachmentSlider
+                  attachments={bug.attachments}
+                  onImageClick={(idx) => {
+                    setViewerAttachments(bug.attachments || []);
+                    setViewerIndex(idx);
+                    setViewerOpen(true);
+                  }}
+                />
+              </Box>
+            </Card>
           )}
-          {/* Activity Section */}
-          <Box>
-            <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#444050', mb: 0.25, lineHeight: 1.3, letterSpacing: '-0.01em' }}>
-              Activity
-            </Typography>
 
-            <Stack spacing={2} sx={{ mb: 3 }}>
+          {/* Description Section SECOND */}
+          <Card sx={{
+            p: 2,
+            borderRadius: '16px',
+            border: '1px solid #EAECEF',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+            bgcolor: '#FFFFFF'
+          }}>
+            <Typography sx={{
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              color: '#94A3B8',
+              textTransform: 'uppercase',
+              mb: 1,
+              letterSpacing: '0.08em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75
+            }}>
+              <Info size={14} color="#7367f0" /> Description
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
+              {bug.description || <em style={{ color: '#94A3B8' }}>No description provided.</em>}
+            </Typography>
+          </Card>
+
+          {/* Activity Section */}
+          <Card sx={{
+            p: 2,
+            borderRadius: '8px',
+            border: '1px solid #EAECEF',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+            bgcolor: '#FFFFFF'
+          }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography sx={{
+                fontSize: '0.88rem',
+                fontWeight: 800,
+                color: '#1E293B',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <MessageSquare size={16} color="#7367f0" />
+                Comments & Discussions
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    bgcolor: 'rgba(115, 103, 240, 0.08)',
+                    color: '#7367f0',
+                    px: 1,
+                    py: 0.2,
+                    borderRadius: '8px'
+                  }}
+                >
+                  {bug.comments?.length || 0}
+                </Box>
+              </Typography>
+            </Stack>
+
+            <Stack spacing={2} sx={{ mb: 2, position: 'relative' }}>
+              {/* Timeline Thread connector */}
+              {sortedComments.length > 0 && (
+                <Box sx={{
+                  position: 'absolute',
+                  left: '18px',
+                  top: '16px',
+                  bottom: '16px',
+                  width: '2px',
+                  bgcolor: '#F1F5F9',
+                  zIndex: 1
+                }} />
+              )}
+
               {sortedComments.slice(0, visibleComments).map((c) => {
                 const normalizedAttachments = Array.isArray(c.attachments)
                   ? c.attachments.map((file) => ({
@@ -403,29 +674,48 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                 const commentAvatarColor = getRandomAvatarColor(commentMemberName);
 
                 return (
-                  <Box key={c.id} sx={{ display: 'flex', gap: 2 }}>
+                  <Box key={c.id} sx={{ display: 'flex', gap: 1.5, position: 'relative', zIndex: 2 }}>
                     <Avatar
                       src={commentImageSrc}
                       sx={{
                         width: 32,
                         height: 32,
-                        fontSize: '14px',
+                        fontSize: '13px',
                         textTransform: 'capitalize',
+                        border: '2px solid #FFFFFF',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                         backgroundColor: commentImageSrc ? 'transparent' : commentAvatarColor,
                       }}
                     >
                       {!commentImageSrc && commentMemberName.charAt(0)}
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
-                      <Box sx={{ p: 2, borderRadius: '0 16px 16px 16px', bgcolor: '#F8FAFC', border: '1px solid transparent' }}>
-                        <Stack direction="row" spacing={1.2} alignItems="baseline" sx={{ mb: 1 }}>
-                          <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: '0.85rem' }}>{commentMemberName}</Typography>
-                          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.65rem' }}>{formatDateTime(c.createdAt)}</Typography>
+                      <Box sx={{
+                        p: 1.5,
+                        borderRadius: '8px',
+                        bgcolor: '#F8FAFC',
+                        border: '1px solid #EAECEF',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                          borderColor: '#CBD5E1'
+                        }
+                      }}>
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
+                          <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: '0.82rem' }}>
+                            {commentMemberName}
+                          </Typography>
+                          <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#CBD5E1' }} />
+                          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.68rem' }}>
+                            {formatCommentDate(c.createdAt)}
+                          </Typography>
                         </Stack>
-                        <Typography variant="body2" sx={{ color: '#475569', lineHeight: 1.6, fontSize: '0.85rem' }}>{c.content}</Typography>
+                        <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.5, fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>
+                          {c.content}
+                        </Typography>
 
                         {normalizedAttachments.length > 0 && (
-                          <Stack direction="row" spacing={1} sx={{ mt: 1.2, flexWrap: 'wrap', gap: 1 }}>
+                          <Stack direction="row" spacing={1} sx={{ mt: 1.25, flexWrap: 'wrap', gap: 1 }}>
                             {normalizedAttachments.map((file, idx) => (
                               <Box
                                 key={file.id || idx}
@@ -437,26 +727,33 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                                 sx={{
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: 0.8,
-                                  p: 0.6,
+                                  gap: 0.75,
+                                  p: 0.5,
                                   pr: 1,
                                   bgcolor: '#FFFFFF',
                                   border: '1px solid #E2E8F0',
-                                  borderRadius: 1.2,
+                                  borderRadius: '8px',
                                   cursor: 'pointer',
-                                  '&:hover': { bgcolor: '#F8FAFC' }
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
+                                  transition: 'all 0.2s ease-in-out',
+                                  '&:hover': {
+                                    borderColor: '#7367f0',
+                                    bgcolor: '#F0EFFF',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 2px 6px rgba(115, 103, 240, 0.06)'
+                                  }
                                 }}
                               >
                                 {file.type === 'image' ? (
                                   <Box
                                     component="img"
                                     src={file.url}
-                                    sx={{ width: 18, height: 18, borderRadius: 0.5, objectFit: 'cover' }}
+                                    sx={{ width: 20, height: 20, borderRadius: '4px', objectFit: 'cover' }}
                                   />
                                 ) : (
-                                  <Paperclip size={12} color="#64748B" />
+                                  <Paperclip size={12} color="#7367f0" />
                                 )}
-                                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#475569', maxWidth: 190 }} noWrap>
+                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', maxWidth: 160 }} noWrap>
                                   {file.name}
                                 </Typography>
                               </Box>
@@ -468,23 +765,46 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                   </Box>
                 );
               })}
+
               {visibleComments < sortedComments.length && (
-                <Button size="small" onClick={() => setVisibleComments(prev => prev + 5)} sx={{ alignSelf: 'center', color: '#6366F1', fontWeight: 700 }}>
+                <Button
+                  size="small"
+                  onClick={() => setVisibleComments(prev => prev + 5)}
+                  sx={{
+                    alignSelf: 'center',
+                    color: '#7367f0',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    fontSize: '0.78rem',
+                    py: 0.25,
+                    px: 1.5,
+                    borderRadius: '8px',
+                    '&:hover': {
+                      bgcolor: 'rgba(115, 103, 240, 0.04)',
+                      textDecoration: 'underline'
+                    }
+                  }}
+                >
                   Load more messages
                 </Button>
               )}
             </Stack>
 
-            {/* New Comment Input */}
-            <CommentInput bugId={bugId} currentUser={currentUser} onCommentAdded={() => fetchBug(true)} />
-          </Box>
+            <Divider sx={{ my: 2.5, borderColor: '#F1F5F9' }} />
+
+            {/* New Comment Input Wrapper */}
+            <Box sx={{ mt: 1 }}>
+              <CommentInput bugId={bugId} currentUser={currentUser} onCommentAdded={() => fetchBug(true)} />
+            </Box>
+          </Card>
+
         </Box>
       </Box>
 
-      {/* ─── Right Column: Issue Info Panels ─── */}
+      {/* ─── Right Column: Issue Info Sidebar ─── */}
       {showSidebar && (
         <Box sx={{
-          width: 280,
+          width: 290,
           bgcolor: '#F8FAFC',
           p: 2,
           display: { xs: 'none', lg: 'flex' },
@@ -492,21 +812,40 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
           gap: 2,
           overflowY: 'auto',
           overflowX: 'hidden',
+          borderLeft: '1px solid #EAECEF',
           ...slimScroll
         }}>
           <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#444050', mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Issue Info</Typography>
+            <Typography sx={{
+              fontWeight: 800,
+              fontSize: '0.72rem',
+              color: '#64748B',
+              mb: 1.5,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5
+            }}>
+              <Info size={13} color="#64748B" /> Issue Details
+            </Typography>
 
-            <Stack spacing={1.5}>
-              {/* Status & Priority Section */}
-              <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)' }}>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
+            <Stack spacing={2}>
+              {/* Status & Priority Card */}
+              <Card sx={{
+                p: 2,
+                borderRadius: '8px',
+                border: '1px solid #EAECEF',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                bgcolor: '#FFFFFF'
+              }}>
+                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
                   Status & Priority
                 </Typography>
                 <Stack spacing={1.5}>
-                  {/* Status */}
+                  {/* Status Select Dropdown */}
                   <Box>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
                       CURRENT STATUS
                     </Typography>
                     {permissions.canChangeBugStatus(currentUser) ? (
@@ -525,48 +864,33 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                         disabled={saving}
                         sx={{
                           height: 32,
-                          borderRadius: 1,
-                          fontWeight: 600,
-                          fontSize: '0.8rem',
-
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
                           bgcolor: ss.bg,
                           color: ss.color,
-
-                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
-
+                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+                          border: `1px solid ${ss.border || 'transparent'}`,
                           '& .MuiOutlinedInput-notchedOutline': {
                             borderColor: 'transparent'
                           },
-
                           '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: ss.border
+                            borderColor: 'transparent'
                           },
-
                           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: ss.border
+                            borderColor: 'transparent'
                           }
                         }}
-
-                        // 🔥 Dropdown container styling (Paper root)
                         MenuProps={{
                           PaperProps: {
                             elevation: 0,
                             sx: {
-                              mt: 1,
-                              borderRadius: 2,
+                              mt: 0.75,
+                              borderRadius: '8px',
                               overflow: 'hidden',
-
                               border: '1px solid #E2E8F0',
-                              boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
-
-                              backdropFilter: 'blur(6px)',
-
-                              py: 0.5
-                            }
-                          },
-                          MenuListProps: {
-                            sx: {
-                              py: 0.5
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                              py: 0.25
                             }
                           }
                         }}
@@ -577,21 +901,22 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                             value={s.id}
                             sx={{
                               fontWeight: 600,
-                              fontSize: '0.8rem',
+                              fontSize: '0.78rem',
                               textTransform: 'capitalize',
-                              borderRadius: 1,
-                              mx: 0.5,
-                              my: 0.25,
+                              borderRadius: '6px',
+                              mx: 0.75,
+                              my: 0.2,
                               transition: 'all 0.15s ease',
                               '&:hover': {
                                 backgroundColor: '#F1F5F9'
                               },
                               '&.Mui-selected': {
-                                backgroundColor: '#EEF2FF',
-                                color: '#4F46E5'
+                                backgroundColor: 'rgba(115, 103, 240, 0.08)',
+                                color: '#7367f0',
+                                fontWeight: 700
                               },
                               '&.Mui-selected:hover': {
-                                backgroundColor: '#E0E7FF'
+                                backgroundColor: 'rgba(115, 103, 240, 0.12)'
                               }
                             }}
                           >
@@ -602,25 +927,34 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                     ) : <StatusBadge status={bug.status} />}
                   </Box>
 
-                  {/* Priority */}
+                  {/* Priority Display */}
                   {bug.priority && (
                     <Box>
-                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
                         PRIORITY LEVEL
                       </Typography>
                       <PriorityBadge priority={bug.priority} />
                     </Box>
                   )}
                 </Stack>
-              </Box>
+              </Card>
 
-              {/* People Section */}
-              <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)' }}>
-                <Stack spacing={1.5}>
-                  {/* Assignee */}
+              {/* People & Assignment Card */}
+              <Card sx={{
+                p: 2,
+                borderRadius: '8px',
+                border: '1px solid #EAECEF',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                bgcolor: '#FFFFFF'
+              }}>
+                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
+                  People & Ownership
+                </Typography>
+                <Stack spacing={2}>
+                  {/* Assignee Card */}
                   <Box>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
-                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B' }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B' }}>
                         ASSIGNED TO
                       </Typography>
                       {permissions.canReassignBug(currentUser) && (
@@ -628,7 +962,14 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                           size="small"
                           variant="text"
                           onClick={() => { setTempDev(bug.assigneeId); setReassignOpen(true); }}
-                          sx={{ fontSize: '0.65rem', fontWeight: 700, p: 0, minWidth: 0, '&:hover': { bgcolor: 'transparent', color: '#6366F1' } }}
+                          sx={{
+                            fontSize: '0.62rem',
+                            fontWeight: 800,
+                            p: 0,
+                            minWidth: 0,
+                            color: '#7367f0',
+                            '&:hover': { bgcolor: 'transparent', color: '#5b50d6', textDecoration: 'underline' }
+                          }}
                         >
                           CHANGE
                         </Button>
@@ -645,125 +986,163 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
                         borderRadius: '8px',
                         bgcolor: '#F8FAFC',
                         cursor: permissions.canReassignBug(currentUser) ? 'pointer' : 'default',
-                        '&:hover': permissions.canReassignBug(currentUser) ? { borderColor: '#E2E8F0', bgcolor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' } : {}
+                        transition: 'all 0.2s ease-in-out',
+                        ...(permissions.canReassignBug(currentUser) ? {
+                          '&:hover': {
+                            borderColor: '#7367f0',
+                            bgcolor: '#FFFFFF',
+                            boxShadow: '0 2px 8px rgba(115, 103, 240, 0.04)'
+                          }
+                        } : {})
                       }}
                     >
                       <Avatar
                         src={aImageSrc}
                         sx={{
-                          width: 32,
-                          height: 32,
-                          fontSize: '14px',
+                          width: 28,
+                          height: 28,
+                          fontSize: '13px',
                           textTransform: 'capitalize',
+                          border: '2px solid #FFFFFF',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                           backgroundColor: aImageSrc ? 'transparent' : aColors,
                         }}
                       >
                         {!aImageSrc && assigneeDisplayName.charAt(0)}
                       </Avatar>
-                      <Box>
-                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', lineHeight: 1.1 }}>{assigneeDisplayName || 'Unassigned'}</Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }} noWrap>
+                          {assigneeDisplayName || 'Unassigned'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 600 }} noWrap>
+                          {getMemberByRef(bug.assigneeId)?.designation || getMemberByRef(bug.assigneeId)?.department || (bug.assigneeId ? 'Developer' : '—')}
+                        </Typography>
                       </Box>
                     </Stack>
                   </Box>
 
-                  {/* Reporter */}
+                  {/* Reporter Card */}
                   <Box>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
                       REPORTED BY
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 0.75, border: '1px solid #F1F5F9', borderRadius: '8px', bgcolor: '#F8FAFC' }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1, border: '1px solid #F1F5F9', borderRadius: '8px', bgcolor: '#F8FAFC' }}>
                       <Avatar
                         src={rImageSrc}
                         sx={{
-                          width: 32,
-                          height: 32,
-                          fontSize: '14px',
+                          width: 28,
+                          height: 28,
+                          fontSize: '13px',
                           textTransform: 'capitalize',
+                          border: '2px solid #FFFFFF',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                           backgroundColor: rImageSrc ? 'transparent' : rColors,
                         }}
                       >
                         {!rImageSrc && reporterDisplayName.charAt(0)}
                       </Avatar>
-                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748B' }}>{reporterDisplayName}</Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }} noWrap>
+                          {reporterDisplayName}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 600 }} noWrap>
+                          {getMemberByRef(bug.reporterId)?.designation || getMemberByRef(bug.reporterId)?.department || 'Reporter'}
+                        </Typography>
+                      </Box>
                     </Stack>
                   </Box>
                 </Stack>
-              </Box>
+              </Card>
 
-              {/* Metadata & Dates Section */}
-              <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)' }}>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
+              {/* Metadata & Timeline Card */}
+              <Card sx={{
+                p: 2,
+                borderRadius: '8px',
+                border: '1px solid #EAECEF',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                bgcolor: '#FFFFFF'
+              }}>
+                <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
                   Additional Info
                 </Typography>
-                <Stack spacing={1.5}>
+                <Stack spacing={2}>
                   {/* Category */}
                   {bug.category && (
                     <Box>
-                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
                         CATEGORY
                       </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', bgcolor: '#F1F5F9', px: 1, py: 0.4, borderRadius: 1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#7367f0', bgcolor: 'rgba(115, 103, 240, 0.08)', px: 1, py: 0.35, borderRadius: '6px', fontSize: '0.7rem', display: 'inline-block' }}>
                         {typeof bug.category === 'object' ? bug.category.label : bug.category}
                       </Typography>
                     </Box>
                   )}
 
-                  {/* Environment */}
+                  {/* Environment Tags */}
                   <Box>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
                       ENVIRONMENT
                     </Typography>
                     {bug.environment ? (
-                      <Stack direction="row" spacing={0.75}>
+                      <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
                         {(() => {
                           try {
                             const env = typeof bug.environment === 'string' ? JSON.parse(bug.environment) : bug.environment;
                             const activeEnvs = Object.entries(env).filter(([_, active]) => active);
                             return activeEnvs.length > 0 ? activeEnvs.map(([name]) => (
-                              <Typography key={name} variant="caption" sx={{ fontWeight: 600, color: '#059669', bgcolor: '#DCFCE7', px: 0.75, py: 0.3, borderRadius: 1, textTransform: 'capitalize', fontSize: '0.7rem' }}>
+                              <Typography key={name} variant="caption" sx={{ fontWeight: 700, color: '#28C76F', bgcolor: 'rgba(40, 199, 111, 0.08)', px: 0.75, py: 0.3, borderRadius: '6px', textTransform: 'capitalize', fontSize: '0.68rem' }}>
                                 {name}
                               </Typography>
                             )) : (
-                              <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic' }}>
+                              <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>
                                 Not Specified
                               </Typography>
                             );
                           } catch (e) {
-                            return <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic' }}>Not Specified</Typography>;
+                            return <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>Not Specified</Typography>;
                           }
                         })()}
                       </Stack>
                     ) : (
-                      <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>
                         Not Specified
                       </Typography>
                     )}
                   </Box>
 
-                  {/* Dates */}
+                  {/* Timeline Dates */}
                   <Box>
-                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#64748B', mb: 1 }}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 1 }}>
                       TIMELINE
                     </Typography>
-                    <Stack spacing={1}>
+                    <Stack spacing={0.75}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Created</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', bgcolor: '#F8FAFC', px: 0.75, py: 0.25, borderRadius: 0.5, border: '1px solid #E2E8F0', fontSize: '0.75rem' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', bgcolor: '#F8FAFC', px: 0.75, py: 0.25, borderRadius: '6px', border: '1px solid #EAECEF', fontSize: '0.72rem' }}>
                           {new Date(bug.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                         </Typography>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Due Date</Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: bug.dueDate && bug.dueDate !== 'Not set' ? '#DC2626' : '#9CA3AF', bgcolor: bug.dueDate && bug.dueDate !== 'Not set' ? '#FEE2E2' : '#F8FAFC', px: 0.75, py: 0.25, borderRadius: 0.5, border: '1px solid #E2E8F0', fontSize: '0.75rem' }}>
+                        <Typography variant="caption" sx={{
+                          fontWeight: 700,
+                          color: bug.dueDate && bug.dueDate !== 'Not set' ? '#EA5455' : '#94A3B8',
+                          bgcolor: bug.dueDate && bug.dueDate !== 'Not set' ? 'rgba(234, 84, 85, 0.08)' : '#F8FAFC',
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          border: '1px solid #EAECEF',
+                          fontSize: '0.72rem'
+                        }}>
                           {formatDate(bug.dueDate)}
                         </Typography>
                       </Stack>
                     </Stack>
                   </Box>
                 </Stack>
-              </Box>
+              </Card>
 
-              {/* History Section */}
+              {/* History / Audit Log Section */}
               {(bug.history && bug.history.length > 0) && (
                 <TimelineSection
                   timeline={bug.history}
@@ -777,8 +1156,18 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
         </Box>
       )}
 
-      {/* Modals */}
-      <BugModal open={editOpen} onClose={() => setEditOpen(false)} bug={bug} onSuccess={() => { setEditOpen(false); fetchBug(); onRefreshList(); }} />
+      {/* Modals & Dialogs */}
+      <BugModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        bug={bug}
+        onSuccess={() => {
+          setEditOpen(false);
+          fetchBug();
+          onRefreshList();
+        }}
+      />
+
       <ReassignDialog
         open={reassignOpen}
         onClose={() => setReassignOpen(false)}
@@ -790,7 +1179,6 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
         bug={bug}
         onConfirm={async (devId, remark) => {
           const previousAssignee = bug.assigneeId || bug.assignee;
-          const newAssigneeName = getMemberNameByRef(devId, 'Unknown');
           await patch({ assigneeId: devId, remark: remark });
           setReassignOpen(false);
           fetchBug();
@@ -805,6 +1193,7 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
           });
         }}
       />
+
       <StatusDialog
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
@@ -815,6 +1204,7 @@ export default function IssueDetailPanel({ bugId, currentUser, developers, taskA
         }}
         saving={saving}
       />
+
       <AttachmentViewer
         open={viewerOpen}
         onClose={() => setViewerOpen(false)}

@@ -23,6 +23,7 @@ import DepartmentAssigneeAutocomplete from './Common/DepartmentAssigneeAutocompl
 import CustomAutocomplete from './Common/CustomAutocomplete.jsx';
 import CustomDatePicker from './Common/CustomDatePicker.jsx';
 import ImageDrawEditor from './ImageDrawEditor.jsx';
+import { decodeUrlParams } from '@/utils/urlParams';
 
 export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo = '', taskName = '', taskId = '', initialAttachment = null, assigneeids = '', dueDate = '' }) {
   const isEdit = !!bug;
@@ -40,23 +41,47 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const assignees = useAssignees(open);
   const [errors, setErrors] = useState({});
 
-  // Filter assignees based on assigneeids from URL and ensure only developers are selected
+  // Get assigneeids from props, or decode from URL parameter 'data'
+  const resolvedAssigneeIds = useMemo(() => {
+    if (assigneeids) return assigneeids;
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const dataParam = searchParams.get('data');
+      if (dataParam) {
+        try {
+          const decoded = decodeUrlParams(dataParam);
+          return decoded.assigneeids || '';
+        } catch (error) {
+          console.error('Error decoding params in BugModal:', error);
+        }
+      }
+    }
+    return '';
+  }, [assigneeids]);
+
+  // Filter assignees based on assigneeids from URL or props and ensure only developers are selected when direct
   const filteredAssignees = (() => {
-    if (isEdit) return assignees; // Don't filter if editing
     let result = assignees;
     
-    // First, filter by assigneeids from URL
-    if (assigneeids) {
-      const assigneeIdArray = assigneeids.split(',').map(id => id.trim()).filter(id => id);
+    // First, check if we have task context
+    if (resolvedAssigneeIds) {
+      const assigneeIdArray = resolvedAssigneeIds.split(',').map(id => id.trim()).filter(id => id);
       if (assigneeIdArray.length > 0) {
         result = result.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
+        // When in task context, only show the task assignees (do not filter by developer designation)
+        return result;
       }
     }
     
-    // Then, filter to only show developers
-    const developers = result.filter(a => (a?.designation || '').toLowerCase().includes('developer'));
-    
-    return developers.length > 0 ? developers : result;
+    // Direct context:
+    if (isEdit) {
+      // When editing direct, show every assignee
+      return assignees;
+    } else {
+      // When creating direct, filter to only show developers
+      const developers = result.filter(a => (a?.designation || '').toLowerCase().includes('developer'));
+      return developers.length > 0 ? developers : result;
+    }
   })();
 
   const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -95,12 +120,12 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
   // Auto-select the top assignee if not editing
   useEffect(() => {
-    if (open && !isEdit && assigneeids && filteredAssignees.length > 0 && !formData.assigneeId && !hasAutoSelected.current) {
+    if (open && !isEdit && resolvedAssigneeIds && filteredAssignees.length > 0 && !formData.assigneeId && !hasAutoSelected.current) {
       const topAssignee = filteredAssignees[0];
       setFormData(prev => ({ ...prev, assigneeId: topAssignee?.id || '' }));
       hasAutoSelected.current = true;
     }
-  }, [open, assigneeids, filteredAssignees, isEdit, formData.assigneeId]);
+  }, [open, resolvedAssigneeIds, filteredAssignees, isEdit, formData.assigneeId]);
 
   const handleDrawEditorSave = (editedFile) => {
     if (editingImageIndex !== null) {

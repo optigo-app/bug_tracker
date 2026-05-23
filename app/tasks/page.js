@@ -22,11 +22,13 @@ import {
   Clock, CheckCircle2, AlertCircle, TrendingUp, BarChart3
 } from 'lucide-react';
 import { fetchTaskDataFullApi } from '@/src/utils/taskApi';
+import { useBugContext } from '@/contexts/BugContext';
 import { statusColors, priorityColors } from '@/utils/glocalfunc';
 import { encodeUrlParams } from '@/utils/urlParams';
 
 export default function TasksPage() {
   const router = useRouter();
+  const { fetchBugsGlobal } = useBugContext();
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +51,16 @@ export default function TasksPage() {
     try {
       const taskData = await fetchTaskDataFullApi();
       const tasks = taskData?.rd || [];
-      processAndSetTasks(tasks);
+
+      // Fetch bugs list to count bugs task-wise
+      let bugsData = [];
+      try {
+        bugsData = await fetchBugsGlobal(forceRefresh);
+      } catch (bugError) {
+        console.error("Error fetching bugs for task page:", bugError);
+      }
+
+      processAndSetTasks(tasks, bugsData);
     } catch (error) {
       console.error("Error in fetchTaskData:", error);
     } finally {
@@ -57,7 +68,7 @@ export default function TasksPage() {
     }
   };
 
-  const processAndSetTasks = (tasks) => {
+  const processAndSetTasks = (tasks, bugsData = []) => {
     const priorityData = JSON.parse(sessionStorage.getItem('taskpriorityData') || '[]');
     const statusData = JSON.parse(sessionStorage.getItem('taskstatusData') || '[]');
     const taskProject = JSON.parse(sessionStorage.getItem('taskprojectData') || '[]');
@@ -77,6 +88,10 @@ export default function TasksPage() {
         ?.map((user) => ({
           ...user,
         }));
+
+      const taskIdVal = String(task.taskid || task.id || '');
+      const bugCount = bugsData.filter(bug => String(bug.taskId || '') === taskIdVal).length;
+
       return {
         ...task,
         id: task.taskid || task.id || Math.random(),
@@ -86,6 +101,7 @@ export default function TasksPage() {
         assignee: matchedAssignees ?? [],
         category: category?.labelname,
         startDate: task.StartDate,
+        bugCount: bugCount
       };
     };
     
@@ -256,6 +272,41 @@ export default function TasksPage() {
           )}
         </Stack>
       )
+    },
+    {
+      field: 'bugCount',
+      headerName: 'BUGS',
+      width: 100,
+      renderCell: (params) => {
+        const count = params.value || 0;
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            {count > 0 ? (
+              <Chip
+                icon={<AlertCircle size={12} style={{ color: '#EA5455' }} />}
+                label={count}
+                size="small"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  color: '#EA5455',
+                  bgcolor: 'rgba(234, 84, 85, 0.1)',
+                  border: '1px solid rgba(234, 84, 85, 0.2)',
+                  borderRadius: '4px',
+                  '& .MuiChip-icon': {
+                    marginLeft: '4px',
+                    marginRight: '-4px'
+                  }
+                }}
+              />
+            ) : (
+              <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE', fontWeight: 500 }}>
+                0
+              </Typography>
+            )}
+          </Box>
+        );
+      }
     },
     {
       field: 'category',

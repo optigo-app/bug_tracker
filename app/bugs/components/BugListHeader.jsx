@@ -1,4 +1,4 @@
-import { Box, Stack, InputBase, IconButton, Tooltip, Chip, Button } from '@mui/material';
+import { Box, Stack, InputBase, IconButton, Tooltip, Chip, Button, Tabs, Tab } from '@mui/material';
 import { Filter, SortAsc } from 'lucide-react';
 
 export default function BugListHeader({
@@ -8,7 +8,9 @@ export default function BugListHeader({
   setStatusFilter,
   setFilterAnchorEl,
   setSortAnchorEl,
-  statusOptions = []
+  statusOptions = [],
+  filterScope,
+  setFilterScope
 }) {
   return (
     <Box sx={{
@@ -107,6 +109,52 @@ export default function BugListHeader({
           </IconButton>
         </Tooltip>
       </Stack>
+
+      {/* Me vs Team Filter Switch */}
+      <Tabs
+        value={filterScope}
+        onChange={(e, val) => setFilterScope(val)}
+        variant="fullWidth"
+        sx={{
+          mt: 1.5,
+          minHeight: 34,
+          height: 34,
+          bgcolor: '#F8FAFC',
+          borderRadius: 2,
+          p: 0.5,
+          border: '1px solid #E2E8F0',
+          '& .MuiTabs-flexContainer': {
+            height: '100%',
+          },
+          '& .MuiTab-root': {
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '0.75rem',
+            minHeight: '100%',
+            height: '100%',
+            borderRadius: 1.5,
+            color: '#64748B',
+            minWidth: 0,
+            padding: '4px 8px',
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              color: '#7367f0',
+            },
+            '&.Mui-selected': {
+              color: '#7367f0',
+              bgcolor: 'white',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03)',
+              fontWeight: 700,
+            }
+          },
+          '& .MuiTabs-indicator': {
+            display: 'none',
+          }
+        }}
+      >
+        <Tab label="Me" value="me" />
+        <Tab label="Team" value="team" />
+      </Tabs>
 
       {/* Active Filters */}
       {(statusFilter !== 'ALL' || search) && (

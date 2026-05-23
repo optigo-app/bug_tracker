@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box, Typography, Button, Avatar, Stack, IconButton, CircularProgress, MenuItem,
   Tooltip,
@@ -20,7 +20,6 @@ import ReassignDialog from '@/components/ReassignDialog';
 import StatusDialog from '@/components/StatusDialog';
 import { permissions } from '@/utils/permissions';
 import AttachmentSlider from '@/components/AttachmentSlider';
-import { fetchBugListApi } from '@/app/api/buglistApi';
 import { deleteBugApi } from '@/app/api/bugdeleteApi';
 import { getBugDetailApi } from '@/app/api/bugdetailApi';
 import { updateBugApi } from '@/app/api/bugupdateApi';
@@ -52,17 +51,20 @@ function BugsPageContent() {
   const taskIdParam = decodedParams.taskid;
   const assigneeIdsParam = decodedParams.assigneeids;
   const dueDateParam = decodedParams.duedate;
-  const { setBugs: setBugsContext } = useBugContext();
+  const {
+    bugs: globalBugs,
+    setBugs,
+    isLoading,
+    error,
+    fetchBugsGlobal
+  } = useBugContext();
 
-  const [bugs, setBugs] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedId, setSelectedId] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [developers, setDevelopers] = useState([]);
   const [taskAssignees, setTaskAssignees] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [bugToDelete, setBugToDelete] = useState(null);
@@ -72,6 +74,7 @@ function BugsPageContent() {
   const [editedImage, setEditedImage] = useState(null);
 
   // Filter and Sort states
+  const [filterScope, setFilterScope] = useState('me');
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'priority-high', 'priority-low'
@@ -124,13 +127,18 @@ function BugsPageContent() {
     if (userProfileData) {
       try {
         const profile = JSON.parse(userProfileData);
-        setCurrentUser({
+        const userObj = {
           id: profile.id,
           name: `${profile.firstname} ${profile.lastname}`.trim() || profile.id,
           role: profile.designation || 'User',
           email: profile.userid,
           ...profile
-        });
+        };
+        setCurrentUser(userObj);
+        
+        // Dynamically set default filter scope based on role
+        const shouldFilter = permissions.shouldFilterByAssignee(userObj);
+        setFilterScope(shouldFilter ? 'me' : 'team');
       } catch (error) {
         console.error('Error parsing UserProfileData:', error);
       }
@@ -200,63 +208,83 @@ function BugsPageContent() {
     router.replace(nextQuery ? `/bugs?${nextQuery}` : '/bugs');
   }, [openReportParam, currentUser, router, searchParams, taskNoParam]);
 
-  const fetchBugs = useCallback(async () => {
+  const fetchBugs = useCallback(async (forceRefresh = false) => {
     if (!currentUser?.id) return;
-    setIsLoading(true); setError(null);
     try {
-      const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
-      const response = await fetchBugListApi({
-        taskId: taskIdParam || '',
-        status: '',
-        assigneeId: shouldFilter ? currentUser?.id : '',
-        reporterId: shouldFilter ? currentUser?.id : ''
-      });
-      const data = response?.rd || response?.rd1 || [];
-      const normalizedBugs = normalizeBugList(data);
-      setBugs(normalizedBugs);
-      setBugsContext(normalizedBugs);
-      if (data.length > 0 && !selectedId) setSelectedId(data[0].id);
+      await fetchBugsGlobal(forceRefresh);
     } catch (err) {
-      setError('Connection failed. Check your database status.');
-    } finally { setIsLoading(false); }
-  }, [taskIdParam, currentUser?.id, setBugsContext]);
-
-  useEffect(() => { fetchBugs(); }, [fetchBugs]);
-
-  const filteredBugs = bugs.filter(bug => {
-    const query = (search || '').toLowerCase();
-    const title = String(bug?.title || '').toLowerCase();
-    const id = String(bug?.id || '').toLowerCase();
-    const taskNo = String(bug?.taskNo || '').toLowerCase();
-    const bugNo = String(bug?.bugNo || '').toLowerCase();
-
-    const matchSearch = title.includes(query) ||
-      id.includes(query) ||
-      taskNo.includes(query) ||
-      bugNo.includes(query);
-    const matchStatus = statusFilter === 'ALL' || String(bug?.statusId || bug?.status) === statusFilter;
-    return matchSearch && matchStatus;
-  }).filter(bug => {
-    const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
-    if (!shouldFilter) return true;
-    const isAssigned = String(bug.assigneeId) === String(currentUser?.id) || String(bug.assignee) === String(currentUser?.id);
-    const isReporter = String(bug.reporterId) === String(currentUser?.id) || String(bug.reporter?.id || bug.reporter) === String(currentUser?.id);
-    return isAssigned || isReporter;
-  }).sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-    if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-    if (sortBy === 'priority-high') {
-      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
-      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
-      return pB - pA;
+      console.error('Error fetching global bugs:', err);
     }
-    if (sortBy === 'priority-low') {
-      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
-      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
-      return pA - pB;
-    }
-    return 0;
-  });
+  }, [currentUser?.id, fetchBugsGlobal]);
+
+  useEffect(() => {
+    fetchBugs();
+  }, [fetchBugs]);
+
+  const filteredBugs = useMemo(() => {
+    return globalBugs
+      .filter((bug) => {
+        // 1. Filter by task id if parameter is present
+        if (taskIdParam && String(bug.taskId || '') !== String(taskIdParam)) {
+          return false;
+        }
+
+        // 2. Filter by search query
+        const query = (search || '').toLowerCase();
+        const title = String(bug?.title || '').toLowerCase();
+        const id = String(bug?.id || '').toLowerCase();
+        const taskNo = String(bug?.taskNo || '').toLowerCase();
+        const bugNo = String(bug?.bugNo || '').toLowerCase();
+
+        const matchSearch =
+          title.includes(query) ||
+          id.includes(query) ||
+          taskNo.includes(query) ||
+          bugNo.includes(query);
+        const matchStatus =
+          statusFilter === 'ALL' || String(bug?.statusId || bug?.status) === statusFilter;
+        return matchSearch && matchStatus;
+      })
+      .filter((bug) => {
+        // 3. Filter by filterScope (me vs team)
+        if (filterScope === 'team') return true;
+        const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
+        if (!shouldFilter && filterScope !== 'me') return true;
+
+        const isAssigned =
+          String(bug.assigneeId) === String(currentUser?.id) ||
+          String(bug.assigneeId) === String(currentUser?.userid) ||
+          (bug.assignee && typeof bug.assignee === 'object'
+            ? String(bug.assignee.id) === String(currentUser?.id) ||
+              String(bug.assignee.userid) === String(currentUser?.userid)
+            : String(bug.assignee) === String(currentUser?.id));
+
+        const isReporter =
+          String(bug.reporterId) === String(currentUser?.id) ||
+          String(bug.reporterId) === String(currentUser?.userid) ||
+          (bug.reporter && typeof bug.reporter === 'object'
+            ? String(bug.reporter.id) === String(currentUser?.id) ||
+              String(bug.reporter.userid) === String(currentUser?.userid)
+            : String(bug.reporter?.id || bug.reporter) === String(currentUser?.id));
+
+        return isAssigned || isReporter;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+        if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+        if (sortBy === 'priority-high') {
+          const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+          const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+          return pB - pA;
+        }
+        if (sortBy === 'priority-low') {
+          const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+          const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+          return pA - pB;
+        }
+        return 0;
+      });
+  }, [globalBugs, taskIdParam, search, statusFilter, filterScope, currentUser, sortBy, priorityMap]);
 
   // Keep selectedId valid when filter changes
   useEffect(() => {
@@ -365,6 +393,8 @@ function BugsPageContent() {
             setFilterAnchorEl={setFilterAnchorEl}
             setSortAnchorEl={setSortAnchorEl}
             statusOptions={statusOptions}
+            filterScope={filterScope}
+            setFilterScope={setFilterScope}
           />
 
           <Box
@@ -403,9 +433,9 @@ function BugsPageContent() {
                   reassignInfo={reassignInfo}
                   onUndoReassign={async () => {
                     if (reassignInfo?.previousAssignee) {
-                      await updateBugApi({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee, remark: 'Reverted reassignment', userId: currentUser?.id, reporterId: bugs.find(b => b.id === reassignInfo.bugId)?.reporterId });
+                      await updateBugApi({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee, remark: 'Reverted reassignment', userId: currentUser?.id, reporterId: globalBugs.find(b => b.id === reassignInfo.bugId)?.reporterId });
                       setReassignInfo(null);
-                      fetchBugs();
+                      fetchBugs(true);
                     }
                   }}
                 />

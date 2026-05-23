@@ -7,7 +7,8 @@ export const fetchBugListApi = async (params = {}) => {
       taskId: params.taskId || "",
       status: params.status || "",
       assigneeId: params.assigneeId || "",
-      reporterId: params.reporterId || ""
+      reporterId: params.reporterId || "",
+      filterType: params.filterType || ""
     },
     f: 'Bug Management (bugmaster)',
   });

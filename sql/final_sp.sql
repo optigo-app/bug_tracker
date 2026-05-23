@@ -1,3 +1,4 @@
+USE [404146_CentralUser]
 GO
 /****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 22-05-2026 13:51:13 ******/
 SET ANSI_NULLS ON
@@ -71,6 +72,7 @@ BEGIN
             , @bug_dueDate NVARCHAR(50)  = ''
             , @bug_categoryId NVARCHAR(50)  = ''
             , @bug_environment NVARCHAR(200) = ''
+            , @bug_remark NVARCHAR(MAX) = ''
             , @comment_bugId NVARCHAR(50) = ''
             , @comment_userId NVARCHAR(50) = ''
             , @comment_content NVARCHAR(MAX) = ''
@@ -87,6 +89,7 @@ BEGIN
             , @input_priorityId NVARCHAR(50) = ''
             , @input_category NVARCHAR(50) = ''
             , @input_categoryId NVARCHAR(50) = ''
+            , @bug_filterType NVARCHAR(50) = ''
 
         BEGIN TRY
 
@@ -112,6 +115,7 @@ BEGIN
                     ,@input_category  = ISNULL(category, '')
                     ,@input_categoryId = ISNULL(categoryId, '')
                     ,@bug_environment = ISNULL(environment, '')
+                    ,@bug_remark      = ISNULL(remark, '')
 
                     ,@comment_bugId   = ISNULL(bugId, '')
                     ,@comment_userId  = ISNULL(userId, '')
@@ -123,6 +127,7 @@ BEGIN
                     ,@notif_message   = ISNULL(message, '')
                     ,@notif_type      = ISNULL([type], '')
                     ,@notif_relatedId = ISNULL(relatedId, '')
+                    ,@bug_filterType  = ISNULL(filterType, '')
                 FROM OPENJSON(@p)
                 WITH
                 (
@@ -142,6 +147,7 @@ BEGIN
                     ,category NVARCHAR(50) '$.category'
                     ,categoryId NVARCHAR(50) '$.categoryId'
                     ,environment NVARCHAR(200) '$.environment'
+                    ,remark NVARCHAR(MAX) '$.remark'
                     ,bugId NVARCHAR(50) '$.bugId'
                     ,userId NVARCHAR(50) '$.userId'
                     ,content NVARCHAR(MAX) '$.content'
@@ -149,6 +155,7 @@ BEGIN
                     ,message NVARCHAR(MAX) '$.message'
                     ,[type] NVARCHAR(50) '$.type'
                     ,relatedId NVARCHAR(50) '$.relatedId'
+                    ,filterType NVARCHAR(50) '$.filterType'
                 )
 
                 SET @bug_statusId = COALESCE(NULLIF(@input_statusId, ''), NULLIF(@input_status, ''), '')
@@ -161,12 +168,28 @@ BEGIN
             ------------------------------------------------
             IF (@mode = 'buglist')
             BEGIN
+                IF (@bug_filterType = 'me')
+                BEGIN
+                    IF (ISNULL(@bug_assigneeId, '') = '')
+                    BEGIN
+                        SET @bug_assigneeId = @appuserid
+                    END
+                    IF (ISNULL(@bug_reporterId, '') = '')
+                    BEGIN
+                        SET @bug_reporterId = @appuserid
+                    END
+                END
+                ELSE IF (@bug_filterType = 'team')
+                BEGIN
+                    SET @bug_assigneeId = ''
+                    SET @bug_reporterId = ''
+                END
+
                 SET @SQL = '
                     SELECT *, statusId AS [status], priorityId AS [priority], categoryId AS [category]
                     FROM [' + @DBNAME + '].[dbo].[bug_Bugs]
                     WHERE (''' + @bug_taskId + ''' = '''' OR taskId = ''' + @bug_taskId + ''')
                     AND (''' + @bug_statusId + ''' = '''' OR statusId = ''' + @bug_statusId + ''')
-                    AND (''' + @bug_categoryId + ''' = '''' OR categoryId = ''' + @bug_categoryId + ''')
                     AND (
                         (''' + @bug_assigneeId + ''' = '''' AND ''' + @bug_reporterId + ''' = '''')
                         OR (''' + @bug_assigneeId + ''' <> '''' AND assigneeId = ''' + @bug_assigneeId + ''')
@@ -296,35 +319,35 @@ BEGIN
                     IF @newStatusId IS NOT NULL AND @newStatusId <> @oldStatusId
                     BEGIN
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
-                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''statusId'', @oldStatusId, @newStatusId, ''Updated via bugupdate'')
+                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''statusId'', @oldStatusId, @newStatusId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                     END
 
                     -- Track History for Priority
                     IF @newPriorityId IS NOT NULL AND @newPriorityId <> @oldPriorityId
                     BEGIN
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
-                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''priorityId'', @oldPriorityId, @newPriorityId, ''Updated via bugupdate'')
+                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''priorityId'', @oldPriorityId, @newPriorityId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                     END
 
                     -- Track History for Assignee
                     IF @newAssigneeId IS NOT NULL AND @newAssigneeId <> @oldAssigneeId
                     BEGIN
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
-                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''assigneeId'', @oldAssigneeId, @newAssigneeId, ''Updated via bugupdate'')
+                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''assigneeId'', @oldAssigneeId, @newAssigneeId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                     END
 
                     -- Track History for Category
                     IF @newCategoryId IS NOT NULL AND @newCategoryId <> @oldCategoryId
                     BEGIN
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
-                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''categoryId'', @oldCategoryId, @newCategoryId, ''Updated via bugupdate'')
+                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''categoryId'', @oldCategoryId, @newCategoryId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                     END
 
                     -- Track History for Title
                     IF @newTitle IS NOT NULL AND @newTitle <> @oldTitle
                     BEGIN
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
-                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''title'', @oldTitle, @newTitle, ''Updated via bugupdate'')
+                        VALUES (''bh'' + CAST(NEWID() AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''title'', @oldTitle, @newTitle, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                     END
 
                     -- Update Bug

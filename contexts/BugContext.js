@@ -1,6 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { fetchBugListApi } from '@/app/api/buglistApi';
+import { normalizeBugList } from '@/utils/normalizeBugData';
 
 const BugContext = createContext();
 
@@ -8,6 +10,42 @@ export const BugProvider = ({ children }) => {
   const [bugs, setBugs] = useState([]);
   const [totalBugCount, setTotalBugCount] = useState(0);
   const [todayBugCount, setTodayBugCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [bugsLoaded, setBugsLoaded] = useState(false);
+
+  const fetchBugsGlobal = useCallback(async (forceRefresh = false) => {
+    let currentBugs = [];
+    setBugs((prev) => {
+      currentBugs = prev;
+      return prev;
+    });
+
+    // Return cache if loaded and not forced to refresh
+    if (bugsLoaded && !forceRefresh) {
+      return currentBugs;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetchBugListApi({
+        taskId: '',
+        filterType: 'team',
+      });
+      const data = response?.rd || response?.rd1 || [];
+      const normalizedBugs = normalizeBugList(data);
+      setBugs(normalizedBugs);
+      setBugsLoaded(true);
+      return normalizedBugs;
+    } catch (err) {
+      console.error('Error fetching global bugs:', err);
+      setError('Failed to fetch bug list.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [bugsLoaded]);
 
   useEffect(() => {
     const today = new Date();
@@ -25,7 +63,18 @@ export const BugProvider = ({ children }) => {
   }, [bugs]);
 
   return (
-    <BugContext.Provider value={{ bugs, setBugs, totalBugCount, todayBugCount }}>
+    <BugContext.Provider
+      value={{
+        bugs,
+        setBugs,
+        totalBugCount,
+        todayBugCount,
+        isLoading,
+        error,
+        bugsLoaded,
+        fetchBugsGlobal,
+      }}
+    >
       {children}
     </BugContext.Provider>
   );
@@ -38,3 +87,4 @@ export const useBugContext = () => {
   }
   return context;
 };
+

@@ -16,6 +16,7 @@ import {
 import DepartmentAssigneeAutocomplete from './Common/DepartmentAssigneeAutocomplete';
 import RemarkSelector from './RemarkSelector';
 import { commonTextFieldProps } from '@/utils/glocalfunc';
+import { decodeUrlParams } from '@/utils/urlParams';
 
 export default function ReassignDialog({ 
     open, 
@@ -26,7 +27,8 @@ export default function ReassignDialog({
     onConfirm, 
     saving, 
     currentUser,
-    bug
+    bug,
+    assigneeids = ''
 }) {
     const [remark, setRemark] = useState('');
     const [customRemark, setCustomRemark] = useState('');
@@ -57,14 +59,46 @@ export default function ReassignDialog({
         }
     }, [open]);
 
+    const resolvedAssigneeIds = React.useMemo(() => {
+        if (assigneeids) return assigneeids;
+        if (typeof window !== 'undefined') {
+            const searchParams = new URLSearchParams(window.location.search);
+            const dataParam = searchParams.get('data');
+            if (dataParam) {
+                try {
+                    const decoded = decodeUrlParams(dataParam);
+                    return decoded.assigneeids || '';
+                } catch (error) {
+                    console.error('Error decoding params in ReassignDialog:', error);
+                }
+            }
+        }
+        return '';
+    }, [assigneeids]);
+
     // Map developers to DepartmentAssigneeAutocomplete format if needed
-    const mappedDevelopers = developers.map(dev => ({
-        id: dev.id,
-        firstname: dev.firstname || (typeof dev.name === 'string' ? dev.name.split(' ')[0] : '') || '',
-        lastname: dev.lastname || (typeof dev.name === 'string' ? dev.name.split(' ').slice(1).join(' ') : '') || '',
-        department: dev.department || dev.role || '',
-        designation: dev.designation || dev.role || ''
-    }));
+    const mappedDevelopers = React.useMemo(() => {
+        return developers.map(dev => ({
+            id: dev.id,
+            firstname: dev.firstname || (typeof dev.name === 'string' ? dev.name.split(' ')[0] : '') || '',
+            lastname: dev.lastname || (typeof dev.name === 'string' ? dev.name.split(' ').slice(1).join(' ') : '') || '',
+            department: dev.department || dev.role || '',
+            designation: dev.designation || dev.role || ''
+        }));
+    }, [developers]);
+
+    const filteredAssignees = React.useMemo(() => {
+        const baseList = assignees.length > 0 ? assignees : mappedDevelopers;
+        if (resolvedAssigneeIds) {
+            const assigneeIdArray = resolvedAssigneeIds.split(',').map(id => id.trim()).filter(id => id);
+            if (assigneeIdArray.length > 0) {
+                return baseList.filter(user => 
+                    assigneeIdArray.includes(String(user.id)) || assigneeIdArray.includes(String(user.userid))
+                );
+            }
+        }
+        return baseList;
+    }, [assignees, mappedDevelopers, resolvedAssigneeIds]);
 
     const handleClose = () => {
         setRemark('');
@@ -151,11 +185,11 @@ export default function ReassignDialog({
                             Assign To <Typography sx={{ color: '#DC2626' }}>*</Typography>
                         </Typography>
                         <DepartmentAssigneeAutocomplete
-                            options={assignees.length > 0 ? assignees : mappedDevelopers}
+                            options={filteredAssignees}
                             label=""
                             placeholder="Search assignee..."
                             multiple={false}
-                            value={assignees.length > 0 ? assignees.find(a => a.id === selectedDev) || null : (mappedDevelopers.find(d => d.id === selectedDev) || null)}
+                            value={filteredAssignees.find(a => a.id === selectedDev) || null}
                             onChange={(newValue) => {
                                 setSelectedDev(newValue?.id || '');
                                 setError('');

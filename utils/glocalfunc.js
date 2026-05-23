@@ -67,6 +67,22 @@ export const formatDate = (d) => {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+export const formatCommentDate = (dateString) => {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+
+    return date.toLocaleString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC', // remove if you want IST
+    });
+};
+
 /**
  * Generates a consistent background and text color for an avatar based on a string (e.g., name or email).
  * @param {string} name - The name or identifier to generate a color for.

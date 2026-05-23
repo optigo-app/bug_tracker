@@ -50,14 +50,65 @@ export default function DrawTopbar({ onExportPng, onExportSvg, onSave, onSaveAnd
         >
           Export
         </Button>
-        <Button
-          variant="contained"
-          className={styles.continueButton}
-          disableElevation
-          onClick={onSaveAndNew || onSave}
-        >
-          {onSaveAndNew ? 'Save & New' : 'Continue'}
-        </Button>
+        {onSaveAndNew && onSave ? (
+          <>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={onSave}
+              sx={{
+                minHeight: 34,
+                borderRadius: '10px',
+                padding: '0 16px',
+                bgcolor: '#7367f0',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 700,
+                textTransform: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: '#6366f1',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(115, 103, 240, 0.3)'
+                }
+              }}
+            >
+              Save
+            </Button>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={onSaveAndNew}
+              sx={{
+                minHeight: 34,
+                borderRadius: '10px',
+                padding: '0 16px',
+                bgcolor: '#28c76f',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: 700,
+                textTransform: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: '#20a85c',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(40, 199, 111, 0.3)'
+                }
+              }}
+            >
+              Save & New
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="contained"
+            className={styles.continueButton}
+            disableElevation
+            onClick={onSaveAndNew || onSave}
+          >
+            {onSaveAndNew ? 'Save & New' : 'Continue'}
+          </Button>
+        )}
         <Menu
           anchorEl={anchorEl}
           open={isOpen}

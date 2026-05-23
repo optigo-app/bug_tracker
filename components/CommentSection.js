@@ -9,7 +9,7 @@ import {
     Divider
 } from '@mui/material';
 import { MessageSquare, File } from 'lucide-react';
-import { getAvatarColor, getInitials, handleImageError, formatDateTime } from '@/utils/glocalfunc';
+import { getAvatarColor, getInitials, handleImageError, formatCommentDate } from '@/utils/glocalfunc';
 import CommentInput from '@/components/CommentInput';
 
 export default function CommentSection({
@@ -65,7 +65,7 @@ export default function CommentSection({
                                                 {userName}
                                             </Typography>
                                             <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500 }}>
-                                                {formatDateTime(c.createdAt)}
+                                                {formatCommentDate(c.createdAt)}
                                             </Typography>
                                         </Stack>
                                         <Typography variant="body2" sx={{
