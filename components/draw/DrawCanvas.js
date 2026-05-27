@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import styles from "./draw-editor.module.css";
 
 export default function DrawCanvas({
@@ -21,6 +22,30 @@ export default function DrawCanvas({
   shapes,
   viewport,
 }) {
+  // Use a ref for the handleWheel to ensure the effect doesn't re-run unnecessarily
+  // while still having access to the latest handleWheel function.
+  const handleWheelRef = useRef(handleWheel);
+  useEffect(() => {
+    handleWheelRef.current = handleWheel;
+  }, [handleWheel]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onWheel = (e) => {
+      handleWheelRef.current(e);
+    };
+
+    // We must use a non-passive listener to be able to call e.preventDefault()
+    // which stops the browser from zooming the entire page.
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    
+    return () => {
+      canvas.removeEventListener('wheel', onWheel);
+    };
+  }, [canvasRef]);
+
   return (
     <section
       ref={canvasRef}
@@ -29,7 +54,7 @@ export default function DrawCanvas({
       onDoubleClick={handleCanvasDoubleClick}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
-      onWheel={handleWheel}
+      // onWheel={handleWheel} // Moved to useEffect for non-passive listener
       onDragOver={handleCanvasDragOver}
       onDrop={handleCanvasDrop}
     >
@@ -199,7 +224,7 @@ export default function DrawCanvas({
                           width: '100%',
                           height: '100%',
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: 'flex-start',
                           justifyContent: shape.align === 'start' ? 'flex-start' : shape.align === 'end' ? 'flex-end' : 'center',
                           padding: '8px',
                           wordBreak: 'break-word',
@@ -379,6 +404,10 @@ export default function DrawCanvas({
             width: editingText.w * viewport.scale,
             height: editingText.h * viewport.scale,
             color: selectedShape?.type === "text" ? (selectedShape.color || currentColor) : currentColor,
+            textAlign: 'left',
+            textTransform: selectedShape?.textTransform || currentTextTransform || 'none',
+            fontSize: `${(selectedShape?.fontSize || currentFontSize || 18) * viewport.scale}px`,
+            verticalAlign: 'top',
           }}
           value={draftText}
           onPointerDown={(event) => {

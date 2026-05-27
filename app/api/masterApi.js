@@ -124,11 +124,27 @@ export const fetchMasterGlFunc = async () => {
         }));
         sessionStorage.setItem('taskDepartments', JSON.stringify(departmentArray));
 
+        // Fetch taskbugstatus and taskbugpriority first
+        const priorityModes = ['taskbugstatus', 'taskbugpriority'];
+        for (const mode of priorityModes) {
+            const apiResponse = await fetchIndidualApiMaster({ mode });
+            let filteredData = apiResponse?.rd?.filter(row => row?.isdelete != 1) || [];
+            filteredData.sort((a, b) => {
+                if (a.displayorder !== b.displayorder) {
+                    return a.displayorder - b.displayorder;
+                }
+                return (a.labelname || '').localeCompare(b.labelname || '');
+            });
+            sessionStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
+            localStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
+        }
+
+        // Fetch remaining master data
         const response = await fetchMaster();
         if (response?.rd && Array.isArray(response.rd)) {
             for (const item of response.rd) {
                 const { mode } = item;
-                if (mode) {
+                if (mode && !priorityModes.includes(mode)) {
                     const apiResponse = await fetchIndidualApiMaster({ mode });
                     let filteredData = apiResponse?.rd?.filter(row => row?.isdelete != 1) || [];
                     filteredData.sort((a, b) => {

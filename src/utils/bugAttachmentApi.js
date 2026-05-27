@@ -45,7 +45,7 @@ export const uploadFilesForBug = async ({ bugId, files = [] }) => {
       const mimeType = uploaded?.originalFile?.type || uploaded?.fileType || uploaded?.mimeType || inferMimeType(fileName);
 
       return {
-        id: `a${Date.now()}${index}`,
+        id: null, // Let SQL generate incremental ID
         bugId,
         fileName,
         fileSize,

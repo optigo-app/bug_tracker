@@ -1,4 +1,4 @@
-Design a modern, enterprise-grade Bug Management System web application UI called "BugTrackr".
+Design a modern, enterprise-grade Bug Management System web application UI called "BugTracker".
 
 Tech Context:
 - Next.js 14 (App Router)

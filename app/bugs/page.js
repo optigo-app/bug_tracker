@@ -2,42 +2,29 @@
 
 import React, { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Box, Typography, Button, Avatar, Stack, IconButton, CircularProgress, MenuItem,
-  Tooltip,
-  Select,
+  Box, Typography, Button, Stack, CircularProgress,
+  Skeleton
 } from '@mui/material';
-import {
-  Edit2, AlertCircle, Paperclip,
-  CheckCircle2, RotateCcw, Inbox, ExternalLink,
-  PanelRightClose, PanelRightOpen,
-} from 'lucide-react';
+import { AlertCircle, Inbox } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
-import AttachmentViewer from '@/components/AttachmentViewer';
-import CommentInput from '@/components/CommentInput';
-import ReassignDialog from '@/components/ReassignDialog';
-import StatusDialog from '@/components/StatusDialog';
 import { permissions } from '@/utils/permissions';
-import AttachmentSlider from '@/components/AttachmentSlider';
 import { deleteBugApi } from '@/app/api/bugdeleteApi';
-import { getBugDetailApi } from '@/app/api/bugdetailApi';
 import { updateBugApi } from '@/app/api/bugupdateApi';
-import { STATUS, slimScroll, formatDateTime, formatDate } from './constants';
-import { normalizeBugList, normalizeBugData } from '@/utils/normalizeBugData';
-import StatusBadge from './components/StatusBadge';
-import PriorityBadge from './components/PriorityBadge';
+import { slimScroll } from './constants';
+import { normalizeBugData } from '@/utils/normalizeBugData';
+import { getStatusOptions } from '@/components/bugModal/constants';
 import IssueCard from './components/IssueCard';
 import BugListHeader from './components/BugListHeader';
 import FilterMenu from './components/FilterMenu';
 import SortMenu from './components/SortMenu';
 import BugDetailSkeleton from './components/BugDetailSkeleton';
 import EmptyStateSkeleton from './components/EmptyStateSkeleton';
-import TimelineSection from '@/components/TimelineSection';
 import IssueDetailPanel from './components/IssueDetailPanel';
 import ReportBugFlow from './components/ReportBugFlow';
 import { decodeUrlParams } from '@/utils/urlParams';
 import { useBugContext } from '@/contexts/BugContext';
+import AdvancedFilterDialog from './components/AdvancedFilterDialog';
 
 // ─── Main Page Component ─────────────────────────────────────────────────────
 function BugsPageContent() {
@@ -56,7 +43,10 @@ function BugsPageContent() {
     setBugs,
     isLoading,
     error,
-    fetchBugsGlobal
+    bugsLoaded,
+    setBugsLoaded,
+    fetchBugsGlobal,
+    reportBugSignal
   } = useBugContext();
 
   const [search, setSearch] = useState('');
@@ -72,6 +62,7 @@ function BugsPageContent() {
   const [reassignInfo, setReassignInfo] = useState(null);
   const [drawEditorOpen, setDrawEditorOpen] = useState(false);
   const [editedImage, setEditedImage] = useState(null);
+  const [statusOptions, setStatusOptions] = useState([]);
 
   // Filter and Sort states
   const [filterScope, setFilterScope] = useState('me');
@@ -79,9 +70,21 @@ function BugsPageContent() {
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'priority-high', 'priority-low'
   const [priorityMap, setPriorityMap] = useState({});
-  const [statusOptions, setStatusOptions] = useState([]);
   const [isResizing, setIsResizing] = useState(false);
   const [listWidth, setListWidth] = useState(320);
+
+  const [advFilters, setAdvFilters] = useState({
+    taskNo: '',
+    bugNo: '',
+    status: null,
+    priority: null,
+    assignee: null,
+    reporter: null,
+    startDate: { startDate: '', endDate: '' },
+    dueDate: { startDate: '', endDate: '' }
+  });
+  const [advFilterOpen, setAdvFilterOpen] = useState(false);
+  const [priorityOptions, setPriorityOptions] = useState([]);
 
   const startResizing = useCallback((e) => {
     e.preventDefault();
@@ -122,7 +125,6 @@ function BugsPageContent() {
   }, [isResizing, resize, stopResizing]);
 
   useEffect(() => {
-    // Get current user profile from sessionStorage
     const userProfileData = sessionStorage.getItem('UserProfileData');
     if (userProfileData) {
       try {
@@ -135,16 +137,12 @@ function BugsPageContent() {
           ...profile
         };
         setCurrentUser(userObj);
-        
-        // Dynamically set default filter scope based on role
         const shouldFilter = permissions.shouldFilterByAssignee(userObj);
         setFilterScope(shouldFilter ? 'me' : 'team');
       } catch (error) {
         console.error('Error parsing UserProfileData:', error);
       }
     }
-
-    // Load task assignees from sessionStorage
     const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
     if (taskAssigneeData) {
       try {
@@ -161,8 +159,7 @@ function BugsPageContent() {
       }
     }
 
-    // Load priority data from sessionStorage for sorting
-    const priorityData = sessionStorage.getItem('taskbugpriorityData');
+    const priorityData = sessionStorage.getItem('taskbugpriorityData') || localStorage.getItem('taskbugpriorityData');
     if (priorityData) {
       try {
         const parsed = JSON.parse(priorityData);
@@ -170,14 +167,18 @@ function BugsPageContent() {
         parsed.forEach((item, index) => {
           map[String(item.id)] = parsed.length - index; // Higher index = higher priority
         });
+        setPriorityOptions(parsed.map(item => ({
+          id: String(item.id),
+          label: item.labelname || item.label || item.name || item.id
+        })));
         setPriorityMap(map);
       } catch (error) {
         console.error('Error parsing priority data:', error);
       }
     }
 
-    // Load status options from sessionStorage for filtering
-    const statusData = sessionStorage.getItem('taskbugstatusData');
+    // Load status options from sessionStorage or localStorage for filtering
+    const statusData = sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData');
     if (statusData) {
       try {
         const parsed = JSON.parse(statusData);
@@ -190,6 +191,16 @@ function BugsPageContent() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (reportBugSignal > 0 && currentUser && permissions.canReportBug(currentUser)) {
+      if (taskNoParam) {
+        setDrawEditorOpen(true);
+      } else {
+        setTaskSelectOpen(true);
+      }
+    }
+  }, [reportBugSignal, currentUser, taskNoParam]);
 
   useEffect(() => {
     if (!openReportParam || !currentUser) return;
@@ -217,76 +228,138 @@ function BugsPageContent() {
     }
   }, [currentUser?.id, fetchBugsGlobal]);
 
+  const handleRefresh = () => {
+    setBugsLoaded(false);
+    fetchBugs(true);
+  }
+
+  const handleUpdateBug = useCallback((updatedBug) => {
+    setBugs(prevBugs => {
+      return prevBugs.map(bug => {
+        if (bug.id === updatedBug.id) {
+          return { ...bug, ...updatedBug };
+        }
+        return bug;
+      });
+    });
+  }, [setBugs]);
+
   useEffect(() => {
     fetchBugs();
   }, [fetchBugs]);
 
+  // Update status options based on user role
+  useEffect(() => {
+    setStatusOptions(getStatusOptions(currentUser, true));
+  }, [currentUser]);
+
   const filteredBugs = useMemo(() => {
-    return globalBugs
-      .filter((bug) => {
-        // 1. Filter by task id if parameter is present
-        if (taskIdParam && String(bug.taskId || '') !== String(taskIdParam)) {
-          return false;
-        }
+    // Pre-calculate filter values
+    const query = (search || '').toLowerCase();
+    const safeStatusFilter = String(statusFilter || 'ALL').toLowerCase();
+    const advTaskNo = (advFilters.taskNo || '').toLowerCase();
+    const advBugNo = (advFilters.bugNo || '').toLowerCase();
+    const advStatus = String(advFilters.status || '');
+    const advPriority = String(advFilters.priority || '');
+    const advAssignee = String(advFilters.assignee || '');
+    const advReporter = String(advFilters.reporter || '');
 
-        // 2. Filter by search query
-        const query = (search || '').toLowerCase();
-        const title = String(bug?.title || '').toLowerCase();
-        const id = String(bug?.id || '').toLowerCase();
-        const taskNo = String(bug?.taskNo || '').toLowerCase();
-        const bugNo = String(bug?.bugNo || '').toLowerCase();
+    // Pre-calculate date ranges
+    const isStartDateActive = advFilters.startDate?.startDate && advFilters.startDate?.endDate;
+    const startDateRange = isStartDateActive ? {
+      start: new Date(new Date(advFilters.startDate.startDate).setHours(0, 0, 0, 0)),
+      end: new Date(new Date(advFilters.startDate.endDate).setHours(23, 59, 59, 999))
+    } : null;
 
-        const matchSearch =
-          title.includes(query) ||
-          id.includes(query) ||
-          taskNo.includes(query) ||
-          bugNo.includes(query);
-        const matchStatus =
-          statusFilter === 'ALL' || String(bug?.statusId || bug?.status) === statusFilter;
-        return matchSearch && matchStatus;
-      })
-      .filter((bug) => {
-        // 3. Filter by filterScope (me vs team)
-        if (filterScope === 'team') return true;
-        const shouldFilter = permissions.shouldFilterByAssignee(currentUser);
-        if (!shouldFilter && filterScope !== 'me') return true;
+    const isDueDateActive = advFilters.dueDate?.startDate && advFilters.dueDate?.endDate;
+    const dueDateRange = isDueDateActive ? {
+      start: new Date(new Date(advFilters.dueDate.startDate).setHours(0, 0, 0, 0)),
+      end: new Date(new Date(advFilters.dueDate.endDate).setHours(23, 59, 59, 999))
+    } : null;
 
-        const isAssigned =
-          String(bug.assigneeId) === String(currentUser?.id) ||
-          String(bug.assigneeId) === String(currentUser?.userid) ||
-          (bug.assignee && typeof bug.assignee === 'object'
-            ? String(bug.assignee.id) === String(currentUser?.id) ||
-              String(bug.assignee.userid) === String(currentUser?.userid)
-            : String(bug.assignee) === String(currentUser?.id));
+    // Helper function to check if bug belongs to current user
+    const isUserBug = (bug) => {
+      const userId = String(currentUser?.id);
+      const userUserid = String(currentUser?.userid);
 
-        const isReporter =
-          String(bug.reporterId) === String(currentUser?.id) ||
-          String(bug.reporterId) === String(currentUser?.userid) ||
-          (bug.reporter && typeof bug.reporter === 'object'
-            ? String(bug.reporter.id) === String(currentUser?.id) ||
-              String(bug.reporter.userid) === String(currentUser?.userid)
-            : String(bug.reporter?.id || bug.reporter) === String(currentUser?.id));
+      const isAssigned =
+        String(bug.assigneeId) === userId ||
+        String(bug.assigneeId) === userUserid ||
+        (bug.assignee && typeof bug.assignee === 'object'
+          ? (String(bug.assignee.id) === userId || String(bug.assignee.userid) === userUserid)
+          : String(bug.assignee) === userId);
 
-        return isAssigned || isReporter;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-        if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-        if (sortBy === 'priority-high') {
-          const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
-          const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
-          return pB - pA;
-        }
-        if (sortBy === 'priority-low') {
-          const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
-          const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
-          return pA - pB;
-        }
-        return 0;
-      });
-  }, [globalBugs, taskIdParam, search, statusFilter, filterScope, currentUser, sortBy, priorityMap]);
+      const isReporter =
+        String(bug.reporterId) === userId ||
+        String(bug.reporterId) === userUserid ||
+        (bug.reporter && typeof bug.reporter === 'object'
+          ? (String(bug.reporter.id) === userId || String(bug.reporter.userid) === userUserid)
+          : String(bug.reporter?.id || bug.reporter) === userId);
 
-  // Keep selectedId valid when filter changes
+      return isAssigned || isReporter;
+    };
+
+    const shouldFilterByUser = filterScope !== 'team' && permissions.shouldFilterByAssignee(currentUser);
+
+    // First filter: taskId, search, status, advFilters
+    const baseFiltered = globalBugs.filter((bug) => {
+      if (taskIdParam && String(bug.taskId || '') !== String(taskIdParam)) {
+        return false;
+      }
+
+      const title = String(bug?.title || '').toLowerCase();
+      const id = String(bug?.id || '').toLowerCase();
+      const taskNo = String(bug?.taskNo || '').toLowerCase();
+      const bugNo = String(bug?.bugNo || '').toLowerCase();
+      const bugStatusStr = String(bug?.statusId || bug?.status || '').toLowerCase();
+
+      const matchSearch = title.includes(query) || id.includes(query) || taskNo.includes(query) || bugNo.includes(query);
+      const matchStatus = safeStatusFilter === 'all' || bugStatusStr === safeStatusFilter;
+      const matchAdvTaskNo = !advTaskNo || taskNo.includes(advTaskNo);
+      const matchAdvBugNo = !advBugNo || bugNo.includes(advBugNo);
+      const matchAdvStatus = !advStatus || String(bug?.statusId || bug?.status) === advStatus;
+      const matchAdvPriority = !advPriority || String(bug?.priorityId || bug?.priority) === advPriority;
+      const matchAdvAssignee = !advAssignee || String(bug?.assigneeId) === advAssignee || String(bug?.assignee?.id) === advAssignee;
+      const matchAdvReporter = !advReporter || String(bug?.reporterId) === advReporter || String(bug?.reporter?.id) === advReporter;
+
+      const matchAdvStartDate = !isStartDateActive || (
+        bug.createdAt &&
+        new Date(bug.createdAt) >= startDateRange.start &&
+        new Date(bug.createdAt) <= startDateRange.end
+      );
+
+      const matchAdvDueDate = !isDueDateActive || (
+        bug.dueDate &&
+        new Date(bug.dueDate) >= dueDateRange.start &&
+        new Date(bug.dueDate) <= dueDateRange.end
+      );
+
+      return matchSearch && matchStatus && matchAdvTaskNo && matchAdvBugNo && matchAdvStatus && matchAdvPriority && matchAdvAssignee && matchAdvReporter && matchAdvStartDate && matchAdvDueDate;
+    });
+
+    // Calculate me and team counts
+    const meCount = baseFiltered.filter(isUserBug).length;
+    const teamCount = baseFiltered.length;
+
+    // Second filter: filterScope (me vs team)
+    const scopeFiltered = baseFiltered.filter((bug) => {
+      if (!shouldFilterByUser) return true;
+      return isUserBug(bug);
+    });
+
+    // Sort
+    const sorted = scopeFiltered.sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+      return sortBy === 'priority-high' ? pB - pA : pA - pB;
+    });
+
+    Object.assign(sorted, { meCount, teamCount });
+    return sorted;
+  }, [globalBugs, taskIdParam, search, statusFilter, filterScope, currentUser, sortBy, priorityMap, advFilters]);
+
   useEffect(() => {
     if (filteredBugs.length > 0 && !filteredBugs.find(b => b.id === selectedId)) {
       setSelectedId(filteredBugs[0].id);
@@ -311,19 +384,9 @@ function BugsPageContent() {
   };
 
 
-  if (!currentUser) return (
-    <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-      <CircularProgress size={28} sx={{ color: '#4F46E5' }} />
-    </Box>
-  );
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
-
-      {/* ── Split Panel ── */}
       <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
-
-        {/* Left: Issue List */}
         <Box
           sx={{
             width: { xs: selectedId ? 0 : '100%', md: listWidth },
@@ -386,6 +449,10 @@ function BugsPageContent() {
           />
           {/* Bug List Header: Search, Filter, Sort */}
           <BugListHeader
+            bugCount={{
+              me: filteredBugs?.meCount ?? 0,
+              team: filteredBugs?.teamCount ?? 0
+            }}
             search={search}
             setSearch={setSearch}
             statusFilter={statusFilter}
@@ -395,6 +462,9 @@ function BugsPageContent() {
             statusOptions={statusOptions}
             filterScope={filterScope}
             setFilterScope={setFilterScope}
+            setAdvFilterOpen={setAdvFilterOpen}
+            advFilters={advFilters}
+            setAdvFilters={setAdvFilters}
           />
 
           <Box
@@ -406,9 +476,11 @@ function BugsPageContent() {
               ...slimScroll
             }}
           >
-            {isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-                <CircularProgress size={24} sx={{ color: '#7367f0' }} />
+            {!bugsLoaded ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f1f5f9' }} />
+                ))}
               </Box>
             ) : error ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -435,7 +507,7 @@ function BugsPageContent() {
                     if (reassignInfo?.previousAssignee) {
                       await updateBugApi({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee, remark: 'Reverted reassignment', userId: currentUser?.id, reporterId: globalBugs.find(b => b.id === reassignInfo.bugId)?.reporterId });
                       setReassignInfo(null);
-                      fetchBugs(true);
+                      handleUpdateBug({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee });
                     }
                   }}
                 />
@@ -451,6 +523,7 @@ function BugsPageContent() {
           onClose={() => setFilterAnchorEl(null)}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
+          currentUser={currentUser}
         />
 
         {/* Sort Menu */}
@@ -462,7 +535,6 @@ function BugsPageContent() {
           setSortBy={setSortBy}
         />
 
-        {/* Right: Detail Panel */}
         <Box sx={{
           flex: 1,
           overflow: 'hidden',
@@ -470,7 +542,9 @@ function BugsPageContent() {
           flexDirection: 'column',
           minWidth: 0
         }}>
-          {selectedId ? (
+          {!bugsLoaded ? (
+            <BugDetailSkeleton />
+          ) : selectedId ? (
             <IssueDetailPanel
               key={selectedId}
               bugId={selectedId}
@@ -478,9 +552,11 @@ function BugsPageContent() {
               developers={developers}
               taskAssignees={taskAssignees}
               onRefreshList={fetchBugs}
+              onUpdateBug={handleUpdateBug}
               onViewDetails={() => router.push(`/bugs/${selectedId}`)}
               onBack={() => setSelectedId(null)}
               onReassign={(info) => setReassignInfo(info)}
+              onRefress={handleRefresh}
               onPrev={() => {
                 if (hasPrev) {
                   setSelectedId(filteredBugs[selectedIndex - 1]?.id || null);
@@ -493,6 +569,11 @@ function BugsPageContent() {
               }}
               hasPrev={hasPrev}
               hasNext={hasNext}
+              onDelete={(deletedBugId) => {
+                setBugs(prev => prev.filter(b => b.id !== deletedBugId));
+                setSelectedId(null);
+              }}
+              bugs={filteredBugs}
             />
           ) : (
             <EmptyStateSkeleton
@@ -510,6 +591,16 @@ function BugsPageContent() {
       </Box>
 
       {/* Modals */}
+      <AdvancedFilterDialog
+        open={advFilterOpen}
+        onClose={() => setAdvFilterOpen(false)}
+        advFilters={advFilters}
+        setAdvFilters={setAdvFilters}
+        statusOptions={statusOptions}
+        priorityOptions={priorityOptions}
+        developers={developers}
+        taskAssignees={taskAssignees}
+      />
       <ReportBugFlow
         canReportBug={permissions.canReportBug(currentUser)}
         drawEditorOpen={drawEditorOpen}
@@ -523,16 +614,27 @@ function BugsPageContent() {
         taskId={taskIdParam || ''}
         assigneeids={assigneeIdsParam || ''}
         dueDate={dueDateParam || ''}
-        onSuccess={async (newBug, saveAndNew) => {
-          if (newBug?.id) {
+        onSuccess={async (response, saveAndNew) => {
+          if (response?.rd?.[0]) {
+            const responseData = response.rd[0];
+            const formData = response.formData || {};
+
             const normalizedBug = normalizeBugData({
-              ...newBug,
-              reporterId: newBug.reporterId || currentUser?.id,
-              reporter: newBug.reporter || currentUser?.id,
-              statusId: newBug.statusId || newBug.status || 'OPEN',
-              priorityId: newBug.priorityId || newBug.priority || '',
-              categoryId: newBug.categoryId || newBug.category || '',
-              createdAt: newBug.createdAt || new Date().toISOString(),
+              id: responseData.id,
+              bugNo: responseData.bugNo,
+              title: formData.title,
+              description: formData.description,
+              taskId: formData.taskId,
+              taskNo: formData.taskNo,
+              taskName: formData.taskName,
+              assigneeId: formData.assigneeId,
+              reporterId: formData.reporterId || currentUser?.id,
+              priorityId: formData.priorityId,
+              statusId: formData.statusId || 'OPEN',
+              categoryId: formData.categoryId,
+              environment: formData.environment,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             });
 
             setBugs((prevBugs) => {
@@ -544,8 +646,6 @@ function BugsPageContent() {
             });
             setSelectedId(normalizedBug.id);
           }
-
-          await fetchBugs();
 
           if (!saveAndNew) {
             setModalOpen(false);

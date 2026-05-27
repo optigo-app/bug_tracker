@@ -1,4 +1,4 @@
-# BugTrackr
+# BugTracker
 ## System Requirements Document (SRD)
 Version: 1.0  
 System Type: Internal Bug Management System  
@@ -11,7 +11,7 @@ Technology Stack: Next.js + MSSQL + Local File Storage
 
 ## 1.1 Purpose
 
-This document defines the system-level requirements, architecture, and operational environment for the BugTrackr system.
+This document defines the system-level requirements, architecture, and operational environment for the BugTracker system.
 
 The SRD translates business requirements (PRD) into technical system specifications.
 
@@ -21,7 +21,7 @@ The SRD translates business requirements (PRD) into technical system specificati
 
 ## 2.1 Architecture Style
 
-BugTrackr follows a three-tier architecture:
+BugTracker follows a three-tier architecture:
 
 Presentation Layer (Next.js Frontend)
 ↓

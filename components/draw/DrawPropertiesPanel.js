@@ -7,16 +7,26 @@ import {
   Square,
 } from "lucide-react";
 import { useState } from "react";
+import { Select, MenuItem } from "@mui/material";
 import DrawShapeMenu from "./DrawShapeMenu";
 import { COLORS, DASH_STYLES, FILL_STYLES, FONT_FAMILIES, TEXT_ALIGNMENTS } from "./constants";
 import { SHAPE_OPTIONS } from "./shapeOptions";
 import styles from "./draw-editor.module.css";
 
 const SIZE_OPTIONS = [
-  { label: "S", value: 2 },
-  { label: "M", value: 4 },
-  { label: "L", value: 6 },
-  { label: "XL", value: 8 },
+  { label: "12", value: 12 },
+  { label: "15", value: 15 },
+  { label: "16", value: 16 },
+  { label: "18", value: 18 },
+  { label: "20", value: 20 },
+  { label: "24", value: 24 },
+  { label: "28", value: 28 },
+  { label: "32", value: 32 },
+  { label: "36", value: 36 },
+  { label: "40", value: 40 },
+  { label: "44", value: 44 },
+  { label: "48", value: 48 },
+  { label: "50", value: 50 },
 ];
 
 export default function DrawPropertiesPanel({
@@ -50,13 +60,24 @@ export default function DrawPropertiesPanel({
   setCurrentShapeType,
   setCurrentStrokeWidth,
 }) {
-  const mode = selectedShape?.type || activeTool;
+  const shouldEditSelectedShape = Boolean(selectedShape) && activeTool === "select";
+  const mode = shouldEditSelectedShape ? selectedShape.type : activeTool;
   const shouldHidePanel = !selectedShape && ["select", "pan", "eraser", "media"].includes(activeTool);
   const [colorMode, setColorMode] = useState("stroke"); // "stroke" or "background"
 
   const handleStyleChange = (partial) => {
-    if (selectedShape) {
+    if (shouldEditSelectedShape) {
       applyStylesToSelected(partial);
+
+      if (partial.color !== undefined) setCurrentColor(partial.color);
+      if (partial.strokeWidth !== undefined) setCurrentStrokeWidth(partial.strokeWidth);
+      if (partial.fill !== undefined) setCurrentFill(partial.fill);
+      if (partial.backgroundColor !== undefined) setCurrentBackgroundColor(partial.backgroundColor);
+      if (partial.dash !== undefined) setCurrentDash(partial.dash);
+      if (partial.font !== undefined) setCurrentFont(partial.font);
+      if (partial.align !== undefined) setCurrentAlign(partial.align);
+      if (partial.fontSize !== undefined) setCurrentFontSize(partial.fontSize);
+      if (partial.textTransform !== undefined) setCurrentTextTransform(partial.textTransform);
       return;
     }
 
@@ -78,7 +99,7 @@ export default function DrawPropertiesPanel({
   };
 
   const getActiveValue = (key, fallback) =>
-    selectedShape && selectedShape[key] !== undefined ? selectedShape[key] : fallback;
+    shouldEditSelectedShape && selectedShape[key] !== undefined ? selectedShape[key] : fallback;
 
   if (shouldHidePanel) {
     return (
@@ -203,21 +224,30 @@ export default function DrawPropertiesPanel({
         )}
         {showFontRow && (
           <div className={styles.compactSection}>
-            <div className={styles.sliderRow}>
-              <span style={{ fontSize: "12px", color: "#64748B" }}>A</span>
-              <input
-                type="range"
-                min="12"
-                max="48"
-                step="1"
-                value={getActiveValue("fontSize", currentFontSize)}
-                className={styles.thicknessSlider}
-                onChange={(event) =>
-                  handleStyleChange({ fontSize: parseInt(event.target.value, 10) })
-                }
-              />
-              <span style={{ fontSize: "16px", color: "#64748B" }}>A</span>
-            </div>
+            <Select
+              value={getActiveValue("fontSize", currentFontSize)}
+              onChange={(event) =>
+                handleStyleChange({ fontSize: parseInt(event.target.value, 10) })
+              }
+              size="small"
+              sx={{
+                width: "100%",
+                height: "36px",
+                fontSize: "13px",
+                "& .MuiOutlinedInput-root": {
+                  height: "36px",
+                },
+                "& .MuiSelect-select": {
+                  padding: "8px 12px",
+                },
+              }}
+            >
+              {Array.from({ length: 37 }, (_, i) => 14 + i).map((size) => (
+                <MenuItem key={size} value={size}>
+                  {size}
+                </MenuItem>
+              ))}
+            </Select>
           </div>
         )}
 
@@ -261,16 +291,16 @@ export default function DrawPropertiesPanel({
               <button
                 key={option.label}
                 className={`${styles.sizeButton} ${mode === "text" || mode === "note"
-                  ? getActiveValue("fontSize", currentFontSize) === option.value * 6
-                  : getActiveValue("strokeWidth", currentStrokeWidth) === option.value
+                  ? getActiveValue("fontSize", currentFontSize) === option.value
+                  : getActiveValue("strokeWidth", currentStrokeWidth) === Math.round(option.value / 6)
                     ? styles.sizeButtonActive
                     : ""
                   }`}
                 onClick={() => {
                   if (mode === "text" || mode === "note") {
-                    handleStyleChange({ fontSize: option.value * 6 });
+                    handleStyleChange({ fontSize: option.value });
                   } else {
-                    handleStyleChange({ strokeWidth: option.value });
+                    handleStyleChange({ strokeWidth: Math.round(option.value / 6) });
                   }
                 }}
               >

@@ -4,7 +4,7 @@ const LOCAL_HOSTNAMES = (config.LOCAL_HOSTNAMES || "localhost,nzen,bugtracker.we
 const REPORT_ENDPOINT = config.REPORT_ENDPOINT || "/api/report";
 const UPLOAD_ENDPOINT = config.UPLOAD_ENDPOINT || "/api/upload";
 const REMOVE_FILE_ENDPOINT = config.REMOVE_FILE_ENDPOINT || "/api/removefile";
-const API_VERSION = config.API_VERSION || "v6";
+const API_VERSION = config.API_VERSION || "v1";
 const API_ENVIRONMENT = config.API_ENVIRONMENT || "live";
 
 const DOMAINS = {

@@ -1,0 +1,123 @@
+import { useState, useEffect } from "react";
+import { TextField, Box, Popover, InputAdornment, Button, Stack, IconButton, ThemeProvider } from "@mui/material";
+import { DateRangePicker } from "mui-daterange-picker";
+import { CalendarDays, X } from "lucide-react";
+import { commonTextFieldProps, Datetheme } from "../utils/glocalfunc";
+
+const formatDate = (date) => {
+	if (!date) return "";
+	const d = typeof date === "string" ? new Date(date) : date;
+	return d instanceof Date && !isNaN(d) ? d.toLocaleDateString("en-GB") : "";
+};
+
+const CustomDateRangePicker = ({ value = {}, onChange, placeholder = "Date Range" }) => {
+	const [anchorEl, setAnchorEl] = useState(null);
+	const open = Boolean(anchorEl);
+
+	const toDate = (val) => val ? new Date(val) : null;
+
+	const [tempRange, setTempRange] = useState({
+		startDate: toDate(value?.startDate),
+		endDate: toDate(value?.endDate),
+	});
+
+	useEffect(() => {
+		const newStart = toDate(value?.startDate);
+		const newEnd = toDate(value?.endDate);
+		
+		const currentStart = tempRange.startDate instanceof Date ? tempRange.startDate : null;
+		const currentEnd = tempRange.endDate instanceof Date ? tempRange.endDate : null;
+
+		if (
+			(newStart?.getTime() !== currentStart?.getTime()) ||
+			(newEnd?.getTime() !== currentEnd?.getTime())
+		) {
+			setTempRange({
+				startDate: newStart,
+				endDate: newEnd,
+			});
+		}
+	}, [value?.startDate, value?.endDate]);
+
+	const handleOpen = (event) => setAnchorEl(event.currentTarget);
+	const handleClose = () => setAnchorEl(null);
+
+	const handleDateChange = (range) => {
+		setTempRange({
+			startDate: range.startDate || null,
+			endDate: range.endDate || null,
+		});
+	};
+
+	const handleApply = () => {
+		onChange({
+			startDate: tempRange.startDate instanceof Date ? tempRange.startDate.toISOString() : "",
+			endDate: tempRange.endDate instanceof Date ? tempRange.endDate.toISOString() : "",
+		});
+		handleClose();
+	};
+
+	const handleClear = (e) => {
+		e.stopPropagation();
+		setTempRange({ startDate: null, endDate: null });
+		onChange({ startDate: "", endDate: "" });
+		handleClose();
+	};
+
+	const displayValue =
+		value?.startDate && value?.endDate
+			? `${formatDate(new Date(value.startDate))} - ${formatDate(new Date(value.endDate))}`
+			: "";
+
+	return (
+		<ThemeProvider theme={Datetheme}>
+			<Box display="flex" alignItems="center">
+				<TextField
+					placeholder={placeholder}
+					value={displayValue}
+					onClick={handleOpen}
+					size="small"
+					sx={{
+						"& .MuiInputBase-input": {
+							padding: "8.5px 12px",
+							borderRadius:'16px !important',
+							borderColor:""
+						},
+					}}
+					{...commonTextFieldProps}
+					readOnly
+					InputProps={{
+						startAdornment: (
+							<InputAdornment position="start">
+								<CalendarDays width={20} />
+							</InputAdornment>
+						),
+						endAdornment: displayValue && (
+							<InputAdornment position="end">
+								<IconButton aria-label="ClearIcon" onClick={handleClear} color="default" size="small">
+									<X size={20} />
+								</IconButton>
+							</InputAdornment>
+						),
+					}}
+				/>
+
+				<Popover open={open} anchorEl={anchorEl} onClose={handleClose} anchorOrigin={{ vertical: "bottom", horizontal: "left" }} transformOrigin={{ vertical: "top", horizontal: "left" }}>
+					<Box p={2}>
+						<DateRangePicker open toggle={handleClose} onChange={handleDateChange} initialDateRange={tempRange} closeOnClickOutside  wrapperClassName="dateRangePicker"/>
+						<Stack direction="row" justifyContent="flex-end" mt={2} spacing={1}>
+							<Button onClick={handleClose} color="secondary">
+								Cancel
+							</Button>
+							<Button onClick={handleApply} variant="contained" color="primary">
+								Apply
+							</Button>
+						</Stack>
+					</Box>
+				</Popover>
+			</Box>
+		</ThemeProvider>
+	);
+};
+
+export default CustomDateRangePicker;

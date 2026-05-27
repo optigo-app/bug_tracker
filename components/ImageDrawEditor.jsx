@@ -14,13 +14,13 @@ export default function ImageDrawEditor({ open, onClose, imageSrc, onSave, onSav
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          canvas.width = img.width || 800;
-          canvas.height = img.height || 600;
+          canvas.width = img.naturalWidth || img.width || 800;
+          canvas.height = img.naturalHeight || img.height || 600;
 
           const context = canvas.getContext('2d');
           context.fillStyle = '#ffffff';
           context.fillRect(0, 0, canvas.width, canvas.height);
-          context.drawImage(img, 0, 0);
+          context.drawImage(img, 0, 0, canvas.width, canvas.height);
 
           canvas.toBlob((pngBlob) => {
             if (!pngBlob) {
@@ -50,13 +50,13 @@ export default function ImageDrawEditor({ open, onClose, imageSrc, onSave, onSav
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          canvas.width = img.width || 800;
-          canvas.height = img.height || 600;
+          canvas.width = img.naturalWidth || img.width || 800;
+          canvas.height = img.naturalHeight || img.height || 600;
 
           const context = canvas.getContext('2d');
           context.fillStyle = '#ffffff';
           context.fillRect(0, 0, canvas.width, canvas.height);
-          context.drawImage(img, 0, 0);
+          context.drawImage(img, 0, 0, canvas.width, canvas.height);
 
           canvas.toBlob((pngBlob) => {
             if (!pngBlob) {

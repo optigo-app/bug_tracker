@@ -1,43 +1,57 @@
-import { Box, Stack, Skeleton } from '@mui/material';
-import { Fade } from '@mui/material';
+import { Box, Stack, Fade } from '@mui/material';
 
 export default function BugDetailSkeleton() {
   return (
     <Fade in={true} timeout={300}>
-      <Box sx={{ p: 4, height: '100%' }}>
-        {/* Header Skeleton */}
-        <Stack spacing={2} sx={{ mb: 4 }}>
-          <Skeleton variant="rectangular" width="120px" height="28px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-          <Skeleton variant="rectangular" width="100%" height="36px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-        </Stack>
+      <Box sx={{ p: 4, height: '100%', bgcolor: '#FAFBFD', display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Header Skeleton */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ width: 80, height: 28, bgcolor: '#f1f5f9', borderRadius: 1.5 }} />
+        <Box sx={{ flex: 1, height: 28, bgcolor: '#f1f5f9', borderRadius: 1.5 }} />
+      </Box>
 
-        {/* Metadata Skeleton */}
-        <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
-          <Skeleton variant="rectangular" width="100%" height="70vh" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-        </Stack>
+      {/* Attachments Placeholder */}
+      <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ width: 14, height: 14, bgcolor: '#f1f5f9', borderRadius: '50%' }} />
+          <Box sx={{ width: 100, height: 14, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+        </Box>
+        <Box sx={{ width: '100%', height: '25vh', bgcolor: '#f1f5f9', borderRadius: 2 }} />
+      </Box>
 
-        {/* Description Skeleton */}
-        <Stack spacing={1.5} sx={{ mb: 4 }}>
-          <Skeleton variant="rectangular" width="100%" height="16px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-          <Skeleton variant="rectangular" width="100%" height="16px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-          <Skeleton variant="rectangular" width="80%" height="16px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
+      {/* Description */}
+      <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ width: 14, height: 14, bgcolor: '#f1f5f9', borderRadius: '50%' }} />
+          <Box sx={{ width: 100, height: 14, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+        </Box>
+        <Stack spacing={1.5}>
+          <Box sx={{ width: '100%', height: 16, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+          <Box sx={{ width: '100%', height: 16, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+          <Box sx={{ width: '80%', height: 16, bgcolor: '#f1f5f9', borderRadius: 1 }} />
         </Stack>
+      </Box>
 
-        {/* Comments Section Skeleton */}
+      {/* Comments */}
+      <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e2e8f0', flex: 1 }}>
+         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <Box sx={{ width: 14, height: 14, bgcolor: '#f1f5f9', borderRadius: '50%' }} />
+          <Box sx={{ width: 150, height: 16, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+        </Box>
         <Stack spacing={2}>
-          <Skeleton variant="rectangular" width="100px" height="20px" sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
           {[1, 2, 3].map((i) => (
-            <Stack key={i} spacing={1.5} sx={{ p: 2, bgcolor: '#FAFBFC', borderRadius: 1.5 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Skeleton variant="circular" width={32} height={32} sx={{ bgcolor: '#f0f0f0' }} />
-                <Skeleton variant="rectangular" width="120px" height={16} sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-              </Stack>
-              <Skeleton variant="rectangular" width="100%" height={14} sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-              <Skeleton variant="rectangular" width="80%" height={14} sx={{ bgcolor: '#f0f0f0', borderRadius: 1.5 }} />
-            </Stack>
+            <Box key={i} sx={{ display: 'flex', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#f1f5f9' }} />
+              <Box sx={{ flex: 1, p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <Box sx={{ width: '40%', height: 14, bgcolor: '#f1f5f9', borderRadius: 1, mb: 1 }} />
+                <Box sx={{ width: '90%', height: 14, bgcolor: '#f1f5f9', borderRadius: 1, mb: 0.5 }} />
+                <Box sx={{ width: '60%', height: 14, bgcolor: '#f1f5f9', borderRadius: 1 }} />
+              </Box>
+            </Box>
           ))}
         </Stack>
       </Box>
+    </Box>
     </Fade>
   );
 }

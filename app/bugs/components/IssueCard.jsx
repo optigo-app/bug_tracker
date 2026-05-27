@@ -4,6 +4,7 @@ import { MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
+import { formatDate } from '../constants';
 
 export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUndoReassign }) {
   const hasComments = bug.commentCount > 0;
@@ -125,7 +126,7 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
       </Typography>
 
       {/* Row 3: Description snippet */}
-      <Typography sx={{
+      {/* <Typography sx={{
         fontSize: '0.7rem',
         color: '#6F6B7D',
         overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -134,7 +135,7 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
         textOverflow: 'ellipsis'
       }}>
         {bug.description || ''}
-      </Typography>
+      </Typography> */}
 
       {/* Row 4: Footer - Status, Priority & Date */}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -170,7 +171,7 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
             </Button>
           )}
           <Typography sx={{ fontSize: '0.65rem', color: '#A5A3AE', fontWeight: 500, whiteSpace: 'nowrap' }}>
-            {new Date(bug.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+            {formatDate(bug.createdAt)}
           </Typography>
         </Stack>
       </Stack>

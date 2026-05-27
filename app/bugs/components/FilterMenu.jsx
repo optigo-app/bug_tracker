@@ -1,24 +1,13 @@
 import { Menu, Box, Typography, Stack, MenuItem } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { getStatusOptions } from '@/components/bugModal/constants';
 
-export default function FilterMenu({ anchorEl, open, onClose, statusFilter, setStatusFilter }) {
+export default function FilterMenu({ anchorEl, open, onClose, statusFilter, setStatusFilter, currentUser }) {
   const [statusOptions, setStatusOptions] = useState([]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const data = sessionStorage.getItem('taskbugstatusData');
-      if (data) {
-        const parsed = JSON.parse(data);
-        setStatusOptions(parsed.map(item => ({
-          id: String(item.id),
-          label: item.labelname || item.label || item.name || item.id
-        })));
-      }
-    } catch (error) {
-      console.error('Error loading status options:', error);
-    }
-  }, []);
+    setStatusOptions(getStatusOptions(currentUser, true));
+  }, [currentUser]);
   return (
     <Menu
       anchorEl={anchorEl}
@@ -41,13 +30,13 @@ export default function FilterMenu({ anchorEl, open, onClose, statusFilter, setS
               '&.Mui-selected': { bgcolor: 'rgba(115, 103, 240, 0.08)', color: '#7367f0' }
             }}
           >
-            All Statuses
+            All Status
           </MenuItem>
           {statusOptions.map(opt => (
             <MenuItem
-              key={opt.id}
-              onClick={() => { setStatusFilter(opt.id); onClose(); }}
-              selected={statusFilter === opt.id}
+              key={opt.value}
+              onClick={() => { setStatusFilter(opt.value); onClose(); }}
+              selected={statusFilter === opt.value}
               sx={{
                 borderRadius: 1, fontSize: '0.75rem', fontWeight: 600,
                 minHeight: 32, py: 0.5,

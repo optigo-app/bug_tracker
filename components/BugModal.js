@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { X, Upload, File as FileIcon, Edit2 } from 'lucide-react';
 import { handleImageError } from '@/utils/glocalfunc';
-import { INITIAL_FORM_DATA, CATEGORY_OPTIONS, getCategoryOptions, getPriorityOptions, getStatusOptions } from './bugModal/constants';
+import { INITIAL_FORM_DATA, getCategoryOptions, getPriorityOptions, getStatusOptions } from './bugModal/constants';
 import { useUserSession, useAssignees } from './bugModal/useUserSession';
 import { useAttachmentHandlers } from './bugModal/useAttachmentHandlers';
 import { handleSubmit, initializeFormData, initializeAttachments } from './bugModal/useFormHandlers';
@@ -29,7 +29,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const isEdit = !!bug;
   const [attachments, setAttachments] = useState([]);
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-  const [categoryOptions, setCategoryOptions] = useState(CATEGORY_OPTIONS);
+  const [categoryOptions, setCategoryOptions] = useState(getCategoryOptions());
   const [priorityOptions, setPriorityOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
   const [editingImage, setEditingImage] = useState(null);
@@ -62,26 +62,26 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   // Filter assignees based on assigneeids from URL or props and ensure only developers are selected when direct
   const filteredAssignees = (() => {
     let result = assignees;
-    
+
+    // Filter out admin and tester, only show developers
+    const filteredByRole = result.filter(a => {
+      const designation = (a?.designation || '').toLowerCase();
+      const isAdmin = designation.includes('admin');
+      const isTester = designation.includes('tester') || designation.includes('qa');
+      return !isAdmin && !isTester;
+    });
+
     // First, check if we have task context
     if (resolvedAssigneeIds) {
       const assigneeIdArray = resolvedAssigneeIds.split(',').map(id => id.trim()).filter(id => id);
       if (assigneeIdArray.length > 0) {
-        result = result.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
-        // When in task context, only show the task assignees (do not filter by developer designation)
-        return result;
+        const taskAssignees = filteredByRole.filter(a => assigneeIdArray.includes(String(a?.id)) || assigneeIdArray.includes(String(a?.userid)));
+        return taskAssignees.length > 0 ? taskAssignees : filteredByRole;
       }
     }
-    
-    // Direct context:
-    if (isEdit) {
-      // When editing direct, show every assignee
-      return assignees;
-    } else {
-      // When creating direct, filter to only show developers
-      const developers = result.filter(a => (a?.designation || '').toLowerCase().includes('developer'));
-      return developers.length > 0 ? developers : result;
-    }
+
+    // Return filtered assignees (only developers, no admin/tester)
+    return filteredByRole.length > 0 ? filteredByRole : result;
   })();
 
   const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -153,7 +153,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     if (editedFile) {
       setAttachments(prev => [...prev, {
         file: editedFile,
-        name: editedFile.name || 'bug-screenshot.png',
+        name: editedFile.name || 'bug-screenshot.svg',
         type: editedFile.type.startsWith('image/') ? 'image' : 'file',
         url: URL.createObjectURL(editedFile),
         isEdited: true,
@@ -165,8 +165,8 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   useEffect(() => {
     setCategoryOptions(getCategoryOptions());
     setPriorityOptions(getPriorityOptions());
-    setStatusOptions(getStatusOptions());
-  }, []);
+    setStatusOptions(getStatusOptions(currentUser));
+  }, [currentUser]);
 
   // Initialize form data when bug changes or modal opens
   useEffect(() => {
@@ -177,6 +177,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
       } else {
         const defaultStatus = getDefaultStatus();
         const defaultPriority = getDefaultPriority();
+        const defaultAssigneeId = filteredAssignees.length > 0 ? filteredAssignees[0].id : '';
         setFormData({
           ...INITIAL_FORM_DATA,
           taskNo,
@@ -184,6 +185,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
           taskId,
           status: defaultStatus,
           priority: defaultPriority,
+          assigneeId: defaultAssigneeId,
           dueDate: getNormalizedDueDate(dueDate)
         });
         if (initialAttachment) {
@@ -253,6 +255,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     let newErrors = {};
     if (!formData.title?.trim()) newErrors.title = 'Title is required';
     if (!attachments?.length) newErrors.attachments = 'At least one attachment is required';
+    if (!formData.assigneeId) newErrors.assigneeId = 'Assignee is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -262,6 +265,12 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
       setErrors((prev) => ({ ...prev, attachments: null }));
     }
   }, [attachments, errors.attachments]);
+
+  useEffect(() => {
+    if (formData.assigneeId && errors.assigneeId) {
+      setErrors((prev) => ({ ...prev, assigneeId: null }));
+    }
+  }, [formData.assigneeId, errors.assigneeId]);
 
   const handleFormSubmit = (e, saveAndNew = false) => {
     e.preventDefault();
@@ -496,7 +505,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
             {/* Assignee & Category */}
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}>ASSIGNEE</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}>ASSIGNEE <span style={{ color: '#EF4444' }}>*</span></Typography>
               {(() => {
                 const selectedAssignee = filteredAssignees.find((a) => {
                   const currentAssigneeId = String(formData.assigneeId || '');
@@ -514,6 +523,8 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                       setFormData(prev => ({ ...prev, assigneeId: newValue?.id || '' }));
                     }}
                     minWidth="100%"
+                    error={!!errors.assigneeId}
+                    helperText={errors.assigneeId}
                   />
                 );
               })()}

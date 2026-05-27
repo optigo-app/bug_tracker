@@ -4,7 +4,7 @@
  * Roles:
  * - admin: Full access to everything.
  * - project_manager: Full access to bugs and projects.
- * - tester: Can report bugs, but can only see assigned bugs and cannot change anything.
+ * - tester: Can Create bugs, but can only see assigned bugs and cannot change anything.
  * - developer: Can only see assigned bugs and cannot change anything.
  * - other roles: Full readonly access (can see all bugs but cannot change anything).
  */
@@ -34,7 +34,7 @@ export const permissions = {
     canReportBug: (u) => [ROLES.ADMIN, ROLES.PM, ROLES.TESTER].includes(getRole(u)),
 
     // Bug Deletion
-    canDeleteBug: (u) => [ROLES.ADMIN, ROLES.PM].includes(getRole(u)),
+    canDeleteBug: (u) => [ROLES.ADMIN, ROLES.PM, ROLES.TESTER].includes(getRole(u)),
 
     // Bug Editing (General fields like title/description)
     // Management and Tester can edit, Developer cannot (even if reporter, as per request)
@@ -48,6 +48,10 @@ export const permissions = {
     canReassignBug: (u) => [ROLES.DEV, ROLES.PM, ROLES.ADMIN, ROLES.TESTER].includes(getRole(u)),
 
     canVerifyBug: (u) => [ROLES.TESTER, ROLES.PM, ROLES.ADMIN].includes(getRole(u)),
+
+    canReopenBug: (u) => [ROLES.TESTER, ROLES.PM, ROLES.ADMIN].includes(getRole(u)),
+
+    canResolveBug: (u) => [ROLES.DEV].includes(getRole(u)),
 
     // File Uploads
     canUploadAttachment: (u) => [ROLES.ADMIN, ROLES.PM, ROLES.TESTER].includes(getRole(u)),

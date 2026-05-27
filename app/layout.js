@@ -5,6 +5,7 @@ import MainLayout from "@/components/MainLayout";
 import LocalizationProviderWrapper from "@/components/LocalizationProviderWrapper";
 import { Toaster } from "react-hot-toast";
 import { BugProvider } from "@/contexts/BugContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -15,11 +16,12 @@ const publicSans = Public_Sans({
 export const metadata = {
   title: "Bug Tracker - Optigo Apps",
   description: "Track and manage bugs efficiently with our bug tracking system",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({ children }) {
@@ -31,14 +33,16 @@ export default function RootLayout({ children }) {
       </head>
       <body className={publicSans.variable}>
         <BugProvider>
-          <LocalizationProviderWrapper>
-            <ThemeRegistry>
-              <MainLayout>
-                {children}
-              </MainLayout>
-            </ThemeRegistry>
-          </LocalizationProviderWrapper>
-          <Toaster position="top-right" />
+          {/* <SocketProvider> */}
+            <LocalizationProviderWrapper>
+              <ThemeRegistry>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </ThemeRegistry>
+            </LocalizationProviderWrapper>
+            <Toaster position="top-right" />
+          {/* </SocketProvider> */}
         </BugProvider>
       </body>
     </html>

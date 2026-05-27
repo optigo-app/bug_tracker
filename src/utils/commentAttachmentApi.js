@@ -42,7 +42,7 @@ export const uploadFilesForComment = async ({ bugId, files = [] }) => {
             const mimeType = uploaded?.originalFile?.type || uploaded?.fileType || uploaded?.mimeType || getFileTypeFromName(fileName);
 
             return {
-                id: `a${Date.now()}${index}`,
+                id: null, // Let SQL generate incremental ID
                 bugId,
                 commentId: '',
                 fileName,

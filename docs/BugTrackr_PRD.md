@@ -1,4 +1,4 @@
-# BugTrackr
+# BugTracker
 ## Product Requirements Document (PRD)
 Version: 1.0  
 Product Type: Internal Bug Management System  
@@ -10,7 +10,7 @@ Tech Stack Target: Next.js + MSSQL + Local File Storage
 
 ## 1.1 Purpose
 
-BugTrackr is a centralized bug tracking system designed to help software teams efficiently report, manage, assign, and resolve defects across multiple projects.
+BugTracker is a centralized bug tracking system designed to help software teams efficiently report, manage, assign, and resolve defects across multiple projects.
 
 The system will provide structured workflows, attachment handling, audit logging, and performance tracking.
 

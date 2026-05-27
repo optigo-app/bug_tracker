@@ -24,6 +24,7 @@ import { markNotificationReadApi } from '@/app/api/notificationmarkreadApi';
 import { permissions } from '@/utils/permissions';
 import { useBugContext } from '@/contexts/BugContext';
 import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
+import { fetchMasterGlFunc } from '@/app/api/masterApi';
 import {
     Bell,
     Bug,
@@ -31,6 +32,7 @@ import {
     AlertCircle,
     CheckCheck,
     Plus,
+    RefreshCw,
 } from 'lucide-react';
 import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -74,12 +76,13 @@ function HeaderContent() {
     const decodedParams = decodeUrlParams(dataParam);
     const taskNoParam = decodedParams.taskno;
     const taskNameParam = decodedParams.taskname;
-    const { totalBugCount, todayBugCount } = useBugContext();
+    const { totalBugCount, todayBugCount, triggerReportBug } = useBugContext();
     const [currentUser, setCurrentUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const [profileAnchorEl, setProfileAnchorEl] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     const lastUserProfileRawRef = useRef('');
 
     useEffect(() => {
@@ -172,6 +175,19 @@ function HeaderContent() {
         setLoading(false);
     };
 
+    const handleSync = async () => {
+        setSyncing(true);
+        try {
+            await fetchMasterGlFunc();
+            // Reload page to reflect changes
+            window.location.reload();
+        } catch (error) {
+            console.error('Error syncing master data:', error);
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     const getPageTitle = () => {
         if (pathname === '/') return 'Dashboard';
         if (pathname.includes('/tasks')) return 'Tasks';
@@ -250,12 +266,16 @@ function HeaderContent() {
     );
 
     const handleReportBugClick = () => {
-        const params = new URLSearchParams();
-        if (dataParam) {
-            params.set('data', dataParam);
+        if (pathname === '/bugs' || pathname.startsWith('/bugs?')) {
+            triggerReportBug();
+        } else {
+            const params = new URLSearchParams();
+            if (dataParam) {
+                params.set('data', dataParam);
+            }
+            params.set('openReport', '1');
+            router.push(`/bugs?${params.toString()}`);
         }
-        params.set('openReport', '1');
-        router.push(`/bugs?${params.toString()}`);
     };
 
     return (
@@ -357,11 +377,11 @@ function HeaderContent() {
                         onClick={handleReportBugClick}
                         className='buttonClassname'
                     >
-                        Report Bug
+                        Create Bug
                     </Button>
                 )}
 
-                <Stack direction="row" spacing={0.25}>
+                {/* <Stack direction="row" spacing={0.25}>
                     <Tooltip title="Notifications">
                         <IconButton
                             size="small"
@@ -373,7 +393,7 @@ function HeaderContent() {
                             </Badge>
                         </IconButton>
                     </Tooltip>
-                </Stack>
+                </Stack> */}
 
                 {/* Notification Popover */}
                 <Popover
@@ -557,6 +577,22 @@ function HeaderContent() {
                     </Stack>
                 </Box>
                 <Box sx={{ p: 1 }}>
+                    <MenuItem
+                        onClick={handleSync}
+                        disabled={syncing}
+                        sx={{
+                            borderRadius: 1,
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                            color: '#6366F1',
+                            '&:hover': {
+                                bgcolor: '#EEF2FF',
+                            }
+                        }}
+                    >
+                        {syncing ? <CircularProgress size={14} sx={{ mr: 1 }} /> : <RefreshCw size={14} style={{ marginRight: 8 }} />}
+                        Sync Data
+                    </MenuItem>
                     <MenuItem
                         onClick={handleLogout}
                         sx={{

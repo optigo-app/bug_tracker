@@ -18,14 +18,14 @@ import RemarkSelector from './RemarkSelector';
 import { commonTextFieldProps } from '@/utils/glocalfunc';
 import { decodeUrlParams } from '@/utils/urlParams';
 
-export default function ReassignDialog({ 
-    open, 
-    onClose, 
-    developers, 
-    selectedDev, 
-    setSelectedDev, 
-    onConfirm, 
-    saving, 
+export default function ReassignDialog({
+    open,
+    onClose,
+    developers,
+    selectedDev,
+    setSelectedDev,
+    onConfirm,
+    saving,
     currentUser,
     bug,
     assigneeids = ''
@@ -89,15 +89,27 @@ export default function ReassignDialog({
 
     const filteredAssignees = React.useMemo(() => {
         const baseList = assignees.length > 0 ? assignees : mappedDevelopers;
+        let filteredList = baseList;
         if (resolvedAssigneeIds) {
-            const assigneeIdArray = resolvedAssigneeIds.split(',').map(id => id.trim()).filter(id => id);
+            const assigneeIdArray = resolvedAssigneeIds
+                .split(',')
+                .map(id => id.trim())
+                .filter(id => id);
+
             if (assigneeIdArray.length > 0) {
-                return baseList.filter(user => 
-                    assigneeIdArray.includes(String(user.id)) || assigneeIdArray.includes(String(user.userid))
+                filteredList = filteredList.filter(
+                    (user) =>
+                        assigneeIdArray.includes(String(user.id)) ||
+                        assigneeIdArray.includes(String(user.userid))
                 );
             }
         }
-        return baseList;
+        filteredList = filteredList.filter((user) =>
+            String(user.designation || '')
+                .toLowerCase()
+                .includes('developer')
+        );
+        return filteredList;
     }, [assignees, mappedDevelopers, resolvedAssigneeIds]);
 
     const handleClose = () => {
@@ -120,10 +132,10 @@ export default function ReassignDialog({
     };
 
     return (
-        <Dialog 
-            open={open} 
-            onClose={handleClose} 
-            maxWidth="xs" 
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            maxWidth="xs"
             fullWidth
             TransitionProps={{
                 timeout: {
@@ -234,10 +246,10 @@ export default function ReassignDialog({
                 >
                     Cancel
                 </Button>
-                <Button 
-                    variant="contained" 
+                <Button
+                    variant="contained"
                     onClick={handleConfirm}
-                    disabled={!selectedDev || saving} 
+                    disabled={!selectedDev || saving}
                     className='buttonClassname'
                 >
                     {saving ? <CircularProgress size={18} color="inherit" /> : 'forward'}

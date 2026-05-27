@@ -6,9 +6,6 @@ import {
   Bug,
   Folder,
   LogOut,
-  ChevronUp,
-  ChevronDown,
-  BarChart3,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -27,22 +24,11 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
-import { getAvatarColor, getInitials } from '@/utils/glocalfunc';
 
 const menuItems = [
   { icon: <LayoutDashboard size={20} />, label: 'Dashboard', href: '/' },
   { icon: <Folder size={20} />, label: 'Tasks', href: '/tasks' },
   { icon: <Bug size={20} />, label: 'Bug list', href: '/bugs' },
-  {
-    icon: <BarChart3 size={20} />,
-    label: 'Reports',
-    hasSubmenu: true,
-    submenu: [
-      { label: 'Task Performance', href: '/reports/task-performance' },
-      { label: 'Team Productivity', href: '/reports/team-productivity' },
-      { label: 'Bug Analytics', href: '/reports/bug-analytics' },
-    ],
-  },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
@@ -52,7 +38,6 @@ export default function Sidebar({ collapsed, onToggle }) {
   const open = Boolean(anchorEl);
   const [currentUser, setCurrentUser] = useState(null);
   const [logoHovered, setLogoHovered] = useState(false);
-  const [expandedMenu, setExpandedMenu] = useState(null);
 
   useEffect(() => {
     // Get user profile from sessionStorage
@@ -91,10 +76,6 @@ export default function Sidebar({ collapsed, onToggle }) {
     // Redirect to auto-login page
     router.push('/auto-login');
     router.refresh();
-  };
-
-  const toggleSubmenu = (label) => {
-    setExpandedMenu(expandedMenu === label ? null : label);
   };
 
   return (
@@ -157,7 +138,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.2 }}>
-                BugTrackr
+                BugTracker
               </Typography>
             </Box>
           </Box>
@@ -185,16 +166,13 @@ export default function Sidebar({ collapsed, onToggle }) {
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
-          const isSubmenuActive = item.submenu?.some(sub => pathname === sub.href);
-          const isExpanded = expandedMenu === item.label;
 
           if (collapsed) {
-            const href = item.hasSubmenu ? item.submenu[0].href : item.href;
             return (
               <Tooltip key={item.label} title={item.label} placement="right" arrow>
                 <Link
-                  href={href}
-                  className={`nav-item nav-item-collapsed${isActive || isSubmenuActive ? ' active' : ''}`}
+                  href={item.href}
+                  className={`nav-item nav-item-collapsed${isActive ? ' active' : ''}`}
                 >
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.3 }}>
                     {item.icon}
@@ -216,43 +194,14 @@ export default function Sidebar({ collapsed, onToggle }) {
           }
 
           return (
-            <Box key={item.label}>
-              {item.hasSubmenu ? (
-                <Box
-                  onClick={() => toggleSubmenu(item.label)}
-                  className={`nav-item${isActive || isSubmenuActive ? ' active' : ''}`}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  <Box sx={{ ml: 'auto' }}>
-                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </Box>
-                </Box>
-              ) : (
-                <Link
-                  href={item.href}
-                  className={`nav-item${isActive ? ' active' : ''}`}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              )}
-              {item.hasSubmenu && isExpanded && (
-                <Box sx={{ pl: 3, mt: 0.5 }}>
-                  {item.submenu.map((subItem) => (
-                    <Link
-                      key={subItem.href}
-                      href={subItem.href}
-                      className={`nav-item${pathname === subItem.href ? ' active' : ''}`}
-                      sx={{ fontSize: '0.85rem', py: 0.75 }}
-                    >
-                      <span>{subItem.label}</span>
-                    </Link>
-                  ))}
-                </Box>
-              )}
-            </Box>
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`nav-item${isActive ? ' active' : ''}`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
           );
         })}
       </nav>

@@ -228,7 +228,6 @@ function LoadingScreen() {
       justifyContent: 'center',
       minHeight: '100vh',
       bgcolor: '#F8FAFC',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
       <Box sx={{
         bgcolor: 'white',

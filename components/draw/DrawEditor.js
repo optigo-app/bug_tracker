@@ -92,48 +92,8 @@ export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImage
 
     const serialized = new XMLSerializer().serializeToString(svgClone);
     const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-
-    try {
-      const image = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error("Failed to render SVG."));
-        img.src = url;
-      });
-
-      const exportCanvas = document.createElement("canvas");
-      exportCanvas.width = contentW;
-      exportCanvas.height = contentH;
-
-      const context = exportCanvas.getContext("2d");
-      if (!context) {
-        throw new Error("Canvas context unavailable.");
-      }
-
-      context.drawImage(image, 0, 0, exportCanvas.width, exportCanvas.height);
-
-      let pngBlob = null;
-      try {
-        pngBlob = await new Promise((resolve) =>
-          exportCanvas.toBlob(resolve, "image/png")
-        );
-      } catch (error) {
-        if (error?.name === "SecurityError") {
-          return new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
-        }
-        throw error;
-      }
-
-      if (!pngBlob) {
-        return new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
-      }
-
-      return new File([pngBlob], "bug-screenshot.png", { type: "image/png" });
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    
+    return new File([blob], "bug-screenshot.svg", { type: "image/svg+xml" });
   };
 
   const handleContinueSave = async () => {

@@ -103,11 +103,6 @@ export default function DrawBottomBar({
             <Copy size={16} />
           </button>
         </Tooltip>
-        <Tooltip title="More options" arrow>
-          <button className={styles.iconButton}>
-            <MoreVertical size={16} />
-          </button>
-        </Tooltip>
       </div>
 
       <div className={styles.toolDockWrap}>

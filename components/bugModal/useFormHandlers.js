@@ -8,7 +8,7 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
 
   const bugIdForSubmit = isEdit
     ? bug.id
-    : ('b' + Date.now() + Math.random().toString(36).substring(2, 9));
+    : null; // Let SQL generate the ID
 
   const filesToUpload = attachments
     .filter(att => typeof window !== 'undefined' && typeof window.File !== 'undefined' && att?.file instanceof window.File)
@@ -17,7 +17,7 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
   let uploadedAttachments = [];
   if (filesToUpload.length > 0) {
     const uploadResult = await uploadFilesForBug({
-      bugId: bugIdForSubmit,
+      bugId: bugIdForSubmit || 'temp_' + Date.now(),
       files: filesToUpload,
     });
 
@@ -43,11 +43,12 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
   };
 
   try {
+    let response;
     if (isEdit) {
-      await updateBugApi(payload);
+      response = await updateBugApi(payload);
       toast.success('Bug updated successfully');
     } else {
-      await saveBugApi(payload);
+      response = await saveBugApi(payload);
       toast.success('Bug created successfully');
     }
 
@@ -55,7 +56,7 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
       onClose();
     }
 
-    if (onSuccess) onSuccess(isEdit ? undefined : payload, saveAndNew);
+    if (onSuccess) onSuccess(isEdit ? undefined : { ...response, formData: payload }, saveAndNew);
   } catch (error) {
     console.error('Failed to save bug:', error);
     toast.error(isEdit ? 'Failed to update bug' : 'Failed to create bug');

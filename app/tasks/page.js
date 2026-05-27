@@ -13,7 +13,8 @@ import {
   InputBase,
   Tooltip,
   CircularProgress,
-  Button
+  Button,
+  Autocomplete
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { getRandomAvatarColor, getInitials, ImageUrl } from '@/utils/glocalfunc';
@@ -23,8 +24,9 @@ import {
 } from 'lucide-react';
 import { fetchTaskDataFullApi } from '@/src/utils/taskApi';
 import { useBugContext } from '@/contexts/BugContext';
-import { statusColors, priorityColors } from '@/utils/glocalfunc';
 import { encodeUrlParams } from '@/utils/urlParams';
+import StatusChip from '@/components/StatusChip';
+import CustomDateRangePicker from '@/components/DateRangePicker';
 
 export default function TasksPage() {
   const router = useRouter();
@@ -34,15 +36,23 @@ export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter states
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [priorityFilter, setPriorityFilter] = useState('ALL');
-  const [projectFilter, setProjectFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(null);
+  const [priorityFilter, setPriorityFilter] = useState(null);
+  const [projectFilter, setProjectFilter] = useState(null);
+  const [moduleFilter, setModuleFilter] = useState(null);
+  const [startDateFilter, setStartDateFilter] = useState({ startDate: "", endDate: "" });
+  const [dueDateFilter, setDueDateFilter] = useState({ startDate: "", endDate: "" });
+
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 25
+  });
 
   useEffect(() => {
     // Detect if it's a page reload vs navigation
     const navigationEntries = performance.getEntriesByType('navigation');
     const isReload = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
-    
+
     // Force refresh on reload, use cache on navigation
     fetchTaskData(isReload);
   }, []);
@@ -67,6 +77,7 @@ export default function TasksPage() {
       setIsLoading(false);
     }
   };
+  
 
   const processAndSetTasks = (tasks, bugsData = []) => {
     const priorityData = JSON.parse(sessionStorage.getItem('taskpriorityData') || '[]');
@@ -100,30 +111,54 @@ export default function TasksPage() {
         taskPr: project ? project?.labelname : "",
         assignee: matchedAssignees ?? [],
         category: category?.labelname,
+        modulename: task?.modulename,
         startDate: task.StartDate,
         bugCount: bugCount
       };
     };
-    
+
     const finalTasks = tasks?.map((task) => enhanceTask(task)) || [];
+    // Sort by entry date (StartDate) in descending order (newest first)
+    finalTasks.sort((a, b) => {
+      const dateA = a.startDate ? new Date(a.startDate) : new Date(0);
+      const dateB = b.startDate ? new Date(b.startDate) : new Date(0);
+      return dateB - dateA;
+    });
     setTasks(finalTasks);
   };
 
+  const isDateFilterActive = (filter) => filter?.startDate && filter?.endDate;
+
   const filteredTasks = tasks.filter(t => {
     const matchesSearch = t.taskname?.toLowerCase().includes(search.toLowerCase()) ||
-      t.taskno?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
-    const matchesPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
-    const matchesProject = projectFilter === 'ALL' || t.taskPr === projectFilter;
-    return matchesSearch && matchesStatus && matchesPriority && matchesProject;
+      t.taskno?.toLowerCase().includes(search.toLowerCase()) ||
+      t.modulename?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = !statusFilter || t.status === statusFilter;
+    const matchesPriority = !priorityFilter || t.priority === priorityFilter;
+    const matchesProject = !projectFilter || t.taskPr === projectFilter;
+    const matchesModule = !moduleFilter || t.modulename === moduleFilter;
+
+    const matchesStartDate = !isDateFilterActive(startDateFilter) || (
+      t.startDate &&
+      new Date(t.startDate) >= new Date(new Date(startDateFilter.startDate).setHours(0, 0, 0, 0)) &&
+      new Date(t.startDate) <= new Date(new Date(startDateFilter.endDate).setHours(23, 59, 59, 999))
+    );
+    const matchesDueDate = !isDateFilterActive(dueDateFilter) || (
+      t.DeadLineDate &&
+      new Date(t.DeadLineDate) >= new Date(new Date(dueDateFilter.startDate).setHours(0, 0, 0, 0)) &&
+      new Date(t.DeadLineDate) <= new Date(new Date(dueDateFilter.endDate).setHours(23, 59, 59, 999))
+    );
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesModule && matchesStartDate && matchesDueDate;
   });
 
   // Active filter count
-  const activeFilterCount = [statusFilter, priorityFilter, projectFilter].filter(f => f !== 'ALL').length;
+  const activeFilterCount = [statusFilter, priorityFilter, projectFilter, moduleFilter].filter(f => f !== null).length + (isDateFilterActive(startDateFilter) ? 1 : 0) + (isDateFilterActive(dueDateFilter) ? 1 : 0);
 
   // Calculate stats
   const stats = {
     total: tasks.length,
+    totalBugs: tasks.reduce((sum, t) => sum + (t.bugCount || 0), 0),
     open: tasks.filter(t => !t.status || t.status?.toLowerCase() === 'open').length,
     inProgress: tasks.filter(t => t.status?.toLowerCase() === 'in progress').length,
     completed: tasks.filter(t => t.status?.toLowerCase() === 'completed' || t.status?.toLowerCase() === 'closed').length,
@@ -132,88 +167,124 @@ export default function TasksPage() {
 
   const taskColumns = [
     {
+      field: 'srNo',
+      headerName: 'SR NO',
+      width: 70,
+      renderCell: (params) => {
+        const rowIndex =
+          paginationModel.page * paginationModel.pageSize +
+          params.api.getRowIndexRelativeToVisibleRows(params.row.id) +
+          1;
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+              width: '100%',
+              pl: 2
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: '#64748B'
+              }}
+            >
+              {rowIndex}
+            </Typography>
+          </Box>
+        );
+      }
+    },
+    {
       field: 'taskname',
       headerName: 'TASK TITLE',
       flex: 1,
-      minWidth: 200,
-      renderCell: (params) => (
-        <Box sx={{ py: 1 }}>
-          <Stack direction="row" spacing={1} alignItems="baseline">
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: '#7367f0',
-                fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                bgcolor: 'rgba(115, 103, 240, 0.08)',
-                px: 0.8,
-                py: 0.2,
-                borderRadius: 1
-              }}
-            >
-              {params.row.taskno}
-            </Typography>
-            <Typography
-              onClick={() => {
-                if (params.row.taskno) {
-                  const encodedParams = encodeUrlParams({
-                    taskno: params.row.taskno,
-                    taskname: params.row.taskname || '',
-                    taskid: params.row.taskid || params.row.id || '',
-                    assigneeids: params.row.assigneids || '',
-                    dueDate: params.row.DeadLineDate || ''
-                  });
-                  router.push(`/bugs?data=${encodedParams}`);
-                }
-              }}
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                color: '#444050',
-                lineHeight: 1.2,
-                mb: 0.5,
-                cursor: 'pointer',
-                '&:hover': {
+      minWidth: 100,
+      renderCell: (params) => {
+        const bugCount = params.row.bugCount || 0;
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', pr: 2 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                onClick={() => {
+                  if (params.row.taskno) {
+                    const encodedParams = encodeUrlParams({
+                      taskno: params.row.taskno,
+                      taskname: params.row.taskname || '',
+                      taskid: params.row.taskid || params.row.id || '',
+                      assigneeids: params.row.assigneids || '',
+                      dueDate: params.row.DeadLineDate || ''
+                    });
+                    router.push(`/bugs?data=${encodedParams}`);
+                  }
+                }}
+                sx={{
+                  fontWeight: 700,
                   color: '#7367f0',
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              {params.value}
-            </Typography>
-          </Stack>
-        </Box>
-      )
+                  fontSize: '0.75rem',
+                  fontFamily: 'monospace',
+                  bgcolor: 'rgba(115, 103, 240, 0.08)',
+                  px: 0.8,
+                  py: 0.2,
+                  borderRadius: 1,
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'rgba(115, 103, 240, 0.16)'
+                  }
+                }}
+              >
+                {params.row.taskno}
+              </Typography>
+              <Typography
+                onClick={() => {
+                  if (params.row.taskno) {
+                    const encodedParams = encodeUrlParams({
+                      taskno: params.row.taskno,
+                      taskname: params.row.taskname || '',
+                      taskid: params.row.taskid || params.row.id || '',
+                      assigneeids: params.row.assigneids || '',
+                      dueDate: params.row.DeadLineDate || ''
+                    });
+                    router.push(`/bugs?data=${encodedParams}`);
+                  }
+                }}
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  color: '#444050',
+                  lineHeight: 1.2,
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    color: '#7367f0',
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
+                {params.value}
+              </Typography>
+            </Stack>
+            <StatusChip type="bugCount" count={bugCount} sx={{ ml: 2, flexShrink: 0 }} />
+          </Box>
+        );
+      }
     },
     {
       field: 'taskPr',
       headerName: 'PROJECT',
-      width: 180,
+      width: 300,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           {params.value ? (
             <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#A8AAAE' }}>
               <Building2 size={12} />
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 500 }}>{params.value}</Typography>
-            </Stack>
-          ) : (
-            <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE' }}>-</Typography>
-          )}
-        </Box>
-      )
-    },
-     {
-      field: 'startDate',
-      headerName: 'START DATE',
-      width: 120,
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          {params.value ? (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#EA5455' }}>
-              <Calendar size={12} />
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
-                {new Date(params.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 500 }}><span style={{ fontWeight: 700 }}>{params.value}</span>/{params?.row?.modulename}</Typography>
             </Stack>
           ) : (
             <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE' }}>-</Typography>
@@ -222,21 +293,12 @@ export default function TasksPage() {
       )
     },
     {
-      field: 'DeadLineDate',
-      headerName: 'DUE DATE',
+      field: 'category',
+      headerName: 'CATEGORY',
       width: 120,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          {params.value ? (
-            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#EA5455' }}>
-              <Calendar size={12} />
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
-                {new Date(params.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-              </Typography>
-            </Stack>
-          ) : (
-            <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE' }}>-</Typography>
-          )}
+          <StatusChip type="category" label={params.value} />
         </Box>
       )
     },
@@ -274,61 +336,12 @@ export default function TasksPage() {
       )
     },
     {
-      field: 'bugCount',
-      headerName: 'BUGS',
-      width: 100,
-      renderCell: (params) => {
-        const count = params.value || 0;
-        return (
-          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            {count > 0 ? (
-              <Chip
-                icon={<AlertCircle size={12} style={{ color: '#EA5455' }} />}
-                label={count}
-                size="small"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                  color: '#EA5455',
-                  bgcolor: 'rgba(234, 84, 85, 0.1)',
-                  border: '1px solid rgba(234, 84, 85, 0.2)',
-                  borderRadius: '4px',
-                  '& .MuiChip-icon': {
-                    marginLeft: '4px',
-                    marginRight: '-4px'
-                  }
-                }}
-              />
-            ) : (
-              <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE', fontWeight: 500 }}>
-                0
-              </Typography>
-            )}
-          </Box>
-        );
-      }
-    },
-    {
-      field: 'category',
-      headerName: 'CATEGORY',
-      width: 120,
+      field: 'priority',
+      headerName: 'PRIORITY',
+      width: 110,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-          {params.value ? (
-            <Chip
-              label={params.value}
-              size="small"
-              sx={{
-                fontWeight: 600, fontSize: '0.75rem',
-                color: '#475569', bgcolor: '#F1F5F9',
-                borderRadius: '4px'
-              }}
-            />
-          ) : (
-            <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE', fontStyle: 'italic' }}>
-              No category
-            </Typography>
-          )}
+          <StatusChip type="priority" label={params.value} />
         </Box>
       )
     },
@@ -336,41 +349,49 @@ export default function TasksPage() {
       field: 'status',
       headerName: 'STATUS',
       width: 130,
-      renderCell: (params) => {
-        const status = params.value?.toLowerCase() || '';
-        const style = statusColors[status] || { color: '#4B465C', backgroundColor: '#F1F5F9' };
-        return (
-          <Chip
-            label={params.value || 'Open'}
-            size="small"
-            sx={{
-              fontWeight: 600, fontSize: '0.75rem',
-              color: style.color, bgcolor: style.backgroundColor,
-              borderRadius: '4px', textTransform: 'uppercase'
-            }}
-          />
-        );
-      }
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <StatusChip type="status" label={params.value} />
+        </Box>
+      )
     },
     {
-      field: 'priority',
-      headerName: 'PRIORITY',
-      width: 110,
-      renderCell: (params) => {
-        const priority = params.value?.toLowerCase() || '';
-        const style = priorityColors[priority] || { color: '#A8AAAE', backgroundColor: '#F2F2F3' };
-        return (
-          <Chip
-            label={params.value || 'Medium'}
-            size="small"
-            sx={{
-              fontWeight: 700, fontSize: '0.75rem',
-              color: style.color, bgcolor: style.backgroundColor || style.bgcolor,
-              borderRadius: '4px', textTransform: 'uppercase'
-            }}
-          />
-        );
-      }
+      field: 'startDate',
+      headerName: 'START DATE',
+      width: 120,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          {params.value ? (
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#EA5455' }}>
+              <Calendar size={12} />
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                {new Date(params.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE' }}>-</Typography>
+          )}
+        </Box>
+      )
+    },
+    {
+      field: 'DeadLineDate',
+      headerName: 'DUE DATE',
+      width: 120,
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          {params.value ? (
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: '#EA5455' }}>
+              <Calendar size={12} />
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                {new Date(params.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography sx={{ fontSize: '0.8rem', color: '#A8AAAE' }}>-</Typography>
+          )}
+        </Box>
+      )
     }
   ];
 
@@ -389,14 +410,26 @@ export default function TasksPage() {
           <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Total Tasks</Typography>
-                <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#1A202C' }}>{stats.total}</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Total Tasks/Bugs</Typography>
+                <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#1A202C' }}>{stats.total}/<Typography variant='span' sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#EA5455' }}>{stats.totalBugs}</Typography></Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <BarChart3 size={24} color="#7367f0" />
               </Box>
             </Stack>
           </Paper>
+
+          {/* <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Total Bugs</Typography>
+                <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#EA5455' }}>{stats.totalBugs}</Typography>
+              </Box>
+              <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertCircle size={24} color="#EA5455" />
+              </Box>
+            </Stack>
+          </Paper> */}
 
           <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -448,7 +481,7 @@ export default function TasksPage() {
               border: '1px solid #E2E8F0',
               bgcolor: 'white',
               flex: 1,
-              minWidth: 250
+              minWidth: 200
             }}
           >
             <Search size={18} color="#94A3B8" />
@@ -460,64 +493,91 @@ export default function TasksPage() {
             />
           </Paper>
 
-          <TextField
-            select
+          <Autocomplete
             size="small"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ 
-              minWidth: 140,
-              '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' }
-            }}
-            SelectProps={{ native: true }}
-          >
-            <option value="ALL">All Status</option>
-            {Array.from(new Set(tasks.map(t => t.status))).filter(Boolean).map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </TextField>
-
-          <TextField
-            select
-            size="small"
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            sx={{ 
-              minWidth: 140,
-              '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' }
-            }}
-            SelectProps={{ native: true }}
-          >
-            <option value="ALL">All Priority</option>
-            {Array.from(new Set(tasks.map(t => t.priority))).filter(Boolean).map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </TextField>
-
-          <TextField
-            select
-            size="small"
+            options={Array.from(new Set(tasks.map(t => t.taskPr))).filter(Boolean)}
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            sx={{ 
-              minWidth: 140,
-              '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' }
-            }}
-            SelectProps={{ native: true }}
-          >
-            <option value="ALL">All Projects</option>
-            {Array.from(new Set(tasks.map(t => t.taskPr))).filter(Boolean).map(pr => (
-              <option key={pr} value={pr}>{pr}</option>
-            ))}
-          </TextField>
+            onChange={(e, newValue) => setProjectFilter(newValue)}
+            sx={{ minWidth: 180 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="All Projects"
+                sx={{ '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' } }}
+              />
+            )}
+          />
+
+          <Autocomplete
+            size="small"
+            options={Array.from(new Set(tasks.map(t => t.modulename))).filter(Boolean)}
+            value={moduleFilter}
+            onChange={(e, newValue) => setModuleFilter(newValue)}
+            sx={{ minWidth: 300, maxWidth: 300 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="All Modules"
+                sx={{ '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' } }}
+              />
+            )}
+          />
+
+          <Autocomplete
+            size="small"
+            options={Array.from(new Set(tasks.map(t => t.status))).filter(Boolean)}
+            value={statusFilter}
+            onChange={(e, newValue) => setStatusFilter(newValue)}
+            sx={{ minWidth: 140 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="All Status"
+                sx={{ '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' } }}
+              />
+            )}
+          />
+
+          <Autocomplete
+            size="small"
+            options={Array.from(new Set(tasks.map(t => t.priority))).filter(Boolean)}
+            value={priorityFilter}
+            onChange={(e, newValue) => setPriorityFilter(newValue)}
+            sx={{ minWidth: 140 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="All Priority"
+                sx={{ '& .MuiInputBase-root': { borderRadius: 2, fontSize: '0.875rem', bgcolor: 'white' } }}
+              />
+            )}
+          />
+
+          <Box sx={{ minWidth: 220 }}>
+            <CustomDateRangePicker
+              placeholder="Start Date Range"
+              value={startDateFilter}
+              onChange={setStartDateFilter}
+            />
+          </Box>
+          <Box sx={{ minWidth: 220 }}>
+            <CustomDateRangePicker
+              placeholder="Due Date Range"
+              value={dueDateFilter}
+              onChange={setDueDateFilter}
+            />
+          </Box>
 
           {activeFilterCount > 0 && (
             <Button
               size="small"
               onClick={() => {
-                setStatusFilter('ALL');
-                setPriorityFilter('ALL');
-                setProjectFilter('ALL');
+                setStatusFilter(null);
+                setPriorityFilter(null);
+                setProjectFilter(null);
+                setModuleFilter(null);
+                setStartDateFilter({ startDate: "", endDate: "" });
+                setDueDateFilter({ startDate: "", endDate: "" });
               }}
               sx={{
                 textTransform: 'none',
@@ -556,12 +616,9 @@ export default function TasksPage() {
             <DataGrid
               rows={filteredTasks}
               columns={taskColumns}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
               pageSizeOptions={[10, 25, 50, 100]}
-              initialState={{
-                pagination: {
-                  paginationModel: { page: 0, pageSize: 25 }
-                }
-              }}
               disableRowSelectionOnClick
               sx={{
                 border: 'none',

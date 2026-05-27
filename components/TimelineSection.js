@@ -9,7 +9,7 @@ import {
     Paper
 } from '@mui/material';
 import { History } from 'lucide-react';
-import { formatDateTime } from '@/utils/glocalfunc';
+import { formatDateTime, SectionLabel } from '@/utils/glocalfunc';
 
 function getLabelById(id, data, fallbackKey = 'labelname') {
     if (!id || !data || data.length === 0) return id;
@@ -17,19 +17,7 @@ function getLabelById(id, data, fallbackKey = 'labelname') {
     return item?.[fallbackKey] || item?.label || item?.name || id;
 }
 
-function SectionLabel({ children }) {
-    return (
-        <Typography sx={{
-            fontSize: '0.72rem',
-            fontWeight: 800,
-            color: '#7D7f85',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase'
-        }}>
-            {children}
-        </Typography>
-    );
-}
+
 
 export default function TimelineSection({ timeline = [], getUserName, showFullTimeline, setShowFullTimeline }) {
     const [statusData, setStatusData] = useState([]);

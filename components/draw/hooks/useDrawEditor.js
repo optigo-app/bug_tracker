@@ -474,16 +474,8 @@ export function useDrawEditor() {
         img.src = src;
       });
 
-      // Scale down if image is too large (max 800px width or height)
-      const maxDimension = 800;
       let width = naturalWidth;
       let height = naturalHeight;
-
-      if (width > maxDimension || height > maxDimension) {
-        const scale = Math.min(maxDimension / width, maxDimension / height);
-        width = width * scale;
-        height = height * scale;
-      }
 
       const newShape = {
         id: generateId("image"),

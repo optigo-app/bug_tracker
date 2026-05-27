@@ -1,3 +1,5 @@
+import { createTheme, Typography } from "@mui/material";
+
 export const STATUS = {
   OPEN: { label: 'Open', bg: '#F8FAFC', color: '#6D6B77', border: '#e0e0e0', dot: '#7D7f85' },
   IN_PROGRESS: { label: 'In Progress', bg: '#EFF6FF', color: '#7367f0', border: '#DEDAFE', dot: '#7367f0' },
@@ -68,19 +70,19 @@ export const formatDate = (d) => {
 };
 
 export const formatCommentDate = (dateString) => {
-    if (!dateString) return '';
+  if (!dateString) return '';
 
-    const date = new Date(dateString);
+  const date = new Date(dateString);
 
-    return date.toLocaleString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC', // remove if you want IST
-    });
+  return date.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC', // remove if you want IST
+  });
 };
 
 /**
@@ -200,19 +202,19 @@ export const getRandomAvatarColor = (name) => {
 
 // Common TextField style properties
 export const commonTextFieldProps = {
-    fullWidth: true,
-    size: "small",
-    className: "textfieldsClass",
+  fullWidth: true,
+  size: "small",
+  className: "textfieldsClass",
 };
 
 export const ImageUrl = (data) => {
-    if (typeof sessionStorage === 'undefined') return null;
-    const init = JSON.parse(sessionStorage.getItem('taskInit'));
-    if (data && init) {
-        const url = `${init.url_path}/${init.ukey}/${data.empphoto}`;
-        return url;
-    }
-    return null;
+  if (typeof sessionStorage === 'undefined') return null;
+  const init = JSON.parse(sessionStorage.getItem('taskInit'));
+  if (data && init) {
+    const url = `${init.url_path}/${init.ukey}/${data.empphoto}`;
+    return url;
+  }
+  return null;
 };
 
 
@@ -415,11 +417,11 @@ export const PriorityBadge = ({ priority }) => {
       padding: '4px 10px',
       boxShadow: `0 1px 3px ${color}10`,
     }}>
-      <span style={{ 
-        fontSize: '0.72rem', 
-        fontWeight: 800, 
-        color: color, 
-        lineHeight: 1.3, 
+      <span style={{
+        fontSize: '0.72rem',
+        fontWeight: 800,
+        color: color,
+        lineHeight: 1.3,
         letterSpacing: '0.04em'
       }}>
         {p.label}
@@ -450,45 +452,219 @@ export const generateExportFileName = (username = '', taskNo = '', extension = '
 
 //Selectmenu custom styles
 export const commonSelectProps = {
-    select: true,
-    fullWidth: true,
-    size: "small",
-    sx: {
-        "& .MuiOutlinedInput-root": {
-            borderRadius: "8px",
-            "& fieldset": {
-                borderRadius: "8px",
+  select: true,
+  fullWidth: true,
+  size: "small",
+  sx: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "8px",
+      "& fieldset": {
+        borderRadius: "8px",
+      },
+    },
+  },
+  SelectProps: {
+    MenuProps: {
+      PaperProps: {
+        sx: {
+          borderRadius: "8px",
+          "& .MuiMenuItem-root": {
+            fontFamily: '"Public Sans", sans-serif',
+            color: "#444050",
+            margin: "5px 10px",
+            "&:hover": {
+              borderRadius: "8px",
+              backgroundColor: "#7367f0",
+              color: "#fff",
             },
+            "&.Mui-selected": {
+              backgroundColor: "#80808033",
+              borderRadius: "8px",
+              "&:hover": {
+                backgroundColor: "#7367f0",
+                color: "#fff",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+
+export const bugstatusColor = {
+  "new": {
+    "bgColor": "#CFE8E1",
+    "textColor": "#2F7D6D"
+  },
+  "assigned": {
+    "bgColor": "#F6E2C8",
+    "textColor": "#B06A1B"
+  },
+  "in_progress": {
+    "bgColor": "#DCD9F8",
+    "textColor": "#5A54B3"
+  },
+  "fixed": {
+    "bgColor": "#DCD9F8",
+    "textColor": "#5A54B3"
+  },
+  "ready_for_test": {
+    "bgColor": "#CFE8E1",
+    "textColor": "#2F7D6D"
+  },
+  "verified": {
+    "bgColor": "#CFE8E1",
+    "textColor": "#2F7D6D"
+  },
+  "closed": {
+    "bgColor": "#E5E2DC",
+    "textColor": "#6E6A63"
+  },
+  "reopened": {
+    "bgColor": "#CFE8E1",
+    "textColor": "#2F7D6D"
+  },
+  "deferred": {
+    "bgColor": "#F6E2C8",
+    "textColor": "#B06A1B"
+  },
+  "rejected": {
+    "bgColor": "#E5E2DC",
+    "textColor": "#6E6A63"
+  }
+}
+
+
+export const Datetheme = createTheme({
+    palette: {
+        primary: {
+            main: "#7367f0",
+        },
+        secondary: {
+            main: "#f50057",
+        },
+        background: {
+            default: "#f5f5f5",
         },
     },
-    SelectProps: {
-        MenuProps: {
-            PaperProps: {
-                sx: {
-                    borderRadius: "8px",
-                    "& .MuiMenuItem-root": {
-                        fontFamily: '"Public Sans", sans-serif',
-                        color: "#444050",
-                        margin: "5px 10px",
-                        "&:hover": {
-                            borderRadius: "8px",
-                            backgroundColor: "#7367f0",
-                            color: "#fff",
-                        },
-                        "&.Mui-selected": {
-                            backgroundColor: "#80808033",
-                            borderRadius: "8px",
-                            "&:hover": {
-                                backgroundColor: "#7367f0",
-                                color: "#fff",
-                            },
-                        },
+    typography: {
+        color: "#fff !important",
+        fontFamily: '"Public Sans", sans-serif',
+        h4: {
+            fontWeight: 600,
+        },
+    },
+    components: {
+        MuiPaper: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 1,
+                    boxShadow: "rgba(90, 90, 90, 0.1) 0px 4px 12px",
+                    border: "1px solid rgba(90, 90, 90, 0.1)",
+                    "&::-webkit-scrollbar": {
+                        width: "6px",
+                    },
+                    "&::-webkit-scrollbar-track": {
+                        background: "transparent", // Almost invisible track
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "rgba(0, 0, 0, 0.1)", // Very light thumb
+                        borderRadius: "4px",
+                    },
+                    "&::-webkit-scrollbar-thumb:hover": {
+                        backgroundColor: "rgba(0, 0, 0, 0.15)", // Slightly visible on hover
+                    },
+                    "&::-webkit-scrollbar-thumb:active": {
+                        backgroundColor: "rgba(0, 0, 0, 0.2)", // Slightly darker when dragging
+                        color: "#fff",
                     },
                 },
             },
         },
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 8,
+                    textTransform: "capitalize",
+                },
+                containedPrimary: {
+                    background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)", // Button color
+                    "&:hover": {
+                        background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)",
+                    },
+                    color: "white",
+                },
+                textSecondary: {
+                    background: "#ebebed", // Button color
+                    "&:hover": {
+                        backgroundColor: "#ebebed",
+                    },
+                    color: "#7D7f85",
+                }
+            },
+        },
+        MuiTextField: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 8, // Applies border radius to the entire TextField
+                    "& .MuiOutlinedInput-root": {
+                        "& fieldset": {
+                            borderColor: "#d1d5db", // Default border color (gray)
+                        },
+                        "&:hover fieldset": {
+                            borderColor: "black", // Darker border on hover
+                        },
+                        "&.Mui-focused fieldset": {
+                            borderColor: "#685dd8", // Default MUI blue when focused
+                        },
+                        "&.Mui-disabled fieldset": {
+                            borderColor: "#d1d5db", // Light gray when disabled
+                        },
+                        "&.Mui-error fieldset": {
+                            borderColor: "#d32f2f", // Red border when there's an error
+                        },
+                    },
+                    "& .MuiInputBase-input": {
+                        padding: "10px 14px", // Padding inside the input field
+                    },
+                    "& .MuiInputLabel-root": {
+                        color: "gray", // Default label color
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#685dd8", // Label color when focused
+                    },
+                    "& .MuiInputLabel-root.Mui-error": {
+                        color: "#d32f2f", // Label color when there's an error
+                    },
+                },
+            },
+        },
+        MuiMenu: {
+            styleOverrides: {
+                paper: {
+                    maxHeight: "200px", // Fixed height for the dropdown list
+                    overflowY: "auto", // Enable vertical scrolling if content exceeds height
+                    zIndex: 1300, // Ensure proper z-index for overlay elements
+                },
+            },
+        },
     },
-};
+});
 
+export function SectionLabel({ children }) {
+    return (
+        <Typography sx={{
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            color: '#7D7f85',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase'
+        }}>
+            {children}
+        </Typography>
+    );
+}
 
 

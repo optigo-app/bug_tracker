@@ -17,9 +17,6 @@ export default function DrawTopbar({ onExportPng, onExportSvg, onSave, onSaveAnd
       <div className={styles.brandArea}>
         <div className={styles.logoTile}>B</div>
         <div className={styles.logoText}>BugEditor</div>
-        <button className={styles.iconButton} aria-label="More options">
-          <MoreVertical size={16} />
-        </button>
       </div>
 
       <div className={styles.topbarCenter}>

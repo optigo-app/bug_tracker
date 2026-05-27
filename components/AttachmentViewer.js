@@ -36,7 +36,7 @@ import {
 
 /**
  * Enhanced AttachmentViewer
- * Features: Panning, Smooth Zoom, Keyboard Shortcuts, Info Panel, Slideshow
+ * Features: Panning, Smooth Zoom, Keyboard Shortcuts, Info Panel, Slideshow, Bug Switching
  * Note: Swiper dependency removed and replaced with a custom native React slider
  * for better environment compatibility.
  */
@@ -44,7 +44,10 @@ export default function AttachmentViewer({
     open,
     onClose,
     attachments = [],
-    initialIndex = 0
+    initialIndex = 0,
+    bugs = [], // Array of bugs with their attachments
+    currentBugId = null, // Current bug ID being viewed
+    onBugChange = null // Callback when switching bugs
 }) {
     const [fullMode, setFullMode] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -78,6 +81,38 @@ export default function AttachmentViewer({
         setRotation(0);
         setPosition({ x: 0, y: 0 });
     }, []);
+
+    // Find current bug index
+    const currentBugIndexVal = bugs.findIndex(b => String(b.id) === String(currentBugId));
+    const currentBug = bugs[currentBugIndexVal];
+
+    // Bug switch handlers
+    const goToNextBug = useCallback(() => {
+        if (bugs.length === 0 || currentBugIndexVal < 0 || currentBugIndexVal >= bugs.length - 1) return;
+        const nextIndex = currentBugIndexVal + 1;
+        const nextBug = bugs[nextIndex];
+        if (nextBug) {
+            setCurrentIndex(0);
+            resetView();
+            if (onBugChange) {
+                onBugChange(nextBug.id, nextBug.attachments || []);
+            }
+        }
+    }, [bugs, currentBugIndexVal, onBugChange, resetView]);
+
+    const goToPrevBug = useCallback(() => {
+        if (bugs.length === 0 || currentBugIndexVal <= 0) return;
+        const prevIndex = currentBugIndexVal - 1;
+        const prevBug = bugs[prevIndex];
+        if (prevBug) {
+            setCurrentIndex(0);
+            resetView();
+            // Update attachments directly without closing dialog
+            if (onBugChange) {
+                onBugChange(prevBug.id, prevBug.attachments || []);
+            }
+        }
+    }, [bugs, currentBugIndexVal, onBugChange, resetView]);
 
     // Navigation Handlers
     const goToNext = useCallback(() => {
@@ -163,6 +198,12 @@ export default function AttachmentViewer({
             if (e.key === 'ArrowRight') goToNext();
             if (e.key === 'ArrowLeft') goToPrev();
 
+            // Bug Navigation (with Ctrl)
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'ArrowRight') { e.preventDefault(); goToNextBug(); }
+                if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrevBug(); }
+            }
+
             // Utils
             if (e.key === 'r') setRotation(prev => (prev + 90) % 360);
             if (e.key === 'i') setShowInfo(prev => !prev);
@@ -173,7 +214,7 @@ export default function AttachmentViewer({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [open, fullMode, isImage, resetView, onClose, goToNext, goToPrev]);
+    }, [open, fullMode, isImage, resetView, onClose, goToNext, goToPrev, goToNextBug, goToPrevBug]);
 
     if (!mappedAttachments.length) return null;
 
@@ -212,15 +253,31 @@ export default function AttachmentViewer({
                     </IconButton>
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1 }}>
-                            {currentFile.name}
+                            {currentBug ? `${currentBug.bugNo || currentBug.id}: ${currentBug.title}` : currentFile.name}
                         </Typography>
                         <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                             {currentIndex + 1} of {mappedAttachments.length}
+                            {currentBug && ` • ${currentFile.name}`}
                         </Typography>
                     </Box>
                 </Stack>
 
                 <Stack direction="row" spacing={1} alignItems="center">
+                    {bugs.length > 0 && (
+                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
+                            <Tooltip title="Previous Bug (Ctrl + Left Arrow)">
+                                <IconButton size="small" onClick={goToPrevBug} disabled={bugs.length <= 1 || currentBugIndexVal <= 0}>
+                                    <ChevronLeft size={18} />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Next Bug (Ctrl + Right Arrow)">
+                                <IconButton size="small" onClick={goToNextBug} disabled={bugs.length <= 1 || currentBugIndexVal >= bugs.length - 1 || currentBugIndexVal < 0}>
+                                    <ChevronRight size={18} />
+                                </IconButton>
+                            </Tooltip>
+                        </Stack>
+                    )}
+
                     {isImage && (
                         <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
                             <Tooltip title="Zoom Out (Ctrl -)">

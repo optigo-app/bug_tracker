@@ -437,7 +437,7 @@ export default function BugDetailPage() {
                 </Button>
               </>
             )}
-            {permissions.canChangeBugStatus(currentUser) && ['OPEN', 'IN_PROGRESS', 'REOPENED'].includes(bug.status) && (
+            {permissions.canChangeBugStatus(currentUser) && ['OPEN', 'IN_PROGRESS', 'REOPENED'].includes(bug.status) && currentUser?.role?.toLowerCase() === 'developer' && (
               <Button size="small" variant="contained" startIcon={<CheckCircle2 size={15} />}
                 onClick={() => { setPendingStatus('TESTING'); setStatusOpen(true); }} disabled={saving}
                 sx={{

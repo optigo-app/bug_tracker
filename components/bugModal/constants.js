@@ -1,28 +1,73 @@
-export const CATEGORY_OPTIONS = [
-  { value: 'UI/UX', label: 'UI/UX' },
-  { value: 'FUNCTIONALITY', label: 'Functionality' },
-  { value: 'PERFORMANCE', label: 'Performance' },
-  { value: 'SECURITY', label: 'Security' },
-  { value: 'OTHER', label: 'Other' }
-];
-
 export const getCategoryOptions = () => {
-  if (typeof window === 'undefined') return CATEGORY_OPTIONS;
+  if (typeof window === 'undefined') return [];
   try {
     const data = sessionStorage.getItem('bug_categoryData')
-      || sessionStorage.getItem('taskbugcategoryData');
     if (data) {
       const parsed = JSON.parse(data);
-      const mapped = parsed.map(item => ({
+      return parsed.map(item => ({
         value: item.id,
-        label: item.labelname || item.label || item.name || String(item.id)
+        label: item.labelname
       }));
-      if (mapped.length > 0) return mapped;
     }
   } catch (error) {
     console.error('Error loading category options from session storage:', error);
   }
-  return CATEGORY_OPTIONS;
+  return [];
+};
+
+// Centralized function to filter status data based on user role
+export const filterStatusDataByRole = (
+  statusData,
+  user = null,
+  all = false
+) => {
+  if (!user) return statusData;
+
+  // return all statuses when all=true
+  if (all) return statusData;
+
+  const designation = (user.designation || '').toLowerCase();
+
+  const isDeveloper = designation.includes('developer');
+  const isTester =
+    designation.includes('tester') ||
+    designation.includes('qa');
+
+  const isAdmin = designation.includes('admin');
+
+  // Admin gets all options
+  if (isAdmin) return statusData;
+
+  // Developer
+  if (isDeveloper) {
+    const devStatuses = [
+      'In Progress',
+      'Fixed',
+      'Ready For Test',
+      'Rejected',
+    ];
+
+    return statusData.filter((s) =>
+      devStatuses.includes(s.labelname || s.label)
+    );
+  }
+
+  // Tester
+  if (isTester) {
+    const testerStatuses = [
+      'New',
+      'Assigned',
+      'Verified',
+      'Closed',
+      'Reopen',
+      'Rejected',
+    ];
+
+    return statusData.filter((s) =>
+      testerStatuses.includes(s.labelname || s.label)
+    );
+  }
+  return statusData;
 };
 
 export const INITIAL_FORM_DATA = {
@@ -61,16 +106,17 @@ export const getPriorityOptions = () => {
   return [];
 };
 
-export const getStatusOptions = () => {
+export const getStatusOptions = (user = null, all) => {
   if (typeof window === 'undefined') return [];
   try {
     const data = sessionStorage.getItem('taskbugstatusData');
     if (data) {
       const parsed = JSON.parse(data);
-      return parsed.map(item => ({
+      const allOptions = parsed.map(item => ({
         value: item.id,
         label: item.labelname
       }));
+      return filterStatusDataByRole(allOptions, user, all);
     }
   } catch (error) {
     console.error('Error loading status options from session storage:', error);

@@ -18,7 +18,7 @@
 /out/
 
 #sql
-*.sql
+# *.sql
 
 # production
 /build

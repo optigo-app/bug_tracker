@@ -20,7 +20,7 @@ import {
   Button,
   CircularProgress
 } from '@mui/material';
-import { getAvatarColor, getInitials } from '@/utils/glocalfunc';
+import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
 import { checkAuth } from '@/utils/authCheck';
 import { getDashboardApi } from '@/app/api/dashboardApi';
 import {
@@ -142,11 +142,21 @@ export default function Home() {
   const [statusData, setStatusData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [taskAssignees, setTaskAssignees] = useState([]);
 
   useEffect(() => {
     if (!checkAuth()) {
       router.push('/auto-login');
       return;
+    }
+    // Load task assignees from sessionStorage
+    const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
+    if (taskAssigneeData) {
+      try {
+        setTaskAssignees(JSON.parse(taskAssigneeData));
+      } catch (error) {
+        console.error('Error parsing taskAssigneeData:', error);
+      }
     }
     fetchDashboardData();
   }, [router]);
@@ -187,7 +197,7 @@ export default function Home() {
           matchingDay.bugs = row.bugs;
         }
       });
-      const taskBugStatusData = JSON?.parse(sessionStorage.getItem('taskbugstatusData'));
+      const taskBugStatusData = JSON?.parse(sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData'));
       const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', '#64748B'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
@@ -413,25 +423,6 @@ export default function Home() {
                   Reported bugs over the last 7 days
                 </Typography>
               </Box>
-              <Button
-                size="small"
-                variant="outlined"
-                endIcon={<ArrowUpRight size={14} />}
-                sx={{
-                  borderRadius: 2,
-                  borderColor: '#E2E8F0',
-                  color: '#64748B',
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  '&:hover': {
-                    borderColor: '#7367f0',
-                    color: '#7367f0',
-                    bgcolor: 'rgba(115, 103, 240, 0.05)'
-                  }
-                }}
-              >
-                View Report
-              </Button>
             </Box>
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -603,7 +594,10 @@ export default function Home() {
             </Box>
             <List disablePadding>
               {recentActivity.length > 0 ? recentActivity.slice(0, 5).map((activity, idx) => {
-                const activityColors = getAvatarColor(activity.user);
+                const user = taskAssignees.find(u => String(u?.id) === String(activity.user) || String(u?.userid) === String(activity.user));
+                const userName = user ? `${user.firstname || ''} ${user.lastname || ''}`.trim() : activity.user;
+                const colors = getRandomAvatarColor(userName || '');
+                const userImageSrc = user ? ImageUrl({ empphoto: user.empphoto }) : null;
                 return (
                   <React.Fragment key={activity.id || idx}>
                     <ListItem sx={{
@@ -619,15 +613,26 @@ export default function Home() {
                       }
                     }}>
                       <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: activityColors.bg, color: activityColors.text, fontWeight: 700, fontSize: '0.875rem', width: 40, height: 40 }}>
-                          {getInitials(activity.user)}
+                        <Avatar
+                          src={userImageSrc}
+                          sx={{
+                            bgcolor: userImageSrc ? 'transparent' : colors,
+                            color: userImageSrc ? 'inherit' : 'white',
+                            fontWeight: 700,
+                            fontSize: '0.875rem',
+                            width: 40,
+                            height: 40,
+                            border: '1px solid #F1F5F9'
+                          }}
+                        >
+                          {!userImageSrc && userName?.charAt(0)}
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
                         sx={{ flex: 1, minWidth: 0, mr: 2 }}
                         primary={
                           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.5 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{activity.user}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>{userName}</Typography>
                             {activity.badge && (
                               <Chip label={activity.badge.label} size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: activity.badge.bg, color: activity.badge.color, letterSpacing: '0.04em' }} />
                             )}

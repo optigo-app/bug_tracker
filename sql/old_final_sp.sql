@@ -1,6 +1,6 @@
-USE [404146_CentralUser]
+﻿USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 27-05-2026 11:19:03 ******/
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 25-05-2026 10:42:04 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -32,92 +32,25 @@ BEGIN
 -------------
 	SET @spname=concat('exec [404146_CentralUser].[dbo].',OBJECT_NAME(@@PROCID),' ',@spname)
 
-       DECLARE 
-		  @DBNAME as NVARCHAR(50)=''
-		, @id NVARCHAR(50)= ''
-		, @mode NVARCHAR(100)= ''		
-		, @y NVARCHAR(100)= ''
-		, @appuserid NVARCHAR(100)= '' 
-		, @IPAddress NVARCHAR(50)= '' 
-		, @FormName NVARCHAR(200)= ''
-		, @Authorization NVARCHAR(100)= ''
-		, @domain NVARCHAR(50)= ''
-		, @version as NVARCHAR(10)= ''
-		, @ForEvt nvarchar(200)=''
+        DECLARE
+            @DBNAME        NVARCHAR(50)  = ''
+            , @appuserid     NVARCHAR(100) = ''
+            , @IPAddress     NVARCHAR(50)  = ''
+            , @FormName      NVARCHAR(200) = ''
+            , @mode          NVARCHAR(100) = ''
+            , @bug_id        NVARCHAR(50)  = ''
+            , @y             NVARCHAR(100) = ''
+            , @Authorization NVARCHAR(100) = ''
 
-		SET @con=[dbo].Base64Decode(@con)
-
-		IF(isnull(@con,'')<>'')
-		BEGIN
-				DECLARE @conTbl TABLE
-				(			
-				  [id] NVARCHAR(50)
-				, [mode] NVARCHAR(100)		
-				, [y] NVARCHAR(100)
-				, [appuserid] NVARCHAR(100)
-				, [IPAddress] NVARCHAR(50)
-				, [FormName] NVARCHAR(200)
-				, [Authorization] NVARCHAR(100)
-				, [domain] NVARCHAR(50)
-				, [version] NVARCHAR(10)
-				)
-
-				BEGIN TRY
-					BEGIN
-						INSERT INTO @conTbl
-							(
-							  [id]
-							, [mode]
-							, [y]
-							, [appuserid]
-							, [IPAddress]
-							, [FormName]
-							, [Authorization]
-							, [domain]
-							, [version]
-							)				
-						SELECT
-							  ISNULL([id],0) as [id]
-							, ISNULL([mode],'') as [mode]
-							, ISNULL([y],'') as [y]
-							, ISNULL([appuserid],'') as [appuserid]
-							, ISNULL([IPAddress],'') as [IPAddress]
-							, ISNULL([FormName],'') as [FormName]
-							, ISNULL([Authorization],'') as [Authorization]
-							, ISNULL([domain],'') as [domain]
-							, ISNULL([version],'') as [version]
-						FROM OPENJSON(isnull(@con,''))
-						WITH 
-						(
-							  [id] NVARCHAR(50) '$.id'
-							, [mode] NVARCHAR(100) '$.mode'		
-							, [y] NVARCHAR(100) '$.y'
-							, [appuserid] NVARCHAR(100) '$.appuserid'
-							, [IPAddress] NVARCHAR(50) '$.IPAddress'
-							, [FormName] NVARCHAR(200) '$.FormName'
-							, [Authorization] NVARCHAR(100) '$.Authorization'
-							, [domain] NVARCHAR(50) '$.domain'
-							, [version] NVARCHAR(10) '$.version'
-						) AS a
-
-
-						SELECT TOP 1 
-							 @id =ISNULL([id],0)
-							,@mode =ISNULL([mode],'')
-							,@y =ISNULL([y],'')
-							,@appuserid =ISNULL([appuserid],'')
-							,@IPAddress =ISNULL([IPAddress],'')
-							,@FormName =ISNULL([FormName],'')
-							,@Authorization =ISNULL([Authorization],'')
-							,@domain =ISNULL([domain],'')
-							,@version =ISNULL([version],'')
-						FROM @conTbl
-					END
-				END TRY
-				BEGIN CATCH	
-					PRINT '-------------catch'
-				END CATCH;
-		END
+        -- Parse @con
+        SELECT
+            @mode          = IIF(element_id = 2, StringValue, @mode)
+            ,@y             = IIF(element_id = 3, StringValue, @y)
+            ,@appuserid     = IIF(element_id = 4, StringValue, @appuserid)
+            ,@IPAddress     = IIF(element_id = 5, StringValue, @IPAddress)
+            ,@FormName      = IIF(element_id = 6, StringValue, @FormName)
+            ,@Authorization = IIF(element_id = 7, StringValue, @Authorization)
+        FROM [dbo].[parseJSON]([dbo].Base64Decode(@con))
 
         -- DB resolve
         SET @DBNAME = ISNULL([dbo].[GetdbName](@y), '')
@@ -126,7 +59,6 @@ BEGIN
 
         DECLARE
             @SQL NVARCHAR(MAX) = ''
-			, @bug_id NVARCHAR(50)  = ''
             , @bug_taskId NVARCHAR(50)  = ''
             , @bug_statusId NVARCHAR(50)  = ''
             , @bug_title NVARCHAR(200)  = ''
@@ -160,7 +92,7 @@ BEGIN
 
         BEGIN TRY
 
-            ------------------------------------------------	
+            ------------------------------------------------
             -- PARAM PARSE
             ------------------------------------------------
             IF (ISNULL(@p, '') <> '')
@@ -252,37 +184,37 @@ BEGIN
                     SET @bug_reporterId = ''
                 END
 
-				DECLARE @Whereclause as nvarchar(max)=''
+                SET @SQL = '
+                    SELECT
+                        b.*,
+                        b.statusId AS [status],
+                        b.priorityId AS [priority],
+                        b.categoryId AS [category]
+                    FROM ' + QUOTENAME(@DBNAME) + '.[dbo].[bug_Bugs] b
+                    WHERE 1 = 1'
 
-				IF (ISNULL(@bug_taskId, '') <> '')
-                    SET @Whereclause = @Whereclause + ' AND b.taskId = @bug_taskId'
+                IF (ISNULL(@bug_taskId, '') <> '')
+                    SET @SQL = @SQL + ' AND b.taskId = @bug_taskId'
 
                 IF (ISNULL(@bug_statusId, '') <> '')
-                    SET @Whereclause = @Whereclause + ' AND b.statusId = @bug_statusId'
+                    SET @SQL = @SQL + ' AND b.statusId = @bug_statusId'
 
                 IF (ISNULL(@bug_assigneeId, '') <> '' AND ISNULL(@bug_reporterId, '') <> '')
-                    SET @Whereclause = @Whereclause + ' AND (b.assigneeId = @bug_assigneeId OR b.reporterId = @bug_reporterId)'
-
+                    SET @SQL = @SQL + ' AND (b.assigneeId = @bug_assigneeId OR b.reporterId = @bug_reporterId)'
                 ELSE IF (ISNULL(@bug_assigneeId, '') <> '')
-                    SET @Whereclause = @Whereclause + ' AND b.assigneeId = @bug_assigneeId'
-
+                    SET @SQL = @SQL + ' AND b.assigneeId = @bug_assigneeId'
                 ELSE IF (ISNULL(@bug_reporterId, '') <> '')
-                    SET @Whereclause = @Whereclause + ' AND b.reporterId = @bug_reporterId'
-                SET @SQL = '
-						SELECT
-							b.*,
-							b.statusId AS [status],
-							b.priorityId AS [priority],
-							b.categoryId AS [category]
-						FROM ' + QUOTENAME(@DBNAME) + '.[dbo].[bug_Bugs] b
-						WHERE 1 = 1
-						'+@Whereclause+'
-						ORDER BY b.createdAt DESC
-					'
+                    SET @SQL = @SQL + ' AND b.reporterId = @bug_reporterId'
 
-				PRINT(@SQL)
-                EXEC @SQL
-                    
+                SET @SQL = @SQL + ' ORDER BY b.createdAt DESC'
+
+                EXEC sp_executesql
+                    @SQL,
+                    N'@bug_taskId NVARCHAR(50), @bug_statusId NVARCHAR(50), @bug_assigneeId NVARCHAR(50), @bug_reporterId NVARCHAR(50)',
+                    @bug_taskId = @bug_taskId,
+                    @bug_statusId = @bug_statusId,
+                    @bug_assigneeId = @bug_assigneeId,
+                    @bug_reporterId = @bug_reporterId
             END
 
             ------------------------------------------------
@@ -294,15 +226,29 @@ BEGIN
                     DECLARE @bug_id    NVARCHAR(50)
                     DECLARE @bug_no    NVARCHAR(20)
                     DECLARE @next_num  BIGINT
+                    DECLARE @nextAttNum BIGINT
                     DECLARE @now       DATETIME = GETDATE()
 
                     BEGIN TRY
                         SET TRANSACTION ISOLATION LEVEL READ COMMITTED
                         BEGIN TRANSACTION
 
+                        -- Get IDs using MAX with NOLOCK
+                        SELECT @next_num = ISNULL(MAX(CAST(id AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Bugs] WITH (NOLOCK)
+                        WHERE ISNUMERIC(id) = 1
+
+                        SET @next_num = @next_num + 1
+                        SET @bug_id = CAST(@next_num AS NVARCHAR(50))
+                        SET @bug_no = ''BT'' + CAST(@next_num AS NVARCHAR(20))
+
+                        SELECT @nextAttNum = ISNULL(MAX(CAST(id AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Attachments] WITH (NOLOCK)
+                        WHERE ISNUMERIC(id) = 1
+
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Bugs]
                         (
-                            bugNo,
+                            id, bugNo,
                             title, description,
                             taskId, taskNo, taskName,
                             assigneeId, reporterId,
@@ -312,7 +258,8 @@ BEGIN
                         )
                         VALUES
                         (
-                            '''',
+                            @bug_id,
+                            @bug_no,
                             ''' + REPLACE(@bug_title,       '''', '''''') + ''',
                             ''' + REPLACE(@bug_description, '''', '''''') + ''',
                             ''' + @bug_taskId + ''',
@@ -328,30 +275,24 @@ BEGIN
                             @now, @now
                         )
 
-                        SET @next_num = SCOPE_IDENTITY()
-                        IF (@next_num IS NOT NULL)
-                        BEGIN
-                            SET @bug_id = CAST(@next_num AS NVARCHAR(50))
-                            SET @bug_no = ''BT'' + CAST(@next_num AS NVARCHAR(20))
-
-                            UPDATE [' + @DBNAME + '].[dbo].[bug_Bugs]
-                            SET bugNo = @bug_no
-                            WHERE id = @next_num
-                        END
-
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Attachments]
                         (
-                            bugId,
-                            fileName, filePath
+                            id, bugId,
+                            fileName, fileSize, mimeType, filePath
                         )
                         SELECT
+                            CAST(@nextAttNum + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(50)),
                             @bug_id,
                             fileName,
+                            TRY_CAST(fileSize AS INT),
+                            mimeType,
                             filePath
                         FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''', ''$.attachments'')
                         WITH
                         (
                             fileName  NVARCHAR(200) ''$.fileName'',
+                            fileSize  NVARCHAR(50)  ''$.fileSize'',
+                            mimeType  NVARCHAR(100) ''$.mimeType'',
                             filePath  NVARCHAR(500) ''$.filePath''
                         )
                         WHERE fileName IS NOT NULL
@@ -365,11 +306,10 @@ BEGIN
                         IF (@@TRANCOUNT <> 0)
                         BEGIN
                             ROLLBACK TRANSACTION
-                        END;
-                        THROW;
+                        END
+                        THROW
                     END CATCH
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -385,11 +325,24 @@ BEGIN
                     DECLARE @newStatusId NVARCHAR(50), @newPriorityId NVARCHAR(50), @newCategoryId NVARCHAR(50)
                     DECLARE @newAssigneeId NVARCHAR(50), @newTitle NVARCHAR(200), @newDescription NVARCHAR(MAX)
                     DECLARE @targetUser NVARCHAR(50), @notifMsg NVARCHAR(MAX), @effectiveTitle NVARCHAR(200)
-                    DECLARE @statusHistoryRemark NVARCHAR(MAX), @priorityHistoryRemark NVARCHAR(MAX), @assigneeHistoryRemark NVARCHAR(MAX), @categoryHistoryRemark NVARCHAR(MAX), @titleHistoryRemark NVARCHAR(MAX)
+                    DECLARE @nextHistoryNum BIGINT, @nextNotifNum BIGINT, @nextAttNum BIGINT
 
                     BEGIN TRY
                         SET TRANSACTION ISOLATION LEVEL READ COMMITTED
                         BEGIN TRANSACTION
+
+                        -- Get IDs using MAX with NOLOCK
+                        SELECT @nextHistoryNum = ISNULL(MAX(CAST(SUBSTRING(id, 3, LEN(id) - 2) AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_BugHistory] WITH (NOLOCK)
+                        WHERE id LIKE ''bh%'' AND ISNUMERIC(SUBSTRING(id, 3, LEN(id) - 2)) = 1
+
+                        SELECT @nextNotifNum = ISNULL(MAX(CAST(SUBSTRING(id, 4, LEN(id) - 3) AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Notifications] WITH (NOLOCK)
+                        WHERE id LIKE ''nt_%'' AND ISNUMERIC(SUBSTRING(id, 4, LEN(id) - 3)) = 1
+
+                        SELECT @nextAttNum = ISNULL(MAX(CAST(id AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Attachments] WITH (NOLOCK)
+                        WHERE ISNUMERIC(id) = 1
 
                         -- Get old values
                         SELECT 
@@ -413,46 +366,41 @@ BEGIN
                         -- Track History for Status
                         IF @newStatusId IS NOT NULL AND @newStatusId <> @oldStatusId
                         BEGIN
-                            SET @statusHistoryRemark = ''statusId changed from '' + ISNULL(CAST(@oldStatusId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newStatusId AS NVARCHAR(MAX)), ''N/A'')
-                            IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @statusHistoryRemark = @statusHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', @statusHistoryRemark)
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''statusId'', @oldStatusId, @newStatusId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                         END
 
                         -- Track History for Priority
                         IF @newPriorityId IS NOT NULL AND @newPriorityId <> @oldPriorityId
                         BEGIN
-                            SET @priorityHistoryRemark = ''priorityId changed from '' + ISNULL(CAST(@oldPriorityId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newPriorityId AS NVARCHAR(MAX)), ''N/A'')
-                            IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @priorityHistoryRemark = @priorityHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', @priorityHistoryRemark)
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''priorityId'', @oldPriorityId, @newPriorityId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                         END
 
                         -- Track History for Assignee
                         IF @newAssigneeId IS NOT NULL AND @newAssigneeId <> @oldAssigneeId
                         BEGIN
-                            SET @assigneeHistoryRemark = ''assigneeId changed from '' + ISNULL(CAST(@oldAssigneeId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newAssigneeId AS NVARCHAR(MAX)), ''N/A'')
-                            IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @assigneeHistoryRemark = @assigneeHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', @assigneeHistoryRemark)
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''assigneeId'', @oldAssigneeId, @newAssigneeId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                         END
 
                         -- Track History for Category
                         IF @newCategoryId IS NOT NULL AND @newCategoryId <> @oldCategoryId
                         BEGIN
-                            SET @categoryHistoryRemark = ''categoryId changed from '' + ISNULL(CAST(@oldCategoryId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newCategoryId AS NVARCHAR(MAX)), ''N/A'')
-                            IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @categoryHistoryRemark = @categoryHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', @categoryHistoryRemark)
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''categoryId'', @oldCategoryId, @newCategoryId, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                         END
 
                         -- Track History for Title
                         IF @newTitle IS NOT NULL AND @newTitle <> @oldTitle
                         BEGIN
-                            SET @titleHistoryRemark = ''title changed from '' + ISNULL(CAST(@oldTitle AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newTitle AS NVARCHAR(MAX)), ''N/A'')
-                            IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @titleHistoryRemark = @titleHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', @titleHistoryRemark)
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, oldValue, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''title'', @oldTitle, @newTitle, ''' + REPLACE(@bug_remark, '''', '''''') + ''')
                         END
 
                         -- Update Bug
@@ -476,18 +424,26 @@ BEGIN
                         -- Insert Attachments
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Attachments]
                         (
+                            id,
                             bugId,
                             fileName,
+                            fileSize,
+                            mimeType,
                             filePath
                         )
                         SELECT
+                            CAST(@nextAttNum + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(50)),
                             ''' + @bug_id + ''',
                             fileName,
+                            TRY_CAST(fileSize AS INT),
+                            mimeType,
                             filePath
                         FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments'')
                         WITH
                         (
                             fileName NVARCHAR(200) ''$.fileName'',
+                            fileSize NVARCHAR(50) ''$.fileSize'',
+                            mimeType NVARCHAR(100) ''$.mimeType'',
                             filePath NVARCHAR(500) ''$.filePath''
                         )
                         WHERE fileName IS NOT NULL
@@ -495,8 +451,9 @@ BEGIN
                         -- Log attachments in history
                         IF EXISTS (SELECT 1 FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments''))
                         BEGIN
-                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] (bugId, userId, remark)
-                            VALUES (''' + @bug_id + ''', ''' + @appuserid + ''', ''attachments updated | Updated via bugupdate'')
+                            SET @nextHistoryNum = @nextHistoryNum + 1
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_BugHistory] ([id], bugId, userId, field, newValue, remark)
+                            VALUES (''bh'' + CAST(@nextHistoryNum AS NVARCHAR(36)), ''' + @bug_id + ''', ''' + @appuserid + ''', ''attachments'', ''File(s) added'', ''Updated via bugupdate'')
                         END
 
                         SET @effectiveTitle = ISNULL(@newTitle, @oldTitle)
@@ -504,23 +461,23 @@ BEGIN
                         -- Notify if Assignee Changed
                         IF @newAssigneeId IS NOT NULL AND @newAssigneeId <> @oldAssigneeId
                         BEGIN
+                            SET @nextNotifNum = @nextNotifNum + 1
                             INSERT INTO [' + @DBNAME + '].[dbo].[bug_Notifications]
-                            (userId, title, message, [type], relatedId, createdAt)
-                            VALUES (@newAssigneeId, ''Bug Reassigned to You'', @effectiveTitle, ''BUG_ASSIGNED'', ''' + @bug_id + ''', @now)
+                            (id, userId, title, message, [type], relatedId, createdAt)
+                            VALUES (''nt_'' + CAST(@nextNotifNum AS NVARCHAR(36)), @newAssigneeId, ''Bug Reassigned to You'', @effectiveTitle, ''BUG_ASSIGNED'', ''' + @bug_id + ''', @now)
                         END
 
                         -- Notify current assignee of status change
                         IF @newStatusId IS NOT NULL AND @newStatusId <> @oldStatusId
                         BEGIN
                             SET @targetUser = ISNULL(@newAssigneeId, @oldAssigneeId)
-                            DECLARE @newStatusLabel NVARCHAR(100)
-                            SELECT @newStatusLabel = labelname FROM [' + @DBNAME + '].[dbo].[task_BugStatus] WHERE id = @newStatusId
-                            SET @notifMsg = ''Status changed to '' + ISNULL(@newStatusLabel, @newStatusId) + '' for "'' + @effectiveTitle + ''"''
+                            SET @notifMsg = ''Status changed to '' + @newStatusId + '' for "'' + @effectiveTitle + ''"''
                             IF @targetUser IS NOT NULL
                             BEGIN
+                                SET @nextNotifNum = @nextNotifNum + 1
                                 INSERT INTO [' + @DBNAME + '].[dbo].[bug_Notifications]
-                                (userId, title, message, [type], relatedId, createdAt)
-                                VALUES (@targetUser, ''Bug Status Updated'', @notifMsg, ''STATUS_CHANGED'', ''' + @bug_id + ''', @now)
+                                (id, userId, title, message, [type], relatedId, createdAt)
+                                VALUES (''nt_'' + CAST(@nextNotifNum AS NVARCHAR(36)), @targetUser, ''Bug Status Updated'', @notifMsg, ''STATUS_CHANGED'', ''' + @bug_id + ''', @now)
                             END
                         END
 
@@ -533,11 +490,10 @@ BEGIN
                         IF (@@TRANCOUNT <> 0)
                         BEGIN
                             ROLLBACK TRANSACTION
-                        END;
-                        THROW;
+                        END
+                        THROW
                     END CATCH
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -555,7 +511,6 @@ BEGIN
             
                     SELECT 1 stat,''bug deleted'' stat_msg,1000 stat_code,''' + @bug_id + ''' id
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -594,7 +549,6 @@ BEGIN
                     WHERE bugId = ''' + @bug_id + ''' AND commentId IS NOT NULL
                     ORDER BY createdAt DESC
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -606,44 +560,57 @@ BEGIN
                 SET @SQL = '
                     DECLARE @comment_id NVARCHAR(50)
                     DECLARE @next_comment_num BIGINT
+                    DECLARE @nextAttNum BIGINT
                     DECLARE @now DATETIME = GETDATE()
 
                     BEGIN TRY
                         SET TRANSACTION ISOLATION LEVEL READ COMMITTED
                         BEGIN TRANSACTION
 
+                        -- Get IDs using MAX with NOLOCK
+                        SELECT @next_comment_num = ISNULL(MAX(CAST(SUBSTRING(id, 2, LEN(id) - 1) AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Comments] WITH (NOLOCK)
+                        WHERE id LIKE ''c%'' AND ISNUMERIC(SUBSTRING(id, 2, LEN(id) - 1)) = 1
+
+                        SET @next_comment_num = @next_comment_num + 1
+                        @comment_id = ''c'' + CAST(@next_comment_num AS NVARCHAR(50))
+
+                        SELECT @nextAttNum = ISNULL(MAX(CAST(id AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Attachments] WITH (NOLOCK)
+                        WHERE ISNUMERIC(id) = 1
+
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Comments]
                         (
-                            bugId, userId, content, createdAt
+                            id, bugId, userId, content, createdAt
                         )
                         VALUES
                         (
+                            @comment_id,
                             ''' + @comment_bugId + ''',
                             ''' + @comment_userId + ''',
                             ''' + REPLACE(@comment_content, '''', '''''') + ''',
                             @now
                         )
 
-                        SET @next_comment_num = SCOPE_IDENTITY()
-                        IF (@next_comment_num IS NOT NULL)
-                        BEGIN
-                            SET @comment_id = CAST(@next_comment_num AS NVARCHAR(50))
-                        END
-
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Attachments]
                         (
-                            bugId, commentId,
-                            fileName, filePath
+                            id, bugId, commentId,
+                            fileName, fileSize, mimeType, filePath
                         )
                         SELECT
+                            CAST(@nextAttNum + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(50)),
                             ''' + @comment_bugId + ''',
                             @comment_id,
                             fileName,
+                            TRY_CAST(fileSize AS INT),
+                            mimeType,
                             filePath
                         FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments'')
                         WITH
                         (
                             fileName NVARCHAR(200) ''$.fileName'',
+                            fileSize NVARCHAR(50) ''$.fileSize'',
+                            mimeType NVARCHAR(100) ''$.mimeType'',
                             filePath NVARCHAR(500) ''$.filePath''
                         )
                         WHERE fileName IS NOT NULL
@@ -657,11 +624,10 @@ BEGIN
                         IF (@@TRANCOUNT <> 0)
                         BEGIN
                             ROLLBACK TRANSACTION
-                        END;
-                        THROW;
+                        END
+                        THROW
                     END CATCH
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -676,7 +642,6 @@ BEGIN
                     WHERE bugId = ''' + @comment_bugId + '''
                     ORDER BY createdAt DESC
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -691,7 +656,6 @@ BEGIN
                     WHERE userId = ''' + @notif_userId + '''
                     ORDER BY isRead ASC, createdAt DESC
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -707,7 +671,6 @@ BEGIN
 
                     SELECT 1 stat,''notification marked read'' stat_msg,1000 stat_code,''' + @notif_id + ''' id
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -725,12 +688,21 @@ BEGIN
                         SET TRANSACTION ISOLATION LEVEL READ COMMITTED
                         BEGIN TRANSACTION
 
+                        -- Get IDs using MAX with NOLOCK
+                        SELECT @next_notif_num = ISNULL(MAX(CAST(SUBSTRING(id, 4, LEN(id) - 3) AS BIGINT)), 0)
+                        FROM [' + @DBNAME + '].[dbo].[bug_Notifications] WITH (NOLOCK)
+                        WHERE id LIKE ''nt_%'' AND ISNUMERIC(SUBSTRING(id, 4, LEN(id) - 3)) = 1
+
+                        SET @next_notif_num = @next_notif_num + 1
+                        SET @notif_id = ''nt_'' + CAST(@next_notif_num AS NVARCHAR(50))
+
                         INSERT INTO [' + @DBNAME + '].[dbo].[bug_Notifications]
                         (
-                            userId, title, message, [type], relatedId, createdAt
+                            id, userId, title, message, [type], relatedId, createdAt
                         )
                         VALUES
                         (
+                            @notif_id,
                             ''' + @notif_userId + ''',
                             ''' + REPLACE(@notif_title, '''', '''''') + ''',
                             ''' + REPLACE(@notif_message, '''', '''''') + ''',
@@ -738,12 +710,6 @@ BEGIN
                             ''' + @notif_relatedId + ''',
                             @now
                         )
-
-                        SET @next_notif_num = SCOPE_IDENTITY()
-                        IF (@next_notif_num IS NOT NULL)
-                        BEGIN
-                            SET @notif_id = CAST(@next_notif_num AS NVARCHAR(50))
-                        END
 
                         COMMIT TRANSACTION
 
@@ -754,11 +720,10 @@ BEGIN
                         IF (@@TRANCOUNT <> 0)
                         BEGIN
                             ROLLBACK TRANSACTION
-                        END;
-                        THROW;
+                        END
+                        THROW
                     END CATCH
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
@@ -794,12 +759,14 @@ BEGIN
                         bh.id,
                         bh.bugId,
                         bh.userId,
+                        bh.field,
+                        bh.oldValue,
+                        bh.newValue,
                         bh.remark,
                         bh.createdAt
                     FROM [' + @DBNAME + '].[dbo].[bug_BugHistory] bh WITH (NOLOCK)
                     ORDER BY bh.createdAt DESC
                 '
-				PRINT(@SQL)
                 EXEC (@SQL)
             END
 
