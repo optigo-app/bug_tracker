@@ -6,12 +6,27 @@ export default function StatusBadge({ status }) {
   const statusLabel = typeof status === 'string' ? status : (status?.label || status);
 
   // Use global statusColors based on label (lowercase for matching)
-  const normalizedKey = statusLabel.toLowerCase();
-  const colorConfig = statusColors[normalizedKey] || { color: '#6D6B77', backgroundColor: '#F8FAFC' };
+  const normalizedKey = statusLabel;
+  const colorConfig = statusColors[normalizedKey];
 
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.6, bgcolor: colorConfig.backgroundColor, border: `1px solid ${colorConfig.color}30`, borderRadius: 1.5, px: 1, py: 0.35 }}>
-      <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: colorConfig.color, lineHeight: 1}}>{statusLabel}</Typography>
+    <Box sx={{ 
+      display: 'inline-flex', 
+      alignItems: 'center', 
+      bgcolor: colorConfig?.backgroundColor, 
+      borderRadius: '16px', 
+      px: 1, 
+      py: 0.35 
+    }}>
+      <Typography sx={{ 
+        fontSize: '0.65rem', 
+        fontWeight: 700, 
+        color: colorConfig?.color, 
+        lineHeight: 1,
+        letterSpacing: '0.02em',
+      }}>
+        {statusLabel}
+      </Typography>
     </Box>
   );
 }

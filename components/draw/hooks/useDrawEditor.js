@@ -27,10 +27,14 @@ export function useDrawEditor() {
   const [currentBackgroundColor, setCurrentBackgroundColor] = useState("#ffffff");
   const [currentDash, setCurrentDash] = useState("solid");
   const [currentFont, setCurrentFont] = useState("draw");
+  const [currentFontWeight, setCurrentFontWeight] = useState("normal");
+  const [currentFontStyle, setCurrentFontStyle] = useState("normal");
+  const [currentTextDecoration, setCurrentTextDecoration] = useState("none");
   const [currentAlign, setCurrentAlign] = useState("start");
   const [currentFontSize, setCurrentFontSize] = useState(18);
   const [currentTextTransform, setCurrentTextTransform] = useState("none");
   const [currentShapeType, setCurrentShapeType] = useState("rect");
+  const [currentArrowHead, setCurrentArrowHead] = useState("end");
   const [viewport, setViewport] = useState(DEFAULT_VIEWPORT);
   const [history, setHistory] = useState({ past: [], future: [] });
   const [editingText, setEditingText] = useState(null);
@@ -269,7 +273,7 @@ export function useDrawEditor() {
     } else {
       const newShape = {
         id: generateId("text"),
-        type: "text",
+        type: editingText.type || (activeTool === "note" ? "note" : "text"),
         x: editingText.x,
         y: editingText.y,
         w: 200,
@@ -278,9 +282,12 @@ export function useDrawEditor() {
         color: currentColor,
         strokeWidth: currentStrokeWidth,
         font: currentFont,
+        fontWeight: currentFontWeight,
+        fontStyle: currentFontStyle,
+        textDecoration: currentTextDecoration,
         align: currentAlign,
         fill: currentFill,
-        backgroundColor: currentBackgroundColor,
+        backgroundColor: activeTool === "note" ? "#f3ad47" : currentBackgroundColor,
         fontSize: currentFontSize,
         textTransform: currentTextTransform,
         dash: currentDash,
@@ -304,10 +311,14 @@ export function useDrawEditor() {
     currentFontSize,
     currentTextTransform,
     currentFont,
+    currentFontWeight,
+    currentFontStyle,
+    currentTextDecoration,
     currentStrokeWidth,
     draftText,
     editingText,
     recordHistory,
+    activeTool,
   ]);
 
   const applyStylesToSelected = useCallback((partial) => {
@@ -419,9 +430,12 @@ export function useDrawEditor() {
       color: currentColor,
       strokeWidth: currentStrokeWidth,
       font: currentFont,
+      fontWeight: currentFontWeight,
+      fontStyle: currentFontStyle,
+      textDecoration: currentTextDecoration,
       align: currentAlign,
       fill: currentFill,
-      backgroundColor: currentBackgroundColor,
+      backgroundColor: activeTool === "note" ? "#f3ad47" : currentBackgroundColor,
       fontSize: currentFontSize,
       textTransform: currentTextTransform,
       dash: currentDash,
@@ -444,8 +458,12 @@ export function useDrawEditor() {
     currentFontSize,
     currentTextTransform,
     currentFont,
+    currentFontWeight,
+    currentFontStyle,
+    currentTextDecoration,
     currentStrokeWidth,
     recordHistory,
+    activeTool,
   ]);
 
   const createMediaShape = useCallback(async (file, kind, point = null) => {
@@ -476,6 +494,19 @@ export function useDrawEditor() {
 
       let width = naturalWidth;
       let height = naturalHeight;
+
+      const padding = 80;
+      const currentScale = viewportRef.current.scale || 1;
+      const maxWidth = (rect.width > padding ? rect.width - padding : rect.width) / currentScale;
+      const maxHeight = (rect.height > padding ? rect.height - padding : rect.height) / currentScale;
+
+      if (width > maxWidth || height > maxHeight) {
+        const widthRatio = maxWidth / width;
+        const heightRatio = maxHeight / height;
+        const scale = Math.min(widthRatio, heightRatio);
+        width = width * scale;
+        height = height * scale;
+      }
 
       const newShape = {
         id: generateId("image"),
@@ -536,9 +567,12 @@ export function useDrawEditor() {
       color: currentColor,
       strokeWidth: currentStrokeWidth,
       font: currentFont,
+      fontWeight: currentFontWeight,
+      fontStyle: currentFontStyle,
+      textDecoration: currentTextDecoration,
       align: currentAlign,
       fill: currentFill,
-      backgroundColor: currentBackgroundColor,
+      backgroundColor: activeTool === "note" ? "#f3ad47" : currentBackgroundColor,
       fontSize: currentFontSize,
       textTransform: currentTextTransform,
       dash: currentDash,
@@ -559,9 +593,13 @@ export function useDrawEditor() {
     currentFontSize,
     currentTextTransform,
     currentFont,
+    currentFontWeight,
+    currentFontStyle,
+    currentTextDecoration,
     currentStrokeWidth,
     draftText,
     recordHistory,
+    activeTool,
   ]);
 
   useEffect(() => {
@@ -635,6 +673,7 @@ export function useDrawEditor() {
           e: "eraser",
           a: "arrow",
           t: "text",
+          n: "note",
           r: "rect",
           o: "ellipse",
           s: "shape",
@@ -855,11 +894,10 @@ export function useDrawEditor() {
         strokeWidth: currentStrokeWidth,
         fill: currentFill,
         backgroundColor: currentBackgroundColor,
-        fontSize: currentFontSize,
-        textTransform: currentTextTransform,
         dash: currentDash,
         font: currentFont,
         align: currentAlign,
+        arrowHead: currentArrowHead,
       };
       const nextShapes = [...previousShapes, newShape];
       setShapes(nextShapes);
@@ -889,6 +927,7 @@ export function useDrawEditor() {
         color: currentColor,
         strokeWidth: currentStrokeWidth,
         dash: currentDash,
+        arrowHead: currentArrowHead,
       };
       const nextShapes = [...previousShapes, newShape];
       setShapes(nextShapes);
@@ -957,6 +996,7 @@ export function useDrawEditor() {
     currentFont,
     currentShapeType,
     currentStrokeWidth,
+    currentArrowHead,
     deleteShape,
     editingText,
     beginTextEdit,
@@ -1274,6 +1314,7 @@ export function useDrawEditor() {
     currentFontSize,
     currentTextTransform,
     currentShapeType,
+    currentArrowHead,
     deleteShape,
     draftText,
     duplicateSelectedShape,
@@ -1308,10 +1349,14 @@ export function useDrawEditor() {
     setCurrentBackgroundColor,
     setCurrentDash,
     setCurrentFont,
+    setCurrentFontWeight,
+    setCurrentFontStyle,
+    setCurrentTextDecoration,
     setCurrentAlign,
     setCurrentFontSize,
     setCurrentTextTransform,
     setCurrentShapeType,
+    setCurrentArrowHead,
     setDraftText,
     setEditingText,
     setPanelMessage,

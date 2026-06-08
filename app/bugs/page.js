@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Button, Stack, CircularProgress,
   Skeleton
@@ -58,14 +58,16 @@ function BugsPageContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [bugToDelete, setBugToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [taskSelectOpen, setTaskSelectOpen] = useState(false);
   const [reassignInfo, setReassignInfo] = useState(null);
   const [drawEditorOpen, setDrawEditorOpen] = useState(false);
   const [editedImage, setEditedImage] = useState(null);
   const [statusOptions, setStatusOptions] = useState([]);
+  const [masterDataLoaded, setMasterDataLoaded] = useState(false);
 
   // Filter and Sort states
-  const [filterScope, setFilterScope] = useState('me');
+  const [filterScope, setFilterScope] = useState('all');
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'priority-high', 'priority-low'
@@ -85,6 +87,68 @@ function BugsPageContent() {
   });
   const [advFilterOpen, setAdvFilterOpen] = useState(false);
   const [priorityOptions, setPriorityOptions] = useState([]);
+  const bugListRef = useRef(null);
+
+  const hydrateMasterDataFromStorage = useCallback(() => {
+    let hasAssignees = false;
+    let hasPriorities = false;
+    let hasStatuses = false;
+
+    const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
+    if (taskAssigneeData) {
+      try {
+        const parsedData = JSON.parse(taskAssigneeData);
+        const assigneeList = Array.isArray(parsedData) ? parsedData : [];
+        setTaskAssignees(assigneeList);
+        const mappedDevs = assigneeList.map(user => ({
+          id: user.id,
+          name: `${user.firstname} ${user.lastname}`.trim() || user.id,
+          role: user.designation || user.department || 'Developer'
+        }));
+        setDevelopers(mappedDevs);
+        hasAssignees = true;
+      } catch (error) {
+        console.error('Error parsing taskAssigneeData:', error);
+      }
+    }
+
+    const priorityData = sessionStorage.getItem('taskbugpriorityData') || localStorage.getItem('taskbugpriorityData');
+    if (priorityData) {
+      try {
+        const parsed = JSON.parse(priorityData);
+        const priorityList = Array.isArray(parsed) ? parsed : [];
+        const map = {};
+        priorityList.forEach((item, index) => {
+          map[String(item.id)] = priorityList.length - index;
+        });
+        setPriorityOptions(priorityList.map(item => ({
+          id: String(item.id),
+          label: item.labelname || item.label || item.name || item.id
+        })));
+        setPriorityMap(map);
+        hasPriorities = true;
+      } catch (error) {
+        console.error('Error parsing priority data:', error);
+      }
+    }
+
+    const statusData = sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData');
+    if (statusData) {
+      try {
+        const parsed = JSON.parse(statusData);
+        const statusList = Array.isArray(parsed) ? parsed : [];
+        setStatusOptions(statusList.map(item => ({
+          id: String(item.id),
+          label: item.labelname || item.label || item.name || item.id
+        })));
+        hasStatuses = true;
+      } catch (error) {
+        console.error('Error parsing status data:', error);
+      }
+    }
+
+    return hasAssignees && hasPriorities && hasStatuses;
+  }, []);
 
   const startResizing = useCallback((e) => {
     e.preventDefault();
@@ -138,59 +202,13 @@ function BugsPageContent() {
         };
         setCurrentUser(userObj);
         const shouldFilter = permissions.shouldFilterByAssignee(userObj);
-        setFilterScope(shouldFilter ? 'me' : 'team');
+        setFilterScope(shouldFilter ? 'me' : 'all');
       } catch (error) {
         console.error('Error parsing UserProfileData:', error);
       }
     }
-    const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
-    if (taskAssigneeData) {
-      try {
-        const parsedData = JSON.parse(taskAssigneeData);
-        setTaskAssignees(parsedData);
-        const mappedDevs = parsedData.map(user => ({
-          id: user.id,
-          name: `${user.firstname} ${user.lastname}`.trim() || user.id,
-          role: user.designation || user.department || 'Developer'
-        }));
-        setDevelopers(mappedDevs);
-      } catch (error) {
-        console.error('Error parsing taskAssigneeData:', error);
-      }
-    }
-
-    const priorityData = sessionStorage.getItem('taskbugpriorityData') || localStorage.getItem('taskbugpriorityData');
-    if (priorityData) {
-      try {
-        const parsed = JSON.parse(priorityData);
-        const map = {};
-        parsed.forEach((item, index) => {
-          map[String(item.id)] = parsed.length - index; // Higher index = higher priority
-        });
-        setPriorityOptions(parsed.map(item => ({
-          id: String(item.id),
-          label: item.labelname || item.label || item.name || item.id
-        })));
-        setPriorityMap(map);
-      } catch (error) {
-        console.error('Error parsing priority data:', error);
-      }
-    }
-
-    // Load status options from sessionStorage or localStorage for filtering
-    const statusData = sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData');
-    if (statusData) {
-      try {
-        const parsed = JSON.parse(statusData);
-        setStatusOptions(parsed.map(item => ({
-          id: String(item.id),
-          label: item.labelname || item.label || item.name || item.id
-        })));
-      } catch (error) {
-        console.error('Error parsing status data:', error);
-      }
-    }
-  }, []);
+    setMasterDataLoaded(hydrateMasterDataFromStorage());
+  }, [hydrateMasterDataFromStorage]);
 
   useEffect(() => {
     if (reportBugSignal > 0 && currentUser && permissions.canReportBug(currentUser)) {
@@ -220,13 +238,12 @@ function BugsPageContent() {
   }, [openReportParam, currentUser, router, searchParams, taskNoParam]);
 
   const fetchBugs = useCallback(async (forceRefresh = false) => {
-    if (!currentUser?.id) return;
     try {
       await fetchBugsGlobal(forceRefresh);
     } catch (err) {
       console.error('Error fetching global bugs:', err);
     }
-  }, [currentUser?.id, fetchBugsGlobal]);
+  }, [fetchBugsGlobal]);
 
   const handleRefresh = () => {
     setBugsLoaded(false);
@@ -252,6 +269,40 @@ function BugsPageContent() {
   useEffect(() => {
     setStatusOptions(getStatusOptions(currentUser, true));
   }, [currentUser]);
+
+  // Fetch master data if not available
+  useEffect(() => {
+    let isMounted = true;
+    const MASTER_FETCH_TIMEOUT_MS = 8000;
+
+    const ensureMasterData = async () => {
+      const alreadyLoaded = hydrateMasterDataFromStorage();
+      if (alreadyLoaded) {
+        if (isMounted) setMasterDataLoaded(true);
+        return;
+      }
+
+      try {
+        const { fetchMasterGlFunc } = await import('@/app/api/masterApi');
+        await Promise.race([
+          fetchMasterGlFunc(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Master data fetch timeout')), MASTER_FETCH_TIMEOUT_MS))
+        ]);
+      } catch (error) {
+        console.error('Error fetching master data:', error);
+      } finally {
+        if (!isMounted) return;
+        hydrateMasterDataFromStorage();
+        setMasterDataLoaded(true);
+      }
+    };
+
+    ensureMasterData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hydrateMasterDataFromStorage]);
 
   const filteredBugs = useMemo(() => {
     // Pre-calculate filter values
@@ -299,8 +350,6 @@ function BugsPageContent() {
       return isAssigned || isReporter;
     };
 
-    const shouldFilterByUser = filterScope !== 'team' && permissions.shouldFilterByAssignee(currentUser);
-
     // First filter: taskId, search, status, advFilters
     const baseFiltered = globalBugs.filter((bug) => {
       if (taskIdParam && String(bug.taskId || '') !== String(taskIdParam)) {
@@ -323,9 +372,9 @@ function BugsPageContent() {
       const matchAdvReporter = !advReporter || String(bug?.reporterId) === advReporter || String(bug?.reporter?.id) === advReporter;
 
       const matchAdvStartDate = !isStartDateActive || (
-        bug.createdAt &&
-        new Date(bug.createdAt) >= startDateRange.start &&
-        new Date(bug.createdAt) <= startDateRange.end
+        (bug.entrydate) &&
+        new Date(bug.entrydate) >= startDateRange.start &&
+        new Date(bug.entrydate) <= startDateRange.end
       );
 
       const matchAdvDueDate = !isDueDateActive || (
@@ -337,26 +386,29 @@ function BugsPageContent() {
       return matchSearch && matchStatus && matchAdvTaskNo && matchAdvBugNo && matchAdvStatus && matchAdvPriority && matchAdvAssignee && matchAdvReporter && matchAdvStartDate && matchAdvDueDate;
     });
 
-    // Calculate me and team counts
+    // Calculate counts
     const meCount = baseFiltered.filter(isUserBug).length;
-    const teamCount = baseFiltered.length;
+    const teamCount = baseFiltered.filter((bug) => !isUserBug(bug)).length;
+    const allCount = baseFiltered.length;
 
-    // Second filter: filterScope (me vs team)
+    // Second filter: filterScope (all vs me vs team)
     const scopeFiltered = baseFiltered.filter((bug) => {
-      if (!shouldFilterByUser) return true;
-      return isUserBug(bug);
+      if (filterScope === 'all') return true;
+      if (filterScope === 'me') return isUserBug(bug);
+      if (filterScope === 'team') return !isUserBug(bug);
+      return true;
     });
 
     // Sort
     const sorted = scopeFiltered.sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      if (sortBy === 'newest') return new Date(b.entrydate) - new Date(a.entrydate);
+      if (sortBy === 'oldest') return new Date(a.entrydate) - new Date(b.entrydate);
       const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
       const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
       return sortBy === 'priority-high' ? pB - pA : pA - pB;
     });
 
-    Object.assign(sorted, { meCount, teamCount });
+    Object.assign(sorted, { meCount, teamCount, allCount });
     return sorted;
   }, [globalBugs, taskIdParam, search, statusFilter, filterScope, currentUser, sortBy, priorityMap, advFilters]);
 
@@ -366,12 +418,17 @@ function BugsPageContent() {
     }
   }, [filteredBugs, selectedId]);
 
+  useEffect(() => {
+    bugListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [filterScope]);
+
   const selectedIndex = filteredBugs.findIndex((bug) => bug.id === selectedId);
   const hasPrev = selectedIndex > 0;
   const hasNext = selectedIndex >= 0 && selectedIndex < filteredBugs.length - 1;
 
   const handleConfirmDelete = async () => {
     if (!bugToDelete) return;
+    setIsDeleting(true);
     try {
       await deleteBugApi(bugToDelete);
       if (selectedId === bugToDelete) setSelectedId(null);
@@ -380,6 +437,8 @@ function BugsPageContent() {
       setBugToDelete(null);
     } catch (err) {
       console.error('Delete error:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -451,7 +510,8 @@ function BugsPageContent() {
           <BugListHeader
             bugCount={{
               me: filteredBugs?.meCount ?? 0,
-              team: filteredBugs?.teamCount ?? 0
+              team: filteredBugs?.teamCount ?? 0,
+              all: filteredBugs?.allCount ?? 0
             }}
             search={search}
             setSearch={setSearch}
@@ -468,6 +528,7 @@ function BugsPageContent() {
           />
 
           <Box
+            ref={bugListRef}
             className="slim-scroll"
             sx={{
               flex: 1,
@@ -476,10 +537,10 @@ function BugsPageContent() {
               ...slimScroll
             }}
           >
-            {!bugsLoaded ? (
+            {((!bugsLoaded && !error) || !masterDataLoaded) ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                 {[...Array(8)].map((_, i) => (
-                  <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f1f5f9' }} />
+                  <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f5f5f5' }} />
                 ))}
               </Box>
             ) : error ? (
@@ -490,7 +551,7 @@ function BugsPageContent() {
               </Box>
             ) : filteredBugs.length === 0 ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
-                <Inbox size={32} color="#E2E8F0" />
+                <Inbox size={32} color="#e0e0e0" />
                 <Typography variant="body2" color="text.disabled" sx={{ mt: 1.5, fontStyle: 'italic', fontSize: '0.8rem' }}>
                   {search ? `No results for "${search}"` : 'No issues found'}
                 </Typography>
@@ -542,7 +603,7 @@ function BugsPageContent() {
           flexDirection: 'column',
           minWidth: 0
         }}>
-          {!bugsLoaded ? (
+          {((!bugsLoaded && !error) || !masterDataLoaded) ? (
             <BugDetailSkeleton />
           ) : selectedId ? (
             <IssueDetailPanel
@@ -633,8 +694,8 @@ function BugsPageContent() {
               statusId: formData.statusId || 'OPEN',
               categoryId: formData.categoryId,
               environment: formData.environment,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              entrydate: new Date().toISOString(),
+              updateddate: new Date().toISOString(),
             });
 
             setBugs((prevBugs) => {
@@ -643,6 +704,13 @@ function BugsPageContent() {
                 return prevBugs.map((bug) => (bug.id === normalizedBug.id ? { ...bug, ...normalizedBug } : bug));
               }
               return [normalizedBug, ...prevBugs];
+            });
+            setBugs((prevGlobalBugs) => {
+              const exists = prevGlobalBugs.some((bug) => bug.id === normalizedBug.id);
+              if (exists) {
+                return prevGlobalBugs.map((bug) => (bug.id === normalizedBug.id ? { ...bug, ...normalizedBug } : bug));
+              }
+              return [normalizedBug, ...prevGlobalBugs];
             });
             setSelectedId(normalizedBug.id);
           }
@@ -655,10 +723,11 @@ function BugsPageContent() {
       />
       <ConfirmationDialog
         open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        onClose={() => !isDeleting && setConfirmOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Delete Issue"
         message="Are you sure you want to delete this issue? This action cannot be undone."
+        loading={isDeleting}
       />
       {/* Task Selection Dialog */}
       <ConfirmationDialog

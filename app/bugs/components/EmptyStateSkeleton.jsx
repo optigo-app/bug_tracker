@@ -27,15 +27,15 @@ export default function EmptyStateSkeleton({ onCreate, isDeveloper = false }) {
         gap: 3,
         p: 4
       }}>
-        <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Inbox size={40} color="#CBD5E1" />
+        <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Inbox size={40} color="#d0d0d0" />
         </Box>
         
         <Stack spacing={1} alignItems="center" textAlign="center">
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             No Bug Selected
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, maxWidth: 300 }}>
+          <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500, maxWidth: 300 }}>
             Select a bug from the list to view details, or create a new bug to get started.
           </Typography>
         </Stack>

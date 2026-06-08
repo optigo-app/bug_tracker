@@ -1,25 +1,29 @@
 import { Box, Typography } from '@mui/material';
 import { priorityColors } from '@/utils/glocalfunc';
 
-export default function PriorityBadge({ priority }) {
+export default function PriorityBadge({ priority, py = 0.35 , px = 1, fontSize = '0.65rem'}) {
   // Handle string priority values (normalized labelname)
   const priorityLabel = typeof priority === 'string' ? priority : (priority?.label || priority);
 
   // Use global priorityColors based on label (lowercase for matching)
   const normalizedKey = priorityLabel.toLowerCase();
-  const colorConfig = priorityColors[normalizedKey] || priorityColors.normal || { color: '#6D6B77', backgroundColor: '#F8FAFC' };
+  const colorConfig = priorityColors[normalizedKey] || priorityColors.normal || { color: '#6D6B77', backgroundColor: '#fafafa' };
 
   return (
     <Box sx={{
-      display: 'inline-flex', alignItems: 'center', gap: 0.5,
+      display: 'inline-flex', 
+      alignItems: 'center', 
       bgcolor: colorConfig.backgroundColor || colorConfig.bg,
-      px: 1.25, py: 0.45, borderRadius: 2,
-      border: `1px solid ${colorConfig.color}20`
+      borderRadius: '16px', 
+      px: px, 
+      py: py
     }}>
       <Typography sx={{
-        fontSize: '0.68rem', fontWeight: 600,
+        fontSize: fontSize, 
+        fontWeight: 600,
         color: colorConfig.color,
-        lineHeight: 1, letterSpacing: '0.05em',
+        lineHeight: 1, 
+        letterSpacing: '0.02em',
         textTransform: 'capitalize'
       }}>
         {priorityLabel}

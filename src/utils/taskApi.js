@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { UPLOAD_URL, REMOVE_FILE_URL } from "./apiConfig";
 import { CommonAPI } from './commonApi';
+import { getClientIpAddress } from '../../utils/glocalfunc';
 
 export const removeFileApi = async ({ attachments }) => {
   const data = {
@@ -52,16 +53,18 @@ export const filesUploadApi = async ({ attachments, folderName, uniqueNo }) => {
 
 export const fetchTaskDataFullApi = async (params = {}) => {
   try {
+    const ipAddress = await getClientIpAddress();
     const authData = JSON.parse(sessionStorage.getItem("AuthqueryParams") || "{}");
 
     const body = {
       "con": JSON.stringify({
         "id": "",
         "mode": "tasknolist",
-        "appuserid": authData?.uid || ""
+        "appuserid": authData?.uid || "",
+        "IPAddress": ipAddress
       }),
       "p": '{}',
-      "f": "Task Management (taskmaster)"
+      "f": "Task Management (tasknolist)"
     };
 
     const response = await CommonAPI(body, "6");

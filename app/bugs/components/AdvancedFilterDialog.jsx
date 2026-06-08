@@ -68,7 +68,6 @@ export default function AdvancedFilterDialog({
     };
     setLocalFilters(cleared);
     setAdvFilters(cleared);
-    onClose();
   };
 
   return (
@@ -90,8 +89,8 @@ export default function AdvancedFilterDialog({
         style={{ cursor: 'move' }}
         id="draggable-dialog-title"
         sx={{
-          bgcolor: '#F8FAFC',
-          borderBottom: '1px solid #E2E8F0',
+          bgcolor: '#fafafa',
+          borderBottom: '1px solid #e0e0e0',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -101,7 +100,7 @@ export default function AdvancedFilterDialog({
         <Typography sx={{ fontWeight: 700, color: '#1E293B', fontSize: '1rem' }}>
           Advanced Filters
         </Typography>
-        <IconButton size="small" onClick={onClose} sx={{ color: '#64748B' }}>
+        <IconButton size="small" onClick={onClose} sx={{ color: 'var(--text-2nd-color)' }}>
           <X size={18} />
         </IconButton>
       </DialogTitle>
@@ -179,7 +178,7 @@ export default function AdvancedFilterDialog({
           </Stack>
 
           <Box>
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, mb: 0.5, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5, display: 'block' }}>
               Created Date
             </Typography>
             <CustomDateRangePicker
@@ -190,7 +189,7 @@ export default function AdvancedFilterDialog({
           </Box>
 
           <Box>
-            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600, mb: 0.5, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5, display: 'block' }}>
               Due Date
             </Typography>
             <CustomDateRangePicker
@@ -203,12 +202,12 @@ export default function AdvancedFilterDialog({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, borderTop: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
+      <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0', bgcolor: '#fafafa' }}>
         <Button
           onClick={handleClear}
           startIcon={<FilterX size={16} />}
           sx={{
-            color: '#64748B',
+            color: 'var(--text-2nd-color)',
             textTransform: 'none',
             fontWeight: 600,
             mr: 'auto'
@@ -219,7 +218,7 @@ export default function AdvancedFilterDialog({
         <Button
           onClick={onClose}
           sx={{
-            color: '#64748B',
+            color: 'var(--text-2nd-color)',
             textTransform: 'none',
             fontWeight: 600
           }}

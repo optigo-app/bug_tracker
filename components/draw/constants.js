@@ -10,6 +10,7 @@ import {
   MousePointer2,
   PencilLine,
   RectangleHorizontal,
+  StickyNote,
   Type,
   Upload,
 } from "lucide-react";
@@ -46,6 +47,7 @@ export const TOOLS = [
   { id: "eraser", icon: Eraser, label: "Delete" },
   { id: "arrow", icon: ArrowRight, label: "Arrow" },
   { id: "text", icon: Type, label: "Text" },
+  { id: "note", icon: StickyNote, label: "Sticky Note" },
   { id: "rect", icon: RectangleHorizontal, label: "Rectangle" },
   { id: "ellipse", icon: Circle, label: "Ellipse" },
   { id: "shape", icon: Diamond, label: "Shape" },

@@ -3,14 +3,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box, Typography, Stack, Button, Avatar, IconButton, CircularProgress,
-  Tooltip, Select, MenuItem, Divider, Paper, Card, Fade
+  Tooltip, Select, MenuItem, Divider, Paper, Card, Fade, Chip
 } from '@mui/material';
 import { filterStatusDataByRole } from '@/components/bugModal/constants';
 import {
   Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen,
   AlertCircle, ChevronLeft, ChevronRight, Paperclip, MessageSquare, Calendar, Clock,
   User, ShieldAlert, Sparkles, Download, Eye, FileText, Send, Info, Trash2,
-  RefreshCcw
+  RefreshCcw,
+  Image,
+  ListCollapse
 } from 'lucide-react';
 import { getRandomAvatarColor, ImageUrl, formatCommentDate, formatDate, STATUS } from '@/utils/glocalfunc';
 import { slimScroll } from '../constants';
@@ -335,18 +337,24 @@ export default function IssueDetailPanel({
                     size="small"
                     onClick={onRefress}
                     sx={{
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '8px',
-                      width: 32,
-                      height: 32,
-                      color: '#64748B',
+                      border: '1px solid #EAECEF',
+                      borderRadius: '12px',
+                      width: 34,
+                      height: 34,
+                      color: 'var(--text-2nd-color)',
                       bgcolor: '#FFFFFF',
-                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s ease-in-out',
                       '&:hover:not(:disabled)': {
-                        bgcolor: '#F8FAFC',
+                        bgcolor: '#FFFFFF',
                         borderColor: '#7367f0',
                         color: '#7367f0',
+                        boxShadow: '0 3px 8px rgba(115, 103, 240, 0.15)',
                         transform: 'translateY(-1px)'
+                      },
+                      '&:disabled': {
+                        opacity: 0.5,
+                        cursor: 'not-allowed'
                       }
                     }}
                   >
@@ -355,73 +363,86 @@ export default function IssueDetailPanel({
                 </span>
               </Tooltip>
               <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0 }}>
-                <Tooltip title="Previous Issue">
+                <Tooltip title="Previous Bug">
                   <span>
                     <IconButton
                       size="small"
                       onClick={onPrev}
                       disabled={!hasPrev}
                       sx={{
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '8px',
-                        width: 32,
-                        height: 32,
-                        color: '#64748B',
-                        bgcolor: '#FFFFFF',
-                        transition: 'all 0.2s',
+                        border: '1px solid #EAECEF',
+                        borderRadius: '12px',
+                        width: 34,
+                        height: 34,
+                        color: 'var(--text-2nd-color)',
+                        bgcolor: 'var(--light-bg)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover:not(:disabled)': {
-                          bgcolor: '#F8FAFC',
+                          bgcolor: '#FFFFFF',
                           borderColor: '#7367f0',
                           color: '#7367f0',
+                          boxShadow: '0 3px 8px rgba(115, 103, 240, 0.15)',
                           transform: 'translateY(-1px)'
+                        },
+                        '&:disabled': {
+                          opacity: 0.5,
+                          cursor: 'not-allowed'
                         }
                       }}
                     >
-                      <ChevronLeft size={16} />
+                      <ChevronLeft size={18} />
                     </IconButton>
                   </span>
                 </Tooltip>
-                <Tooltip title="Next Issue">
+                <Tooltip title="Next Bug">
                   <span>
                     <IconButton
                       size="small"
                       onClick={onNext}
                       disabled={!hasNext}
                       sx={{
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '8px',
-                        width: 32,
-                        height: 32,
-                        color: '#64748B',
-                        bgcolor: '#FFFFFF',
-                        transition: 'all 0.2s',
+                        border: '1px solid #EAECEF',
+                        borderRadius: '12px',
+                        width: 34,
+                        height: 34,
+                        color: 'var(--text-2nd-color)',
+                        bgcolor: 'var(--light-bg)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover:not(:disabled)': {
-                          bgcolor: '#F8FAFC',
+                          bgcolor: '#FFFFFF',
                           borderColor: '#7367f0',
                           color: '#7367f0',
+                          boxShadow: '0 3px 8px rgba(115, 103, 240, 0.15)',
                           transform: 'translateY(-1px)'
+                        },
+                        '&:disabled': {
+                          opacity: 0.5,
+                          cursor: 'not-allowed'
                         }
                       }}
                     >
-                      <ChevronRight size={16} />
+                      <ChevronRight size={18} />
                     </IconButton>
                   </span>
                 </Tooltip>
                 {permissions.canEditBug(currentUser) && (
-                  <Tooltip title="Edit Issue Details">
+                  <Tooltip title="Edit Bug Details">
                     <IconButton
                       size="small"
                       onClick={() => setEditOpen(true)}
                       sx={{
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                         color: '#7367f0',
                         bgcolor: 'rgba(115, 103, 240, 0.08)',
-                        width: 32,
-                        height: 32,
-                        transition: 'all 0.2s',
+                        width: 34,
+                        height: 34,
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover': {
                           bgcolor: 'rgba(115, 103, 240, 0.15)',
-                          transform: 'translateY(-1px)'
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 3px 8px rgba(115, 103, 240, 0.2)'
                         }
                       }}
                     >
@@ -430,20 +451,21 @@ export default function IssueDetailPanel({
                   </Tooltip>
                 )}
                 {permissions.canDeleteBug(currentUser) && (
-                  <Tooltip title="Delete Issue">
+                  <Tooltip title="Delete Bug">
                     <IconButton
                       size="small"
                       onClick={() => setDeleteConfirmOpen(true)}
                       sx={{
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                         color: '#EA5455',
                         bgcolor: 'rgba(234, 84, 85, 0.08)',
-                        width: 32,
-                        height: 32,
-                        transition: 'all 0.2s',
+                        width: 34,
+                        height: 34,
+                        transition: 'all 0.2s ease-in-out',
                         '&:hover': {
                           bgcolor: 'rgba(234, 84, 85, 0.15)',
-                          transform: 'translateY(-1px)'
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 3px 8px rgba(234, 84, 85, 0.2)'
                         }
                       }}
                     >
@@ -456,17 +478,19 @@ export default function IssueDetailPanel({
                     size="small"
                     onClick={() => setShowSidebar(!showSidebar)}
                     sx={{
-                      border: '1px solid #E2E8F0',
-                      borderRadius: '8px',
-                      width: 32,
-                      height: 32,
-                      color: '#64748B',
+                      border: '1px solid #EAECEF',
+                      borderRadius: '12px',
+                      width: 34,
+                      height: 34,
+                      color: 'var(--text-2nd-color)',
                       bgcolor: '#FFFFFF',
-                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s ease-in-out',
                       '&:hover': {
-                        bgcolor: '#F8FAFC',
+                        bgcolor: '#FFFFFF',
                         borderColor: '#7367f0',
                         color: '#7367f0',
+                        boxShadow: '0 3px 8px rgba(115, 103, 240, 0.15)',
                         transform: 'translateY(-1px)'
                       }
                     }}
@@ -480,15 +504,15 @@ export default function IssueDetailPanel({
                     onClick={onViewDetails}
                     disabled
                     sx={{
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid #EAECEF',
                       borderRadius: '8px',
                       width: 32,
                       height: 32,
-                      color: '#64748B',
+                      color: 'var(--text-2nd-color)',
                       bgcolor: '#FFFFFF',
                       transition: 'all 0.2s',
                       '&:hover': {
-                        bgcolor: '#F8FAFC',
+                        bgcolor: '#FAFAFA',
                         borderColor: '#7367f0',
                         color: '#7367f0',
                         transform: 'translateY(-1px)'
@@ -613,23 +637,29 @@ export default function IssueDetailPanel({
                 <Box sx={{
                   px: 2,
                   py: 1.25,
-                  borderBottom: '1px solid #F1F5F9',
+                  borderBottom: '1px solid #EAECEF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between'
                 }}>
-                  <Typography sx={{
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    color: '#94A3B8',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.75
-                  }}>
-                    <Paperclip size={14} color="#7367f0" /> Attachments ({bug.attachments.length})
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', letterSpacing: '0.05em' }}>
+                      Attachments
+                    </Typography>
+                    <Box sx={{
+                      bgcolor: '#F8F9FA',
+                      borderRadius: '6px',
+                      px: 0.8, py: 0.25,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 0.4,
+                      border: '1px solid #EAECEF'
+                    }}>
+                      <Image size={13} color="var(--text-2nd-color)" />
+                      <Typography sx={{ fontSize: '0.7rem', color: 'var(--text-2nd-color)', fontWeight: 700 }}>{bug.attachments.length}</Typography>
+                    </Box>
+                  </Box>
                 </Box>
                 <Box sx={{ p: 1.5, bgcolor: '#FAFBFD' }}>
                   <AttachmentSlider
@@ -648,219 +678,224 @@ export default function IssueDetailPanel({
             {/* Description Section SECOND */}
             {bug.description && (
               <Card sx={{
-                p: 2,
                 borderRadius: '16px',
                 border: '1px solid #EAECEF',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-                bgcolor: '#FFFFFF'
+                bgcolor: '#FFFFFF',
+                overflow: 'hidden'
               }}>
-                <Typography sx={{
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  color: '#94A3B8',
-                  textTransform: 'uppercase',
-                  mb: 1,
-                  letterSpacing: '0.08em',
+                <Box sx={{
+                  px: 2,
+                  py: 1.25,
+                  borderBottom: '1px solid #EAECEF',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 0.75
+                  justifyContent: 'space-between'
                 }}>
-                  <Info size={14} color="#7367f0" /> Description
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
-                  {bug.description || <em style={{ color: '#94A3B8' }}>No description provided.</em>}
-                </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', letterSpacing: '0.05em' }}>
+                      Description
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ p: 2 }}>
+                  <Typography sx={{ color: "var(-title-color) !important", lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: '0.88rem' }}>
+                    {bug.description || <em style={{ color: 'var(--text-2nd-color)' }}>No description provided.</em>}
+                  </Typography>
+                </Box>
               </Card>
             )}
 
             {/* Activity Section */}
             <Card sx={{
-              p: 2,
-              borderRadius: '8px',
+              borderRadius: '16px',
               border: '1px solid #EAECEF',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-              bgcolor: '#FFFFFF'
+              bgcolor: '#FFFFFF',
+              overflow: 'hidden'
             }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography sx={{
-                  fontSize: '0.88rem',
-                  fontWeight: 800,
-                  color: '#94A3B8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1
-                }}>
-                  <MessageSquare size={16} color="#7367f0" />
-                  Comments & Discussions
-                  <Box
-                    component="span"
-                    sx={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      bgcolor: 'rgba(115, 103, 240, 0.08)',
-                      color: '#7367f0',
-                      px: 1,
-                      py: 0.2,
-                      borderRadius: '8px'
-                    }}
-                  >
-                    {bug.comments?.length || 0}
-                  </Box>
-                </Typography>
-              </Stack>
-
-              <Stack spacing={2} sx={{ mb: 2, position: 'relative' }}>
-                {/* Timeline Thread connector */}
-                {sortedComments.length > 0 && (
+              <Box sx={{
+                px: 2,
+                py: 1.25,
+                borderBottom: '1px solid #EAECEF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', letterSpacing: '0.05em' }}>
+                    Comments
+                  </Typography>
                   <Box sx={{
-                    position: 'absolute',
-                    left: '18px',
-                    top: '16px',
-                    bottom: '16px',
-                    width: '2px',
-                    bgcolor: '#F1F5F9',
-                    zIndex: 1
-                  }} />
-                )}
+                    bgcolor: '#F8F9FA',
+                    borderRadius: '6px',
+                    px: 0.8, py: 0.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 0.4,
+                    border: '1px solid #EAECEF'
+                  }}>
+                    <MessageSquare size={13} color="var(--text-2nd-color)" />
+                    <Typography sx={{ fontSize: '0.7rem', color: 'var(--text-2nd-color)', fontWeight: 700 }}>{bug.comments?.length || 0}</Typography>
+                  </Box>
+                </Box>
+              </Box>
 
-                {sortedComments.slice(0, visibleComments).map((c) => {
-                  const normalizedAttachments = Array.isArray(c.attachments)
-                    ? c.attachments.map((file) => ({
-                      ...file,
-                      id: file.id,
-                      name: file.name || file.fileName || 'Attachment',
-                      type: file.type || ((file.mimeType || '').startsWith('image/') ? 'image' : 'file'),
-                      url: file.url || file.filePath || '',
-                    }))
-                    : [];
-                  const commentMemberName = getMemberName(c);
-                  const commentMember = getMemberByRef(c?.userId ?? c?.userid ?? c?.user);
-                  const commentImageSrc = ImageUrl(commentMember);
-                  const commentAvatarColor = getRandomAvatarColor(commentMemberName);
+              <Box sx={{ p: 2 }}>
+                <Stack spacing={2} sx={{ mb: 2, position: 'relative' }}>
+                  {/* Timeline Thread connector */}
+                  {sortedComments.length > 0 && (
+                    <Box sx={{
+                      position: 'absolute',
+                      left: '18px',
+                      top: '16px',
+                      bottom: '16px',
+                      width: '2px',
+                      bgcolor: '#EAECEF',
+                      zIndex: 1
+                    }} />
+                  )}
 
-                  return (
-                    <Box key={c.id} sx={{ display: 'flex', gap: 1.5, position: 'relative', zIndex: 2 }}>
-                      <Avatar
-                        src={commentImageSrc}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          fontSize: '13px',
-                          textTransform: 'capitalize',
-                          border: '2px solid #FFFFFF',
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                          backgroundColor: commentImageSrc ? 'transparent' : commentAvatarColor,
-                        }}
-                      >
-                        {!commentImageSrc && commentMemberName.charAt(0)}
-                      </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{
-                          p: 1.5,
-                          borderRadius: '8px',
-                          bgcolor: '#F8FAFC',
-                          border: '1px solid #EAECEF',
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                            borderColor: '#CBD5E1'
-                          }
-                        }}>
-                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
-                            <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: '0.82rem' }}>
-                              {commentMemberName}
-                            </Typography>
-                            <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#CBD5E1' }} />
-                            <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, fontSize: '0.68rem' }}>
-                              {formatCommentDate(c.createdAt)}
-                            </Typography>
-                          </Stack>
-                          <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.5, fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>
-                            {c.content}
-                          </Typography>
+                  {sortedComments.slice(0, visibleComments).map((c) => {
+                    const normalizedAttachments = Array.isArray(c.attachments)
+                      ? c.attachments.map((file) => ({
+                        ...file,
+                        id: file.id,
+                        name: file.name || file.fileName || 'Attachment',
+                        type: file.type || ((file.mimeType || '').startsWith('image/') ? 'image' : 'file'),
+                        url: file.url || file.filePath || '',
+                      }))
+                      : [];
+                    const commentMemberName = getMemberName(c);
+                    const commentMember = getMemberByRef(c?.userId ?? c?.userid ?? c?.user);
+                    const commentImageSrc = ImageUrl(commentMember);
+                    const commentAvatarColor = getRandomAvatarColor(commentMemberName);
 
-                          {normalizedAttachments.length > 0 && (
-                            <Stack direction="row" spacing={1} sx={{ mt: 1.25, flexWrap: 'wrap', gap: 1 }}>
-                              {normalizedAttachments.map((file, idx) => (
-                                <Box
-                                  key={file.id || idx}
-                                  onClick={() => {
-                                    setViewerCurrentBugId(bugId);
-                                    setViewerAttachments(normalizedAttachments);
-                                    setViewerIndex(idx);
-                                    setViewerOpen(true);
-                                  }}
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.75,
-                                    p: 0.5,
-                                    pr: 1,
-                                    bgcolor: '#FFFFFF',
-                                    border: '1px solid #E2E8F0',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
-                                    transition: 'all 0.2s ease-in-out',
-                                    '&:hover': {
-                                      borderColor: '#7367f0',
-                                      bgcolor: '#F0EFFF',
-                                      transform: 'translateY(-1px)',
-                                      boxShadow: '0 2px 6px rgba(115, 103, 240, 0.06)'
-                                    }
-                                  }}
-                                >
-                                  {file.type === 'image' ? (
-                                    <Box
-                                      component="img"
-                                      src={file.url}
-                                      sx={{ width: 20, height: 20, borderRadius: '4px', objectFit: 'cover' }}
-                                    />
-                                  ) : (
-                                    <Paperclip size={12} color="#7367f0" />
-                                  )}
-                                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', maxWidth: 160 }} noWrap>
-                                    {file.name}
-                                  </Typography>
-                                </Box>
-                              ))}
+                    return (
+                      <Box key={c.id} sx={{ display: 'flex', gap: 1.5, position: 'relative', zIndex: 2 }}>
+                        <Avatar
+                          src={commentImageSrc}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            fontSize: '13px',
+                            textTransform: 'capitalize',
+                            border: '2px solid #FFFFFF',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                            backgroundColor: commentImageSrc ? 'transparent' : commentAvatarColor,
+                          }}
+                        >
+                          {!commentImageSrc && commentMemberName.charAt(0)}
+                        </Avatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{
+                            p: 1.5,
+                            borderRadius: '8px',
+                            bgcolor: '#FAFAFA',
+                            border: '1px solid #EAECEF',
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                              borderColor: '#CBD5E1'
+                            }
+                          }}>
+                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
+                              <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: '0.82rem' }}>
+                                {commentMemberName}
+                              </Typography>
+                              <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#CBD5E1' }} />
+                              <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600, fontSize: '0.68rem' }}>
+                                {formatCommentDate(c.entrydate)}
+                              </Typography>
                             </Stack>
-                          )}
+                            <Typography variant="body2" sx={{ color: '#334155', lineHeight: 1.5, fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>
+                              {c.content}
+                            </Typography>
+
+                            {normalizedAttachments.length > 0 && (
+                              <Stack direction="row" spacing={1} sx={{ mt: 1.25, flexWrap: 'wrap', gap: 1 }}>
+                                {normalizedAttachments.map((file, idx) => (
+                                  <Box
+                                    key={file.id || idx}
+                                    onClick={() => {
+                                      setViewerCurrentBugId(bugId);
+                                      setViewerAttachments(normalizedAttachments);
+                                      setViewerIndex(idx);
+                                      setViewerOpen(true);
+                                    }}
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 0.75,
+                                      p: 0.5,
+                                      pr: 1,
+                                      bgcolor: '#FFFFFF',
+                                      border: '1px solid #EAECEF',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.01)',
+                                      transition: 'all 0.2s ease-in-out',
+                                      '&:hover': {
+                                        borderColor: '#7367f0',
+                                        bgcolor: '#F0EFFF',
+                                        transform: 'translateY(-1px)',
+                                        boxShadow: '0 2px 6px rgba(115, 103, 240, 0.06)'
+                                      }
+                                    }}
+                                  >
+                                    {file.type === 'image' ? (
+                                      <Box
+                                        component="img"
+                                        src={file.url}
+                                        sx={{ width: 20, height: 20, borderRadius: '4px', objectFit: 'cover' }}
+                                      />
+                                    ) : (
+                                      <Paperclip size={12} color="#7367f0" />
+                                    )}
+                                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', maxWidth: 160 }} noWrap>
+                                      {file.name}
+                                    </Typography>
+                                  </Box>
+                                ))}
+                              </Stack>
+                            )}
+                          </Box>
                         </Box>
                       </Box>
-                    </Box>
-                  );
-                })}
+                    );
+                  })}
 
-                {visibleComments < sortedComments.length && (
-                  <Button
-                    size="small"
-                    onClick={() => setVisibleComments(prev => prev + 5)}
-                    sx={{
-                      alignSelf: 'center',
-                      color: '#7367f0',
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      fontSize: '0.78rem',
-                      py: 0.25,
-                      px: 1.5,
-                      borderRadius: '8px',
-                      '&:hover': {
-                        bgcolor: 'rgba(115, 103, 240, 0.04)',
-                        textDecoration: 'underline'
-                      }
-                    }}
-                  >
-                    Load more messages
-                  </Button>
-                )}
-              </Stack>
+                  {visibleComments < sortedComments.length && (
+                    <Button
+                      size="small"
+                      onClick={() => setVisibleComments(prev => prev + 5)}
+                      sx={{
+                        alignSelf: 'center',
+                        color: '#7367f0',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        fontSize: '0.78rem',
+                        py: 0.25,
+                        px: 1.5,
+                        borderRadius: '8px',
+                        '&:hover': {
+                          bgcolor: 'rgba(115, 103, 240, 0.04)',
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    >
+                      Load more messages
+                    </Button>
+                  )}
+                </Stack>
 
-              <Divider sx={{ my: 2.5, borderColor: '#F1F5F9' }} />
+                <Divider sx={{ my: 2.5, borderColor: '#EAECEF' }} />
 
-              {/* New Comment Input Wrapper */}
-              <Box sx={{ mt: 1 }}>
-                <CommentInput bugId={bugId} currentUser={currentUser} onCommentAdded={() => fetchBug(true)} />
+                {/* New Comment Input Wrapper */}
+                <Box sx={{ mt: 1 }}>
+                  <CommentInput bugId={bugId} currentUser={currentUser} onCommentAdded={() => fetchBug(true)} />
+                </Box>
               </Box>
             </Card>
 
@@ -871,7 +906,7 @@ export default function IssueDetailPanel({
         {showSidebar && (
           <Box sx={{
             width: 290,
-            bgcolor: '#F8FAFC',
+            bgcolor: '#FAFAFA',
             p: 2,
             display: { xs: 'none', lg: 'flex' },
             flexDirection: 'column',
@@ -882,37 +917,24 @@ export default function IssueDetailPanel({
             ...slimScroll
           }}>
             <Box>
-              <Typography sx={{
-                fontWeight: 800,
-                fontSize: '0.72rem',
-                color: '#64748B',
-                mb: 1.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5
-              }}>
-                <Info size={13} color="#64748B" /> Issue Details
+              <Typography sx={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 1.5 }}>
+                Bug Details
               </Typography>
 
               <Stack spacing={2}>
                 {/* Status & Priority Card */}
                 <Card sx={{
                   p: 2,
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   border: '1px solid #EAECEF',
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                  boxShadow: 'none',
                   bgcolor: '#FFFFFF'
                 }}>
-                  <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
-                    Status & Priority
-                  </Typography>
-                  <Stack spacing={1.5}>
+                  <Stack spacing={2}>
                     {/* Status Select Dropdown */}
                     <Box>
-                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
-                        CURRENT STATUS
+                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
+                        Current Status
                       </Typography>
                       {permissions.canChangeBugStatus(currentUser) ? (
                         <Select
@@ -929,34 +951,24 @@ export default function IssueDetailPanel({
                           }}
                           disabled={saving}
                           sx={{
-                            height: 32,
+                            height: 34,
                             borderRadius: '8px',
                             fontWeight: 700,
-                            fontSize: '0.78rem',
+                            fontSize: '0.8rem',
                             bgcolor: ss.bg,
                             color: ss.color,
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.02)',
+                            boxShadow: 'none',
                             border: `1px solid ${ss.border || 'transparent'}`,
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'transparent'
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'transparent'
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'transparent'
-                            }
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' }
                           }}
                           MenuProps={{
                             PaperProps: {
                               elevation: 0,
                               sx: {
-                                mt: 0.75,
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                border: '1px solid #E2E8F0',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                                py: 0.25
+                                mt: 0.75, borderRadius: '8px', overflow: 'hidden',
+                                border: '1px solid #EAECEF', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', py: 0.25
                               }
                             }
                           }}
@@ -966,24 +978,11 @@ export default function IssueDetailPanel({
                               key={s.id}
                               value={s.id}
                               sx={{
-                                fontWeight: 600,
-                                fontSize: '0.78rem',
-                                textTransform: 'capitalize',
-                                borderRadius: '6px',
-                                mx: 0.75,
-                                my: 0.2,
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  backgroundColor: '#F1F5F9'
-                                },
-                                '&.Mui-selected': {
-                                  backgroundColor: 'rgba(115, 103, 240, 0.08)',
-                                  color: '#7367f0',
-                                  fontWeight: 700
-                                },
-                                '&.Mui-selected:hover': {
-                                  backgroundColor: 'rgba(115, 103, 240, 0.12)'
-                                }
+                                fontWeight: 600, fontSize: '0.78rem', textTransform: 'capitalize',
+                                borderRadius: '6px', mx: 0.75, my: 0.2, transition: 'all 0.15s ease',
+                                '&:hover': { backgroundColor: '#EAECEF' },
+                                '&.Mui-selected': { backgroundColor: 'rgba(115, 103, 240, 0.08)', color: '#7367f0', fontWeight: 700 },
+                                '&.Mui-selected:hover': { backgroundColor: 'rgba(115, 103, 240, 0.12)' }
                               }}
                             >
                               {s.labelname}
@@ -997,19 +996,29 @@ export default function IssueDetailPanel({
                     {bug.priority && (
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Box>
-                          <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
-                            PRIORITY LEVEL
+                          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
+                            Priority Level
                           </Typography>
-                          <PriorityBadge priority={bug.priority} />
+                          <PriorityBadge priority={bug.priority} py={0.55} px={1.5} fontSize="0.7rem"/>
                         </Box>
-                        {bug.category && (
+                        {bug.category != '0' && (
                           <Box>
-                            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
-                              CATEGORY
+                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
+                              Category
                             </Typography>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#7367f0', bgcolor: 'rgba(115, 103, 240, 0.08)', px: 1, py: 0.35, borderRadius: '6px', fontSize: '0.7rem', display: 'inline-block' }}>
-                              {typeof bug.category === 'object' ? bug.category.label : bug.category}
-                            </Typography>
+                            <Chip
+                              label={typeof bug.category === 'object' ? bug.category.label : bug.category}
+                              size="small"
+                              sx={{
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                bgcolor: '#F5F5F5',
+                                color: '#64748B',
+                                border: '1px solid #EAECEF',
+                                borderRadius: '12px',
+                                height: '24px'
+                              }}
+                            />
                           </Box>
                         )}
                       </Box>
@@ -1020,20 +1029,17 @@ export default function IssueDetailPanel({
                 {/* People & Assignment Card */}
                 <Card sx={{
                   p: 2,
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   border: '1px solid #EAECEF',
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                  boxShadow: 'none',
                   bgcolor: '#FFFFFF'
                 }}>
-                  <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1.5, letterSpacing: '0.05em' }}>
-                    People & Ownership
-                  </Typography>
-                  <Stack spacing={2}>
-                    {/* Assignee Card */}
+                  <Stack spacing={2.5}>
+                    {/* Assignee */}
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B' }}>
-                          ASSIGNED TO
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', letterSpacing: '0.02em' }}>
+                          Assigned To
                         </Typography>
                         {permissions.canReassignBug(currentUser) && (
                           <Button
@@ -1041,11 +1047,7 @@ export default function IssueDetailPanel({
                             variant="text"
                             onClick={() => { setTempDev(bug.assigneeId); setReassignOpen(true); }}
                             sx={{
-                              fontSize: '0.62rem',
-                              fontWeight: 800,
-                              p: 0,
-                              minWidth: 0,
-                              color: '#7367f0',
+                              fontSize: '0.65rem', fontWeight: 700, p: 0, minWidth: 0, color: '#7367f0',
                               '&:hover': { bgcolor: 'transparent', color: '#5b50d6', textDecoration: 'underline' }
                             }}
                           >
@@ -1055,75 +1057,54 @@ export default function IssueDetailPanel({
                       </Stack>
                       <Stack
                         direction="row"
-                        spacing={1}
+                        spacing={1.25}
                         alignItems="center"
                         onClick={() => { if (permissions.canReassignBug(currentUser)) { setTempDev(bug.assigneeId); setReassignOpen(true); } }}
                         sx={{
-                          p: 1,
-                          border: '1px solid #F1F5F9',
-                          borderRadius: '8px',
-                          bgcolor: '#F8FAFC',
                           cursor: permissions.canReassignBug(currentUser) ? 'pointer' : 'default',
-                          transition: 'all 0.2s ease-in-out',
-                          ...(permissions.canReassignBug(currentUser) ? {
-                            '&:hover': {
-                              borderColor: '#7367f0',
-                              bgcolor: '#FFFFFF',
-                              boxShadow: '0 2px 8px rgba(115, 103, 240, 0.04)'
-                            }
-                          } : {})
+                          '&:hover .assignee-name': permissions.canReassignBug(currentUser) ? { color: '#7367f0' } : {}
                         }}
                       >
                         <Avatar
                           src={aImageSrc}
                           sx={{
-                            width: 28,
-                            height: 28,
-                            fontSize: '13px',
-                            textTransform: 'capitalize',
-                            border: '2px solid #FFFFFF',
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                            backgroundColor: aImageSrc ? 'transparent' : aColors,
+                            width: 32, height: 32, fontSize: '13px', textTransform: 'capitalize',
+                            border: '1px solid #EAECEF', backgroundColor: aImageSrc ? 'transparent' : aColors,
                           }}
                         >
                           {!aImageSrc && assigneeDisplayName.charAt(0)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }} noWrap>
+                          <Typography className="assignee-name" sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', lineHeight: 1.2, transition: 'color 0.2s' }} noWrap>
                             {assigneeDisplayName || 'Unassigned'}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 600 }} noWrap>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 500 }} noWrap>
                             {getMemberByRef(bug.assigneeId)?.designation || getMemberByRef(bug.assigneeId)?.department || (bug.assigneeId ? 'Developer' : '—')}
                           </Typography>
                         </Box>
                       </Stack>
                     </Box>
 
-                    {/* Reporter Card */}
+                    {/* Reporter */}
                     <Box>
-                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
-                        REPORTED BY
+                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
+                        Reported By
                       </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1, border: '1px solid #F1F5F9', borderRadius: '8px', bgcolor: '#F8FAFC' }}>
+                      <Stack direction="row" spacing={1.25} alignItems="center">
                         <Avatar
                           src={rImageSrc}
                           sx={{
-                            width: 28,
-                            height: 28,
-                            fontSize: '13px',
-                            textTransform: 'capitalize',
-                            border: '2px solid #FFFFFF',
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                            backgroundColor: rImageSrc ? 'transparent' : rColors,
+                            width: 32, height: 32, fontSize: '13px', textTransform: 'capitalize',
+                            border: '1px solid #EAECEF', backgroundColor: rImageSrc ? 'transparent' : rColors,
                           }}
                         >
                           {!rImageSrc && reporterDisplayName.charAt(0)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }} noWrap>
+                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', lineHeight: 1.2 }} noWrap>
                             {reporterDisplayName}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.65rem', color: '#94A3B8', fontWeight: 600 }} noWrap>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 500 }} noWrap>
                             {getMemberByRef(bug.reporterId)?.designation || getMemberByRef(bug.reporterId)?.department || 'Reporter'}
                           </Typography>
                         </Box>
@@ -1135,73 +1116,79 @@ export default function IssueDetailPanel({
                 {/* Metadata & Timeline Card */}
                 <Card sx={{
                   p: 2,
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   border: '1px solid #EAECEF',
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.01)',
+                  boxShadow: 'none',
                   bgcolor: '#FFFFFF'
                 }}>
-                  <Stack spacing={2}>
-                    {/* Environment Tags */}
+                  <Stack spacing={2.5}>
+                    {/* Environment */}
                     <Box>
-                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 0.5 }}>
-                        ENVIRONMENT
+                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
+                        Environment
                       </Typography>
                       {bug.environment ? (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                        <Stack direction="row" spacing={0.75} flexWrap="wrap" gap={0.25}>
                           {(() => {
                             try {
                               const env = typeof bug.environment === 'string' ? JSON.parse(bug.environment) : bug.environment;
                               const activeEnvs = Object.entries(env).filter(([_, active]) => active);
                               return activeEnvs.length > 0 ? activeEnvs.map(([name]) => (
-                                <Typography key={name} variant="caption" sx={{ fontWeight: 700, color: '#28C76F', bgcolor: 'rgba(40, 199, 111, 0.08)', px: 0.75, py: 0.3, borderRadius: '6px', textTransform: 'capitalize', fontSize: '0.68rem' }}>
-                                  {name}
-                                </Typography>
+                                <Chip
+                                  key={name}
+                                  label={name}
+                                  size="small"
+                                  sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'capitalize',
+                                    bgcolor: 'rgba(115, 103, 240, 0.08)',
+                                    color: '#7367f0',
+                                    border: '1px solid rgba(115, 103, 240, 0.12)',
+                                    borderRadius: '12px',
+                                    height: '24px'
+                                  }}
+                                />
                               )) : (
-                                <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>
+                                <Typography sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.85rem' }}>
                                   Not Specified
                                 </Typography>
                               );
                             } catch (e) {
-                              return <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>Not Specified</Typography>;
+                              return <Typography sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.85rem' }}>Not Specified</Typography>;
                             }
                           })()}
                         </Stack>
                       ) : (
-                        <Typography variant="caption" sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.7rem' }}>
+                        <Typography sx={{ fontWeight: 500, color: '#9CA3AF', fontStyle: 'italic', fontSize: '0.85rem' }}>
                           Not Specified
                         </Typography>
                       )}
                     </Box>
 
                     {/* Timeline Dates */}
-                    <Box>
-                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#64748B', mb: 1 }}>
-                        TIMELINE
-                      </Typography>
-                      <Stack spacing={0.75}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Created</Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', bgcolor: '#F8FAFC', px: 0.75, py: 0.25, borderRadius: '6px', border: '1px solid #EAECEF', fontSize: '0.72rem' }}>
-                            {formatDate(bug.createdAt)}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Due Date</Typography>
-                          <Typography variant="caption" sx={{
-                            fontWeight: 700,
-                            color: bug.dueDate && bug.dueDate !== 'Not set' ? '#EA5455' : '#94A3B8',
-                            bgcolor: bug.dueDate && bug.dueDate !== 'Not set' ? 'rgba(234, 84, 85, 0.08)' : '#F8FAFC',
-                            px: 0.75,
-                            py: 0.25,
-                            borderRadius: '6px',
-                            border: '1px solid #EAECEF',
-                            fontSize: '0.72rem'
-                          }}>
-                            {formatDate(bug.dueDate)}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </Box>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Box>
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.25, letterSpacing: '0.02em' }}>
+                          Created
+                        </Typography>
+                        <Typography sx={{ fontWeight: 700, color: '#1E293B', fontSize: '0.85rem' }}>
+                          {formatDate(bug.entrydate)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.25, letterSpacing: '0.02em' }}>
+                          Due Date
+                        </Typography>
+                        <Typography sx={{
+                          fontWeight: 700,
+                          color: bug.dueDate && bug.dueDate !== 'Not set' ? '#EA5455' : '#1E293B',
+                          fontSize: '0.85rem'
+                        }}>
+                          {formatDate(bug.dueDate)}
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </Stack>
                 </Card>
 

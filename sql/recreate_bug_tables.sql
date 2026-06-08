@@ -83,7 +83,6 @@ CREATE TABLE [dbo].[bug_Attachments](
     [id] [int] IDENTITY(1,1) NOT NULL,
     [bugId] [int] NULL,
     [commentId] [int] NULL,
-    [fileName] [nvarchar](255) NOT NULL,
     [filePath] [nvarchar](max) NULL,
     [createdAt] [datetime2](7) NULL,
     CONSTRAINT [PK_bug_Attachments] PRIMARY KEY CLUSTERED ([id] ASC)

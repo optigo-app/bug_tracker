@@ -1,17 +1,20 @@
 import { useState, useRef } from 'react';
+import { removeFileApi } from '@/src/utils/taskApi';
 
 export const useAttachmentHandlers = (attachments, setAttachments) => {
   const [dragActive, setDragActive] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [initialEditImage, setInitialEditImage] = useState('');
+  const [removedAttachments, setRemovedAttachments] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleEditOpen = (index) => {
     const att = attachments[index];
-    const mimeType = (att?.type || att?.mimeType || '').toLowerCase();
+    const filePath = att?.url || att?.filepath || '';
+    const mimeType = (att?.type || getMimeTypeFromUrl(filePath) || '').toLowerCase();
     if (att && mimeType?.startsWith('image')) {
-      const url = att.url || att.filePath || (att.file ? URL.createObjectURL(att.file) : '');
+      const url = filePath || (att.file ? URL.createObjectURL(att.file) : '');
       setInitialEditImage(url);
       setEditingIndex(index);
       setEditorOpen(true);
@@ -69,6 +72,20 @@ export const useAttachmentHandlers = (attachments, setAttachments) => {
     fileInputRef.current.click();
   };
 
+  const handleRemoveAttachment = (index) => {
+    const att = attachments[index];
+    const filePath = att?.url || att?.filepath || '';
+    
+    // Track removed attachments but don't delete from server yet
+    // Only delete when user clicks save/update
+    if (att?.isExisting && filePath) {
+      setRemovedAttachments(prev => [...prev, filePath]);
+    }
+    
+    // Remove from local state
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const addFiles = (files) => {
     const newAttachments = files.map(file => ({
       file,
@@ -86,12 +103,14 @@ export const useAttachmentHandlers = (attachments, setAttachments) => {
     editingIndex,
     initialEditImage,
     fileInputRef,
+    removedAttachments,
     handleEditOpen,
     handleEditSave,
     handleDrag,
     handleDrop,
     handleChange,
     onButtonClick,
-    addFiles
+    addFiles,
+    handleRemoveAttachment
   };
 };

@@ -21,7 +21,7 @@ const page = () => {
           sx={{
             p: 4,
             borderRadius: 4,
-            bgcolor: '#F1F5F9',
+            bgcolor: '#f5f5f5',
             mb: 3,
           }}
         >
@@ -30,7 +30,7 @@ const page = () => {
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#1E293B' }}>
           Task Performance Report Coming Soon
         </Typography>
-        <Typography variant="body1" sx={{ color: '#64748B', maxWidth: 500 }}>
+        <Typography variant="body1" sx={{ color: 'var(--text-2nd-color)', maxWidth: 500 }}>
           We're working on building comprehensive task performance analytics to help you track bug distribution, status breakdown, and task health scores.
         </Typography>
       </Box>

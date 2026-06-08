@@ -193,7 +193,7 @@ export default function StatusDialog({
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
                     {config.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, px: 2, mb: 3, lineHeight: 1.6 }}>
+                <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500, px: 2, mb: 3, lineHeight: 1.6 }}>
                     {config.message}
                 </Typography>
 
@@ -210,7 +210,7 @@ export default function StatusDialog({
                 )}
             </DialogContent>
             
-            <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5, bgcolor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+            <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 1.5, bgcolor: '#FAFAFA', borderTop: '1px solid #EAECEF' }}>
                 <Button 
                     fullWidth 
                     variant="outlined" 
@@ -218,14 +218,14 @@ export default function StatusDialog({
                     sx={{
                         borderRadius: 2,
                         fontWeight: 600,
-                        color: '#64748B',
-                        borderColor: '#E2E8F0',
+                        color: 'var(--text-2nd-color)',
+                        borderColor: '#EAECEF',
                         py: 1.25,
                         textTransform: 'none',
                         transition: 'all 0.2s',
                         '&:hover': {
                             borderColor: '#CBD5E1',
-                            bgcolor: '#F8FAFC',
+                            bgcolor: '#FAFAFA',
                         }
                     }}
                 >
@@ -259,8 +259,8 @@ export default function StatusDialog({
                             transform: 'translateY(0)'
                         },
                         '&.Mui-disabled': {
-                            background: '#E2E8F0',
-                            color: '#94A3B8'
+                            background: '#EAECEF',
+                            color: 'var(--text-2nd-color)'
                         }
                     }}
                 >

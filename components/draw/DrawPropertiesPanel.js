@@ -2,9 +2,18 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  Bold,
+  Italic,
+  Strikethrough,
   Minus,
   Plus,
   Square,
+  Ban,
+  Pencil,
+  PaintBucket,
+  MoveRight,
+  MoveLeft,
+  MoveHorizontal,
 } from "lucide-react";
 import { useState } from "react";
 import { Select, MenuItem } from "@mui/material";
@@ -15,18 +24,16 @@ import styles from "./draw-editor.module.css";
 
 const SIZE_OPTIONS = [
   { label: "12", value: 12 },
-  { label: "15", value: 15 },
+  { label: "14", value: 14 },
   { label: "16", value: 16 },
-  { label: "18", value: 18 },
   { label: "20", value: 20 },
   { label: "24", value: 24 },
-  { label: "28", value: 28 },
   { label: "32", value: 32 },
-  { label: "36", value: 36 },
   { label: "40", value: 40 },
-  { label: "44", value: 44 },
   { label: "48", value: 48 },
-  { label: "50", value: 50 },
+  { label: "64", value: 64 },
+  { label: "80", value: 80 },
+  { label: "90", value: 90 },
 ];
 
 export default function DrawPropertiesPanel({
@@ -40,10 +47,14 @@ export default function DrawPropertiesPanel({
   currentFill,
   currentBackgroundColor,
   currentFont,
+  currentFontWeight,
+  currentFontStyle,
+  currentTextDecoration,
   currentFontSize,
   currentTextTransform,
   currentShapeType,
   currentStrokeWidth,
+  currentArrowHead,
   imageInputRef,
   isShapeMenuOpen,
   onShapeMenuToggle,
@@ -55,10 +66,14 @@ export default function DrawPropertiesPanel({
   setCurrentFill,
   setCurrentBackgroundColor,
   setCurrentFont,
+  setCurrentFontWeight,
+  setCurrentFontStyle,
+  setCurrentTextDecoration,
   setCurrentFontSize,
   setCurrentTextTransform,
   setCurrentShapeType,
   setCurrentStrokeWidth,
+  setCurrentArrowHead,
 }) {
   const shouldEditSelectedShape = Boolean(selectedShape) && activeTool === "select";
   const mode = shouldEditSelectedShape ? selectedShape.type : activeTool;
@@ -75,9 +90,13 @@ export default function DrawPropertiesPanel({
       if (partial.backgroundColor !== undefined) setCurrentBackgroundColor(partial.backgroundColor);
       if (partial.dash !== undefined) setCurrentDash(partial.dash);
       if (partial.font !== undefined) setCurrentFont(partial.font);
+      if (partial.fontWeight !== undefined) setCurrentFontWeight(partial.fontWeight);
+      if (partial.fontStyle !== undefined) setCurrentFontStyle(partial.fontStyle);
+      if (partial.textDecoration !== undefined) setCurrentTextDecoration(partial.textDecoration);
       if (partial.align !== undefined) setCurrentAlign(partial.align);
       if (partial.fontSize !== undefined) setCurrentFontSize(partial.fontSize);
       if (partial.textTransform !== undefined) setCurrentTextTransform(partial.textTransform);
+      if (partial.arrowHead !== undefined) setCurrentArrowHead(partial.arrowHead);
       return;
     }
 
@@ -92,10 +111,14 @@ export default function DrawPropertiesPanel({
     if (partial.backgroundColor !== undefined) setCurrentBackgroundColor(partial.backgroundColor);
     if (partial.dash !== undefined) setCurrentDash(partial.dash);
     if (partial.font !== undefined) setCurrentFont(partial.font);
+    if (partial.fontWeight !== undefined) setCurrentFontWeight(partial.fontWeight);
+    if (partial.fontStyle !== undefined) setCurrentFontStyle(partial.fontStyle);
+    if (partial.textDecoration !== undefined) setCurrentTextDecoration(partial.textDecoration);
     if (partial.align !== undefined) setCurrentAlign(partial.align);
     if (partial.fontSize !== undefined) setCurrentFontSize(partial.fontSize);
     if (partial.textTransform !== undefined) setCurrentTextTransform(partial.textTransform);
     if (partial.shapeType !== undefined) setCurrentShapeType(partial.shapeType);
+    if (partial.arrowHead !== undefined) setCurrentArrowHead(partial.arrowHead);
   };
 
   const getActiveValue = (key, fallback) =>
@@ -168,6 +191,7 @@ export default function DrawPropertiesPanel({
 
         <div className={styles.compactSection}>
           <div className={styles.propertyGrid}>
+
             {COLORS.map((color) => (
               <button
                 key={color}
@@ -194,13 +218,29 @@ export default function DrawPropertiesPanel({
 
         {showBackgroundRow && (
           <div className={styles.compactSection}>
-            <button
-              className={`${styles.gridIconButton} ${colorMode === "background" ? styles.gridIconButtonActive : ""}`}
-              onClick={() => setColorMode(colorMode === "stroke" ? "background" : "stroke")}
-              style={{ width: "100%", fontSize: "12px", height: '50px' }}
-            >
-              {colorMode === "stroke" ? "Background Color" : "Stroke Color"}
-            </button>
+            <div className={styles.iconGrid}>
+              <button
+                className={`${styles.gridIconButton} ${colorMode === "stroke" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => setColorMode("stroke")}
+                title={mode === "text" || mode === "note" ? "Text Color" : "Stroke Color"}
+              >
+                <Pencil size={16} strokeWidth={2.5} />
+              </button>
+              <button
+                className={`${styles.gridIconButton} ${colorMode === "background" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => setColorMode("background")}
+                title="Background Color"
+              >
+                <PaintBucket size={16} strokeWidth={2.5} />
+              </button>
+              <button
+                className={`${styles.gridIconButton} ${getActiveValue("backgroundColor", currentBackgroundColor) === "transparent" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => handleStyleChange({ backgroundColor: "transparent" })}
+                title="Transparent Background"
+              >
+                <Ban size={16} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         )}
         {!showFontRow && (
@@ -222,34 +262,7 @@ export default function DrawPropertiesPanel({
             </div>
           </div>
         )}
-        {showFontRow && (
-          <div className={styles.compactSection}>
-            <Select
-              value={getActiveValue("fontSize", currentFontSize)}
-              onChange={(event) =>
-                handleStyleChange({ fontSize: parseInt(event.target.value, 10) })
-              }
-              size="small"
-              sx={{
-                width: "100%",
-                height: "36px",
-                fontSize: "13px",
-                "& .MuiOutlinedInput-root": {
-                  height: "36px",
-                },
-                "& .MuiSelect-select": {
-                  padding: "8px 12px",
-                },
-              }}
-            >
-              {Array.from({ length: 37 }, (_, i) => 14 + i).map((size) => (
-                <MenuItem key={size} value={size}>
-                  {size}
-                </MenuItem>
-              ))}
-            </Select>
-          </div>
-        )}
+
 
         {showFillRow ? (
           <div className={styles.compactSection}>
@@ -338,6 +351,29 @@ export default function DrawPropertiesPanel({
                 <span style={{ fontSize: "14px", fontWeight: "bold" }}>aa</span>
               </button>
             </div>
+            <div className={styles.iconGrid} style={{ marginTop: '8px' }}>
+              <button
+                className={`${styles.gridIconButton} ${getActiveValue("fontWeight", currentFontWeight) === "bold" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => handleStyleChange({ fontWeight: getActiveValue("fontWeight", currentFontWeight) === "bold" ? "normal" : "bold" })}
+                title="Bold"
+              >
+                <Bold size={16} strokeWidth={2.5} />
+              </button>
+              <button
+                className={`${styles.gridIconButton} ${getActiveValue("fontStyle", currentFontStyle) === "italic" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => handleStyleChange({ fontStyle: getActiveValue("fontStyle", currentFontStyle) === "italic" ? "normal" : "italic" })}
+                title="Italic"
+              >
+                <Italic size={16} strokeWidth={2.5} />
+              </button>
+              <button
+                className={`${styles.gridIconButton} ${getActiveValue("textDecoration", currentTextDecoration) === "line-through" ? styles.gridIconButtonActive : ""}`}
+                onClick={() => handleStyleChange({ textDecoration: getActiveValue("textDecoration", currentTextDecoration) === "line-through" ? "none" : "line-through" })}
+                title="Strikethrough"
+              >
+                <Strikethrough size={16} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -368,9 +404,35 @@ export default function DrawPropertiesPanel({
             </div>
             <div className={styles.compactInfoRow}>
               <span>Arrows</span>
-              <div className={styles.arrowEnds}>
-                <button className={styles.inlineTextButton}>--</button>
-                <button className={styles.inlineTextButton}>-&gt;</button>
+              <div className={styles.iconGrid} style={{ width: 'auto', gap: '4px', background: 'none', padding: 0 }}>
+                <button
+                  className={`${styles.gridIconButton} ${getActiveValue("arrowHead", currentArrowHead) === "none" ? styles.gridIconButtonActive : ""}`}
+                  onClick={() => handleStyleChange({ arrowHead: "none" })}
+                  title="Line"
+                >
+                  <Minus size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  className={`${styles.gridIconButton} ${getActiveValue("arrowHead", currentArrowHead) === "end" ? styles.gridIconButtonActive : ""}`}
+                  onClick={() => handleStyleChange({ arrowHead: "end" })}
+                  title="Arrow at End"
+                >
+                  <MoveRight size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  className={`${styles.gridIconButton} ${getActiveValue("arrowHead", currentArrowHead) === "start" ? styles.gridIconButtonActive : ""}`}
+                  onClick={() => handleStyleChange({ arrowHead: "start" })}
+                  title="Arrow at Start"
+                >
+                  <MoveLeft size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  className={`${styles.gridIconButton} ${getActiveValue("arrowHead", currentArrowHead) === "both" ? styles.gridIconButtonActive : ""}`}
+                  onClick={() => handleStyleChange({ arrowHead: "both" })}
+                  title="Arrow at Both Ends"
+                >
+                  <MoveHorizontal size={16} strokeWidth={2.5} />
+                </button>
               </div>
             </div>
           </>

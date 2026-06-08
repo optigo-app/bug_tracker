@@ -21,19 +21,46 @@ function AutoLoginContent() {
     }
 
     const data = searchParams.get('data');
+    const taskData = searchParams.get('taskData');
     console.log('Auto-login: searchParams:', searchParams.toString());
     console.log('Auto-login: data parameter:', data);
+    console.log('Auto-login: taskData parameter:', taskData);
+
+    // Check if user is already authenticated
+    const existingAuth = sessionStorage.getItem('AuthqueryParams');
+    const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+
+    if (isAuthenticated && existingAuth) {
+      console.log('Auto-login: User already authenticated, skipping authentication');
+      setStatus('success');
+
+      // Handle taskData redirect if present
+      if (taskData) {
+        try {
+          const decodedTaskData = JSON.parse(atob(decodeURIComponent(taskData)));
+          const encodedParams = encodeURIComponent(btoa(JSON.stringify(decodedTaskData)));
+          router.push(`/bugs?data=${encodedParams}`);
+        } catch (e) {
+          console.error('Auto-login: Error parsing taskData:', e);
+          router.push('/');
+        }
+      } else {
+        router.push('/');
+      }
+      return;
+    }
 
     if (data) {
       setAuthAttempted(true);
-      handleAutoLogin(data);
+      handleAutoLogin(data, taskData);
     } else {
       const timer = setTimeout(() => {
         const retryData = searchParams.get('data');
+        const retryTaskData = searchParams.get('taskData');
         console.log('Auto-login: retry data parameter:', retryData);
         if (retryData) {
           setAuthAttempted(true);
-          handleAutoLogin(retryData);
+          handleAutoLogin(retryData, retryTaskData);
         } else {
           if (status !== 'success') {
             setStatus('error');
@@ -46,7 +73,7 @@ function AutoLoginContent() {
     }
   }, [searchParams, authAttempted, status]);
 
-  const handleAutoLogin = async (encodedData) => {
+  const handleAutoLogin = async (encodedData, taskData) => {
     try {
       console.log('Auto-login: Starting authentication');
       console.log('Auto-login: Raw encoded data:', encodedData);
@@ -110,11 +137,22 @@ function AutoLoginContent() {
         fetchMasterGlFunc().catch((masterError) => {
           console.error('Auto-login: Error fetching master data:', masterError);
         });
-        // Redirect immediately
-        try {
-          router.push('/');
-        } catch (routerError) {
-          window.location.href = '/';
+        // Redirect to bugs page with task data if present, otherwise to dashboard
+        if (taskData) {
+          try {
+            const decodedTaskData = JSON.parse(atob(decodeURIComponent(taskData)));
+            const encodedParams = encodeURIComponent(btoa(JSON.stringify(decodedTaskData)));
+            router.push(`/bugs?data=${encodedParams}`);
+          } catch (e) {
+            console.error('Auto-login: Error parsing taskData:', e);
+            router.push('/');
+          }
+        } else {
+          try {
+            router.push('/');
+          } catch (routerError) {
+            window.location.href = '/';
+          }
         }
       } else {
         setStatus('error');
@@ -133,7 +171,7 @@ function AutoLoginContent() {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      bgcolor: '#F8FAFC',
+      bgcolor: '#fafafa',
     }}>
       <Box sx={{
         bgcolor: 'white',
@@ -150,7 +188,7 @@ function AutoLoginContent() {
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                 Authenticating...
               </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
                 Setting up your session
               </Typography>
             </Box>
@@ -174,7 +212,7 @@ function AutoLoginContent() {
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                 Authentication Successful!
               </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
                 Redirecting to dashboard...
               </Typography>
             </Box>
@@ -201,7 +239,7 @@ function AutoLoginContent() {
               <Typography variant="body2" sx={{ color: '#EF4444', mb: 2, fontWeight: 600 }}>
                 {errorMessage}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#64748B' }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
                 Please ensure you are accessing this application through the correct portal.
               </Typography>
             </Box>
@@ -227,7 +265,7 @@ function LoadingScreen() {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      bgcolor: '#F8FAFC',
+      bgcolor: '#fafafa',
     }}>
       <Box sx={{
         bgcolor: 'white',
@@ -243,7 +281,7 @@ function LoadingScreen() {
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
               Loading...
             </Typography>
-            <Typography variant="body2" sx={{ color: '#64748B' }}>
+            <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
               Preparing authentication
             </Typography>
           </Box>

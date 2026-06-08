@@ -57,7 +57,7 @@ export const BugProvider = ({ children }) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const todayBugs = bugs.filter(bug => {
-      const bugDate = new Date(bug.createdAt);
+      const bugDate = new Date(bug.entrydate);
       return bugDate >= today && bugDate < tomorrow;
     });
 

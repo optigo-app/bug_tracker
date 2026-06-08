@@ -38,18 +38,10 @@ export const uploadFilesForBug = async ({ bugId, files = [] }) => {
       }
     }
 
-    const attachments = uploadedResults.map((uploaded, index) => {
-      const fileNameFromUrl = uploaded?.url?.split('/').pop()?.split('?')[0] || '';
-      const fileName = uploaded?.originalFile?.name || uploaded?.fileName || uploaded?.name || fileNameFromUrl || `attachment-${index + 1}`;
-      const fileSize = uploaded?.originalFile?.size || uploaded?.size || 0;
-      const mimeType = uploaded?.originalFile?.type || uploaded?.fileType || uploaded?.mimeType || inferMimeType(fileName);
-
+    const attachments = uploadedResults.map((uploaded) => {
       return {
         id: null, // Let SQL generate incremental ID
         bugId,
-        fileName,
-        fileSize,
-        mimeType,
         filePath: uploaded?.url || '',
       };
     });

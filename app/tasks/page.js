@@ -7,26 +7,22 @@ import {
   Typography,
   Paper,
   TextField,
-  Avatar,
   Stack,
-  Chip,
   InputBase,
-  Tooltip,
   CircularProgress,
   Button,
-  Autocomplete
+  Autocomplete,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { getRandomAvatarColor, getInitials, ImageUrl } from '@/utils/glocalfunc';
-import {
-  Search, Calendar, Building2,
-  Clock, CheckCircle2, AlertCircle, TrendingUp, BarChart3
-} from 'lucide-react';
+import { Search, Calendar, Building2, CheckCircle2, AlertCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { fetchTaskDataFullApi } from '@/src/utils/taskApi';
 import { useBugContext } from '@/contexts/BugContext';
 import { encodeUrlParams } from '@/utils/urlParams';
 import StatusChip from '@/components/StatusChip';
 import CustomDateRangePicker from '@/components/DateRangePicker';
+import AssigneeAvatarGroup from '@/app/bugs/components/AssigneeAvatarGroup';
 
 export default function TasksPage() {
   const router = useRouter();
@@ -42,6 +38,7 @@ export default function TasksPage() {
   const [moduleFilter, setModuleFilter] = useState(null);
   const [startDateFilter, setStartDateFilter] = useState({ startDate: "", endDate: "" });
   const [dueDateFilter, setDueDateFilter] = useState({ startDate: "", endDate: "" });
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
@@ -49,27 +46,24 @@ export default function TasksPage() {
   });
 
   useEffect(() => {
-    // Detect if it's a page reload vs navigation
     const navigationEntries = performance.getEntriesByType('navigation');
     const isReload = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
-
-    // Force refresh on reload, use cache on navigation
     fetchTaskData(isReload);
   }, []);
 
   const fetchTaskData = async (forceRefresh = false) => {
     try {
-      const taskData = await fetchTaskDataFullApi();
-      const tasks = taskData?.rd || [];
-
-      // Fetch bugs list to count bugs task-wise
-      let bugsData = [];
-      try {
-        bugsData = await fetchBugsGlobal(forceRefresh);
-      } catch (bugError) {
-        console.error("Error fetching bugs for task page:", bugError);
-      }
-
+      const [taskData, bugsData = []] = await Promise.all([
+        fetchTaskDataFullApi(),
+        fetchBugsGlobal(forceRefresh).catch((error) => {
+          console.error("Error fetching bugs for task page:", error);
+          return [];
+        }),
+      ]);
+      const tasks = (taskData?.rd ?? []).map((task, index) => ({
+        ...task,
+        srNo: index + 1,
+      }));
       processAndSetTasks(tasks, bugsData);
     } catch (error) {
       console.error("Error in fetchTaskData:", error);
@@ -77,7 +71,6 @@ export default function TasksPage() {
       setIsLoading(false);
     }
   };
-  
 
   const processAndSetTasks = (tasks, bugsData = []) => {
     const priorityData = JSON.parse(sessionStorage.getItem('taskpriorityData') || '[]');
@@ -91,9 +84,7 @@ export default function TasksPage() {
       const status = statusData?.find((item) => item?.id == task?.statusid);
       const project = taskProject?.find((item) => item?.id == task?.projectid);
       const category = taskCategory?.find((item) => item?.id == task?.workcategoryid);
-
       const assigneeIdArray = task?.assigneids?.split(",")?.map((id) => Number(id)) || [];
-
       const matchedAssignees = taskAssigneeData
         ?.filter((user) => assigneeIdArray?.includes(user.id))
         ?.map((user) => ({
@@ -102,7 +93,6 @@ export default function TasksPage() {
 
       const taskIdVal = String(task.taskid || task.id || '');
       const bugCount = bugsData.filter(bug => String(bug.taskId || '') === taskIdVal).length;
-
       return {
         ...task,
         id: task.taskid || task.id || Math.random(),
@@ -118,12 +108,6 @@ export default function TasksPage() {
     };
 
     const finalTasks = tasks?.map((task) => enhanceTask(task)) || [];
-    // Sort by entry date (StartDate) in descending order (newest first)
-    finalTasks.sort((a, b) => {
-      const dateA = a.startDate ? new Date(a.startDate) : new Date(0);
-      const dateB = b.startDate ? new Date(b.startDate) : new Date(0);
-      return dateB - dateA;
-    });
     setTasks(finalTasks);
   };
 
@@ -148,12 +132,14 @@ export default function TasksPage() {
       new Date(t.DeadLineDate) >= new Date(new Date(dueDateFilter.startDate).setHours(0, 0, 0, 0)) &&
       new Date(t.DeadLineDate) <= new Date(new Date(dueDateFilter.endDate).setHours(23, 59, 59, 999))
     );
+    const isCompleted = t.status?.toLowerCase() === 'completed' || t.status?.toLowerCase() === 'closed';
+    const matchesCompleted = showCompleted || !isCompleted;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesModule && matchesStartDate && matchesDueDate;
+    return matchesSearch && matchesStatus && matchesPriority && matchesProject && matchesModule && matchesStartDate && matchesDueDate && matchesCompleted;
   });
 
   // Active filter count
-  const activeFilterCount = [statusFilter, priorityFilter, projectFilter, moduleFilter].filter(f => f !== null).length + (isDateFilterActive(startDateFilter) ? 1 : 0) + (isDateFilterActive(dueDateFilter) ? 1 : 0);
+  const activeFilterCount = [statusFilter, priorityFilter, projectFilter, moduleFilter].filter(f => f !== null).length + (isDateFilterActive(startDateFilter) ? 1 : 0) + (isDateFilterActive(dueDateFilter) ? 1 : 0) + (showCompleted ? 0 : 1);
 
   // Calculate stats
   const stats = {
@@ -168,13 +154,11 @@ export default function TasksPage() {
   const taskColumns = [
     {
       field: 'srNo',
-      headerName: 'SR NO',
+      headerName: 'SR #',
       width: 70,
       renderCell: (params) => {
-        const rowIndex =
-          paginationModel.page * paginationModel.pageSize +
-          params.api.getRowIndexRelativeToVisibleRows(params.row.id) +
-          1;
+        const rowIndex = filteredTasks.indexOf(params.row);
+        const srNumber = rowIndex >= 0 ? rowIndex + 1 : '';
         return (
           <Box
             sx={{
@@ -189,10 +173,10 @@ export default function TasksPage() {
               sx={{
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#64748B'
+                color: 'var(--text-2nd-color)'
               }}
             >
-              {rowIndex}
+              {srNumber}
             </Typography>
           </Box>
         );
@@ -224,7 +208,7 @@ export default function TasksPage() {
                 sx={{
                   fontWeight: 700,
                   color: '#7367f0',
-                  fontSize: '0.75rem',
+                  fontSize: '0.85rem',
                   fontFamily: 'monospace',
                   bgcolor: 'rgba(115, 103, 240, 0.08)',
                   px: 0.8,
@@ -307,32 +291,13 @@ export default function TasksPage() {
       headerName: 'TEAM',
       width: 150,
       renderCell: (params) => (
-        <Stack direction="row" spacing={-1} alignItems="center" sx={{ height: '100%' }}>
-          {params.value?.slice(0, 3).map((user, i) => {
-            const userImageSrc = ImageUrl(user.id);
-            const avatarColor = getRandomAvatarColor(user.firstname);
-            return (
-              <Tooltip key={user.id || i} title={`${user.firstname} ${user.lastname}`}>
-                <Avatar
-                  src={userImageSrc}
-                  sx={{
-                    width: 28, height: 28, border: '2px solid white',
-                    fontSize: '0.65rem', fontWeight: 800,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    bgcolor: avatarColor
-                  }}
-                >
-                  {getInitials(user.firstname)}
-                </Avatar>
-              </Tooltip>
-            );
-          })}
-          {params.value?.length > 3 && (
-            <Avatar sx={{ width: 28, height: 28, border: '2px solid white', fontSize: '0.65rem', bgcolor: '#F1F5F9', color: '#6D6B77', fontWeight: 700 }}>
-              +{params.value.length - 3}
-            </Avatar>
-          )}
-        </Stack>
+        <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+          <AssigneeAvatarGroup
+            assignees={params.value || []}
+            maxVisible={3}
+            size={28}
+          />
+        </Box>
       )
     },
     {
@@ -404,13 +369,13 @@ export default function TasksPage() {
       bgcolor: '#FAFBFC'
     }}>
       {/* Header */}
-      <Box sx={{ p: 3, pb: 2, bgcolor: 'white', borderBottom: '1px solid #F1F5F9' }}>
+      <Box sx={{ p: 3, pb: 2, bgcolor: 'white', borderBottom: '1px solid #f5f5f5' }}>
         {/* Stats Cards */}
         <Stack direction="row" spacing={2} mb={3}>
-          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #f5f5f5', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Total Tasks/Bugs</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5 }}>Total Tasks/Bugs</Typography>
                 <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#1A202C' }}>{stats.total}/<Typography variant='span' sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#EA5455' }}>{stats.totalBugs}</Typography></Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -419,10 +384,10 @@ export default function TasksPage() {
             </Stack>
           </Paper>
 
-          {/* <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+          {/* <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #f5f5f5', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Total Bugs</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5 }}>Total Bugs</Typography>
                 <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#EA5455' }}>{stats.totalBugs}</Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -431,10 +396,10 @@ export default function TasksPage() {
             </Stack>
           </Paper> */}
 
-          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #f5f5f5', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>In Progress</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5 }}>In Progress</Typography>
                 <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#7367f0' }}>{stats.inProgress}</Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -443,10 +408,10 @@ export default function TasksPage() {
             </Stack>
           </Paper>
 
-          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #f5f5f5', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Completed</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5 }}>Completed</Typography>
                 <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#10B981' }}>{stats.completed}</Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -455,10 +420,10 @@ export default function TasksPage() {
             </Stack>
           </Paper>
 
-          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #F1F5F9', bgcolor: '#FAFBFC' }}>
+          <Paper sx={{ flex: 1, p: 2, borderRadius: 2, border: '1px solid #f5f5f5', bgcolor: '#FAFBFC' }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Box>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, mb: 0.5 }}>Overdue</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'var(--text-2nd-color)', fontWeight: 600, mb: 0.5 }}>Overdue</Typography>
                 <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#EF4444' }}>{stats.overdue}</Typography>
               </Box>
               <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -478,13 +443,13 @@ export default function TasksPage() {
               px: 1.5,
               py: 0.75,
               borderRadius: 2,
-              border: '1px solid #E2E8F0',
+              border: '1px solid #e0e0e0',
               bgcolor: 'white',
               flex: 1,
               minWidth: 200
             }}
           >
-            <Search size={18} color="#94A3B8" />
+            <Search size={18} color="var(--text-2nd-color)" />
             <InputBase
               placeholder="Search tasks..."
               value={search}
@@ -493,9 +458,24 @@ export default function TasksPage() {
             />
           </Paper>
 
+          <Tooltip title={showCompleted ? 'Hide completed' : 'Show completed'}>
+            <IconButton
+              onClick={() => setShowCompleted((prev) => !prev)}
+              sx={{
+                border: '1px solid #e0e0e0',
+                borderRadius: 2,
+                bgcolor: showCompleted ? 'rgba(115, 103, 240, 0.12)' : 'white',
+                color: showCompleted ? '#7367f0' : '#7D7f85',
+                '&:hover': { bgcolor: showCompleted ? 'rgba(115, 103, 240, 0.2)' : '#f5f5f5' },
+              }}
+            >
+              <CheckCircle2 size={20} />
+            </IconButton>
+          </Tooltip>
+
           <Autocomplete
-            size="small"
-            options={Array.from(new Set(tasks.map(t => t.taskPr))).filter(Boolean)}
+              size="small"
+              options={Array.from(new Set(tasks.map(t => t.taskPr))).filter(Boolean)}
             value={projectFilter}
             onChange={(e, newValue) => setProjectFilter(newValue)}
             sx={{ minWidth: 180 }}
@@ -578,12 +558,13 @@ export default function TasksPage() {
                 setModuleFilter(null);
                 setStartDateFilter({ startDate: "", endDate: "" });
                 setDueDateFilter({ startDate: "", endDate: "" });
+                setShowCompleted(false);
               }}
               sx={{
                 textTransform: 'none',
                 fontSize: '0.875rem',
-                color: '#64748B',
-                '&:hover': { bgcolor: '#F8FAFC' }
+                color: 'var(--text-2nd-color)',
+                '&:hover': { bgcolor: '#fafafa' }
               }}
             >
               Clear ({activeFilterCount})
@@ -598,7 +579,7 @@ export default function TasksPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
             <Stack alignItems="center" spacing={2}>
               <CircularProgress size={40} thickness={4} sx={{ color: '#7367f0' }} />
-              <Typography sx={{ color: '#64748B', fontSize: '0.875rem', fontWeight: 500 }}>
+              <Typography sx={{ color: 'var(--text-2nd-color)', fontSize: '0.875rem', fontWeight: 500 }}>
                 Loading tasks...
               </Typography>
             </Stack>
@@ -607,7 +588,7 @@ export default function TasksPage() {
           <Paper sx={{
             borderRadius: 2,
             overflow: 'hidden',
-            border: '1px solid #F1F5F9',
+            border: '1px solid #f5f5f5',
             boxShadow: 'none',
             height: '100%',
             display: 'flex',
@@ -617,9 +598,16 @@ export default function TasksPage() {
               rows={filteredTasks}
               columns={taskColumns}
               paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
+              onPaginationModelChange={(newModel) => {
+                if (newModel.pageSize !== paginationModel.pageSize) {
+                  setPaginationModel({ page: 0, pageSize: newModel.pageSize });
+                } else {
+                  setPaginationModel(newModel);
+                }
+              }}
               pageSizeOptions={[10, 25, 50, 100]}
               disableRowSelectionOnClick
+              disableColumnMenu
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-cell': {
@@ -628,13 +616,13 @@ export default function TasksPage() {
                   '&:focus-within': { outline: 'none' }
                 },
                 '& .MuiDataGrid-columnHeaders': {
-                  bgcolor: '#F8FAFC',
+                  bgcolor: '#fafafa',
                   fontSize: '0.8rem',
                   textTransform: 'uppercase',
-                  borderBottom: '2px solid #F1F5F9',
+                  borderBottom: '2px solid #f5f5f5',
                   '& .MuiDataGrid-columnHeaderTitle': {
                     fontWeight: 700,
-                    color: '#64748B'
+                    color: 'var(--text-2nd-color)'
                   }
                 },
                 '& .MuiDataGrid-columnHeader:focus': { outline: 'none' },
@@ -644,7 +632,7 @@ export default function TasksPage() {
                   '&:hover': { bgcolor: '#FAFBFC' }
                 },
                 '& .MuiDataGrid-footerContainer': {
-                  borderTop: '2px solid #F1F5F9',
+                  borderTop: '2px solid #f5f5f5',
                   minHeight: '52px !important',
                   bgcolor: '#FAFBFC'
                 }

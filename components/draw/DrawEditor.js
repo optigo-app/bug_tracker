@@ -172,6 +172,11 @@ export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImage
           canvasRef={editor.canvasRef}
           commitTextEdit={editor.commitTextEdit}
           currentColor={editor.currentColor}
+          currentFontWeight={editor.currentFontWeight}
+          currentFontStyle={editor.currentFontStyle}
+          currentTextDecoration={editor.currentTextDecoration}
+          currentFontSize={editor.currentFontSize}
+          currentTextTransform={editor.currentTextTransform}
           draftText={editor.draftText}
           editingText={editor.editingText}
           handleCanvasDoubleClick={editor.handleCanvasDoubleClick}
@@ -214,6 +219,10 @@ export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImage
           currentTextTransform={editor.currentTextTransform}
           currentShapeType={editor.currentShapeType}
           currentStrokeWidth={editor.currentStrokeWidth}
+          currentFontWeight={editor.currentFontWeight}
+          currentFontStyle={editor.currentFontStyle}
+          currentTextDecoration={editor.currentTextDecoration}
+          currentArrowHead={editor.currentArrowHead}
           imageInputRef={editor.imageInputRef}
           isShapeMenuOpen={shapeMenuAnchor === "panel"}
           onShapeMenuToggle={handleShapeMenuToggle}
@@ -229,6 +238,10 @@ export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImage
           setCurrentTextTransform={editor.setCurrentTextTransform}
           setCurrentShapeType={editor.setCurrentShapeType}
           setCurrentStrokeWidth={editor.setCurrentStrokeWidth}
+          setCurrentFontWeight={editor.setCurrentFontWeight}
+          setCurrentFontStyle={editor.setCurrentFontStyle}
+          setCurrentTextDecoration={editor.setCurrentTextDecoration}
+          setCurrentArrowHead={editor.setCurrentArrowHead}
           triggerMediaPicker={editor.triggerMediaPicker}
         />
 

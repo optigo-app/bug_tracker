@@ -16,7 +16,7 @@ export default function FilterMenu({ anchorEl, open, onClose, statusFilter, setS
       PaperProps={{ sx: { width: 180, mt: 1, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
     >
       <Box sx={{ px: 2, py: 1 }}>
-        <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', mb: 1 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-2nd-color)', textTransform: 'uppercase', mb: 1 }}>
           Status Filter
         </Typography>
         <Stack spacing={0.5}>

@@ -36,25 +36,32 @@ export const parseDateValue = (value) => {
 export const formatDateTime = (d, options = {}) => {
   const date = parseDateValue(d);
   if (!date) return '';
-
-  const { locale = 'en-US', timeZone } = options;
+  const { locale = 'en-US' } = options;
+  const timeZone = 'UTC';
   const now = new Date();
-  const dateDay = date.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
-  const todayDay = now.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
-  const isToday = dateDay === todayDay;
-
+  const dateDay = date.toLocaleDateString(locale, { timeZone });
+  const todayDay = now.toLocaleDateString(locale, { timeZone });
   const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const yesterdayDay = yesterday.toLocaleDateString(locale, timeZone ? { timeZone } : undefined);
-  const isYesterday = dateDay === yesterdayDay;
-
-  const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true, ...(timeZone ? { timeZone } : {}) };
-  const dateOptions = { month: 'short', day: 'numeric', year: 'numeric', ...(timeZone ? { timeZone } : {}) };
-
-  const time = date.toLocaleTimeString(locale, timeOptions);
-  if (isToday) return `Today at ${time}`;
-  if (isYesterday) return `Yesterday at ${time}`;
-  return `${date.toLocaleDateString(locale, dateOptions)} · ${time}`;
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayDay = yesterday.toLocaleDateString(locale, { timeZone });
+  const time = date.toLocaleTimeString(locale, {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  if (dateDay === todayDay) {
+    return `Today at ${time}`;
+  }
+  if (dateDay === yesterdayDay) {
+    return `Yesterday at ${time}`;
+  }
+  return `${date.toLocaleDateString(locale, {
+    timeZone,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })} · ${time}`;
 };
 
 /**
@@ -137,13 +144,13 @@ export const handleImageError = (event) => {
   const target = event.target;
 
   // Prevent infinite loop if already showing fallback
-  if (target.src.includes('no-media.svg')) {
+  if (target.src.includes('no-media.jpg')) {
     target.onerror = null;
     return;
   }
 
   // Set fallback image
-  target.src = '/no-media.svg';
+  target.src = '/no-media.jpg';
   target.alt = 'Media unavailable';
 
   // Add styling to ensure fallback displays properly
@@ -291,6 +298,42 @@ export const statusColors = {
     color: "#3949ab", // Indigo - awaiting response
     backgroundColor: "#c5cae9",
   },
+  "New": {
+    color: "#6D6B77",
+    backgroundColor: "#fafafa",
+  },
+  "Assigned": {
+    color: "#6D6B77",
+    backgroundColor: "#fafafa",
+  },
+  "In Progress": {
+    color: "#1e88e5", // Blue - in progress
+    backgroundColor: "#bbdefb",
+  },
+  "Fixed": {
+    color: "#43a047", // Green - fixed
+    backgroundColor: "#c8e6c9",
+  },
+  "Ready For Test": {
+    color: "#6a1b9a", // Purple - ready for test
+    backgroundColor: "#e1bee7",
+  },
+  "Verified": {
+    color: "#6a1b9a", // Purple - verify
+    backgroundColor: "#e1bee7",
+  },
+  "Closed": {
+    color: "#616161", // Gray - closed
+    backgroundColor: "#eeeeee",
+  },
+  "Reopen": {
+    color: "#f57c00", // Deep orange - challenge
+    backgroundColor: "#ffe0b2",
+  },
+  "Rejected": {
+    color: "#d32f2f", // Red - rejected
+    backgroundColor: "#ffcdd2",
+  }
 };
 
 export const priorityColors = {
@@ -538,133 +581,149 @@ export const bugstatusColor = {
 
 
 export const Datetheme = createTheme({
-    palette: {
-        primary: {
-            main: "#7367f0",
-        },
-        secondary: {
-            main: "#f50057",
-        },
-        background: {
-            default: "#f5f5f5",
-        },
+  palette: {
+    primary: {
+      main: "#7367f0",
     },
-    typography: {
-        color: "#fff !important",
-        fontFamily: '"Public Sans", sans-serif',
-        h4: {
-            fontWeight: 600,
-        },
+    secondary: {
+      main: "#f50057",
     },
-    components: {
-        MuiPaper: {
-            styleOverrides: {
-                root: {
-                    borderRadius: 1,
-                    boxShadow: "rgba(90, 90, 90, 0.1) 0px 4px 12px",
-                    border: "1px solid rgba(90, 90, 90, 0.1)",
-                    "&::-webkit-scrollbar": {
-                        width: "6px",
-                    },
-                    "&::-webkit-scrollbar-track": {
-                        background: "transparent", // Almost invisible track
-                    },
-                    "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: "rgba(0, 0, 0, 0.1)", // Very light thumb
-                        borderRadius: "4px",
-                    },
-                    "&::-webkit-scrollbar-thumb:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.15)", // Slightly visible on hover
-                    },
-                    "&::-webkit-scrollbar-thumb:active": {
-                        backgroundColor: "rgba(0, 0, 0, 0.2)", // Slightly darker when dragging
-                        color: "#fff",
-                    },
-                },
-            },
-        },
-        MuiButton: {
-            styleOverrides: {
-                root: {
-                    borderRadius: 8,
-                    textTransform: "capitalize",
-                },
-                containedPrimary: {
-                    background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)", // Button color
-                    "&:hover": {
-                        background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)",
-                    },
-                    color: "white",
-                },
-                textSecondary: {
-                    background: "#ebebed", // Button color
-                    "&:hover": {
-                        backgroundColor: "#ebebed",
-                    },
-                    color: "#7D7f85",
-                }
-            },
-        },
-        MuiTextField: {
-            styleOverrides: {
-                root: {
-                    borderRadius: 8, // Applies border radius to the entire TextField
-                    "& .MuiOutlinedInput-root": {
-                        "& fieldset": {
-                            borderColor: "#d1d5db", // Default border color (gray)
-                        },
-                        "&:hover fieldset": {
-                            borderColor: "black", // Darker border on hover
-                        },
-                        "&.Mui-focused fieldset": {
-                            borderColor: "#685dd8", // Default MUI blue when focused
-                        },
-                        "&.Mui-disabled fieldset": {
-                            borderColor: "#d1d5db", // Light gray when disabled
-                        },
-                        "&.Mui-error fieldset": {
-                            borderColor: "#d32f2f", // Red border when there's an error
-                        },
-                    },
-                    "& .MuiInputBase-input": {
-                        padding: "10px 14px", // Padding inside the input field
-                    },
-                    "& .MuiInputLabel-root": {
-                        color: "gray", // Default label color
-                    },
-                    "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#685dd8", // Label color when focused
-                    },
-                    "& .MuiInputLabel-root.Mui-error": {
-                        color: "#d32f2f", // Label color when there's an error
-                    },
-                },
-            },
-        },
-        MuiMenu: {
-            styleOverrides: {
-                paper: {
-                    maxHeight: "200px", // Fixed height for the dropdown list
-                    overflowY: "auto", // Enable vertical scrolling if content exceeds height
-                    zIndex: 1300, // Ensure proper z-index for overlay elements
-                },
-            },
-        },
+    background: {
+      default: "#f5f5f5",
     },
+  },
+  typography: {
+    color: "#fff !important",
+    fontFamily: '"Public Sans", sans-serif',
+    h4: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 1,
+          boxShadow: "rgba(90, 90, 90, 0.1) 0px 4px 12px",
+          border: "1px solid rgba(90, 90, 90, 0.1)",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent", // Almost invisible track
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.1)", // Very light thumb
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.15)", // Slightly visible on hover
+          },
+          "&::-webkit-scrollbar-thumb:active": {
+            backgroundColor: "rgba(0, 0, 0, 0.2)", // Slightly darker when dragging
+            color: "#fff",
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: "capitalize",
+        },
+        containedPrimary: {
+          background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)", // Button color
+          "&:hover": {
+            background: "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, #7367f0 100%)",
+          },
+          color: "white",
+        },
+        textSecondary: {
+          background: "#ebebed", // Button color
+          "&:hover": {
+            backgroundColor: "#ebebed",
+          },
+          color: "#7D7f85",
+        }
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8, // Applies border radius to the entire TextField
+          "& .MuiOutlinedInput-root": {
+            "& fieldset": {
+              borderColor: "#d1d5db", // Default border color (gray)
+            },
+            "&:hover fieldset": {
+              borderColor: "black", // Darker border on hover
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: "#685dd8", // Default MUI blue when focused
+            },
+            "&.Mui-disabled fieldset": {
+              borderColor: "#d1d5db", // Light gray when disabled
+            },
+            "&.Mui-error fieldset": {
+              borderColor: "#d32f2f", // Red border when there's an error
+            },
+          },
+          "& .MuiInputBase-input": {
+            padding: "10px 14px", // Padding inside the input field
+          },
+          "& .MuiInputLabel-root": {
+            color: "gray", // Default label color
+          },
+          "& .MuiInputLabel-root.Mui-focused": {
+            color: "#685dd8", // Label color when focused
+          },
+          "& .MuiInputLabel-root.Mui-error": {
+            color: "#d32f2f", // Label color when there's an error
+          },
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          maxHeight: "200px", // Fixed height for the dropdown list
+          overflowY: "auto", // Enable vertical scrolling if content exceeds height
+          zIndex: 1300, // Ensure proper z-index for overlay elements
+        },
+      },
+    },
+  },
 });
 
 export function SectionLabel({ children }) {
-    return (
-        <Typography sx={{
-            fontSize: '0.72rem',
-            fontWeight: 800,
-            color: '#7D7f85',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase'
-        }}>
-            {children}
-        </Typography>
-    );
+  return (
+    <Typography sx={{
+      fontSize: '0.72rem',
+      fontWeight: 500,
+      color: 'var(-text-2nd-color)',
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase'
+    }}>
+      {children}
+    </Typography>
+  );
 }
 
 
+export const getClientIpAddress = async () => {
+  try {
+    const cachedIp = sessionStorage.getItem("clientIpAddress");
+    if (cachedIp) return cachedIp;
+
+    const res = await fetch("https://api.ipify.org?format=json");
+    const data = await res.json();
+    const ip = data?.ip || "";
+
+    sessionStorage.setItem("clientIpAddress", ip);
+    return ip;
+  } catch (error) {
+    console.error("Error fetching IP address:", error);
+    return "";
+  }
+};

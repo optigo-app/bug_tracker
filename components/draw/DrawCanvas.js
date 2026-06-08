@@ -6,6 +6,11 @@ export default function DrawCanvas({
   canvasRef,
   commitTextEdit,
   currentColor,
+  currentFontWeight,
+  currentFontStyle,
+  currentTextDecoration,
+  currentFontSize,
+  currentTextTransform,
   draftText,
   editingText,
   handleCanvasDoubleClick,
@@ -66,7 +71,7 @@ export default function DrawCanvas({
             markerHeight="10"
             refX="9.5"
             refY="5"
-            orient="auto"
+            orient="auto-start-reverse"
           >
             <path
               d="M 0 0 L 10 5 L 0 10"
@@ -176,7 +181,8 @@ export default function DrawCanvas({
                       d={getArrowPath(shape)}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      markerEnd="url(#arrowhead)"
+                      markerStart={shape.arrowHead === "start" || shape.arrowHead === "both" ? "url(#arrowhead)" : undefined}
+                      markerEnd={shape.arrowHead === "end" || shape.arrowHead === "both" || !shape.arrowHead ? "url(#arrowhead)" : undefined}
                       style={{ color: shape.color }}
                       fill="none"
                     />
@@ -193,18 +199,18 @@ export default function DrawCanvas({
                   />
                 )}
 
-                {shape.type === "text" && (
+                {(shape.type === "text" || shape.type === "note") && (
                   <g>
                     <rect
                       x={shape.x}
                       y={shape.y}
                       width={shape.w}
                       height={shape.h}
-                      fill={shape.backgroundColor || (shape.fill === "solid" ? `${shape.color}14` : "transparent")}
-                      stroke={shape.color}
+                      fill={shape.backgroundColor && shape.backgroundColor !== "transparent" ? shape.backgroundColor : (shape.fill === "solid" ? `${shape.color}14` : "transparent")}
+                      stroke={shape.backgroundColor && shape.backgroundColor !== "transparent" ? "transparent" : shape.color}
                       strokeWidth={1}
                       strokeDasharray={shape.dash === "dashed" ? "6 6" : shape.dash === "dotted" ? "2 5" : "4 4"}
-                      style={{ opacity: isSelected || editingText?.id === shape.id ? 0.72 : 0.42 }}
+                      style={{ opacity: (shape.backgroundColor && shape.backgroundColor !== "transparent") ? 1 : (isSelected || editingText?.id === shape.id ? 0.72 : 0.42) }}
                     />
                     <foreignObject
                       x={shape.x}
@@ -228,7 +234,11 @@ export default function DrawCanvas({
                           justifyContent: shape.align === 'start' ? 'flex-start' : shape.align === 'end' ? 'flex-end' : 'center',
                           padding: '8px',
                           wordBreak: 'break-word',
-                          userSelect: 'none'
+                          whiteSpace: 'pre-wrap',
+                          userSelect: 'none',
+                          fontWeight: shape.fontWeight || 'normal',
+                          fontStyle: shape.fontStyle || 'normal',
+                          textDecoration: shape.textDecoration || 'none'
                         }}
                       >
                         {shape.text}
@@ -407,6 +417,9 @@ export default function DrawCanvas({
             textAlign: 'left',
             textTransform: selectedShape?.textTransform || currentTextTransform || 'none',
             fontSize: `${(selectedShape?.fontSize || currentFontSize || 18) * viewport.scale}px`,
+            fontWeight: selectedShape?.fontWeight || currentFontWeight || 'normal',
+            fontStyle: selectedShape?.fontStyle || currentFontStyle || 'normal',
+            textDecoration: selectedShape?.textDecoration || currentTextDecoration || 'none',
             verticalAlign: 'top',
           }}
           value={draftText}

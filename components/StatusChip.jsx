@@ -7,7 +7,7 @@ const chipStyles = {
     fontWeight: 600,
     fontSize: '0.75rem',
     color: '#475569',
-    bgcolor: '#F1F5F9',
+    bgcolor: '#EAECEF',
     borderRadius: '8px'
   },
   priority: {
@@ -44,7 +44,7 @@ const priorityColors = {
 };
 
 const statusColors = {
-  open: { color: '#64748B', backgroundColor: '#F1F5F9' },
+  open: { color: 'var(--text-2nd-color)', backgroundColor: '#EAECEF' },
   'in progress': { color: '#7367f0', backgroundColor: '#EFF6FF' },
   completed: { color: '#10B981', backgroundColor: '#F0FDF4' },
   closed: { color: '#10B981', backgroundColor: '#F0FDF4' },
@@ -70,7 +70,7 @@ export default function StatusChip({ type = 'category', label, count, color, bgC
 
   const getStatusStyle = (label) => {
     const key = label?.toLowerCase();
-    return statusColors[key] || { color: '#4B465C', backgroundColor: '#F1F5F9' };
+    return statusColors[key] || { color: '#4B465C', backgroundColor: '#EAECEF' };
   };
 
   const finalStyle = (() => {

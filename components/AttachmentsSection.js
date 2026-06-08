@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { Paperclip, File, Download } from 'lucide-react';
 import { handleImageError } from '@/utils/glocalfunc';
+import { getFileNameFromUrl, getMimeTypeFromUrl } from '@/utils/fileUtils';
 
 function SectionLabel({ children }) {
     return (
@@ -28,12 +29,15 @@ function SectionLabel({ children }) {
 
 export default function AttachmentsSection({ attachments = [], onAttachmentClick }) {
     // Map API attachment format to expected structure
-    const mappedAttachments = attachments.map(f => ({
-        ...f,
-        name: f.name || f.fileName,
-        url: f.url || f.filePath,
-        type: f.type || f.mimeType
-    }));
+    const mappedAttachments = attachments.map(f => {
+        const filePath = f.url || f.filepath || '';
+        return {
+            ...f,
+            name: f.name || getFileNameFromUrl(filePath),
+            url: filePath,
+            type: f.type || getMimeTypeFromUrl(filePath)
+        };
+    });
 
     return (
         <Box>
@@ -49,7 +53,7 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                 sx={{
                                     p: 1.5,
                                     borderRadius: 2,
-                                    border: '1px solid #F1F5F9',
+                                    border: '1px solid #EAECEF',
                                     bgcolor: '#FFFFFF',
                                     transition: 'all 0.2s',
                                     cursor: 'pointer',
@@ -57,8 +61,8 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                     flexDirection: 'column',
                                     gap: 1,
                                     '&:hover': {
-                                        bgcolor: '#F8FAFC',
-                                        borderColor: '#E2E8F0',
+                                        bgcolor: '#FAFAFA',
+                                        borderColor: '#EAECEF',
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                                     }
                                 }}
@@ -67,16 +71,16 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                 <Box
                                     sx={{
                                         height: 110,
-                                        bgcolor: '#F8FAFC',
+                                        bgcolor: '#FAFAFA',
                                         borderRadius: 1,
                                         overflow: 'hidden',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        border: '1px solid #F1F5F9'
+                                        border: '1px solid #EAECEF'
                                     }}
                                 >
-                                    {(f.type || f.mimeType || '').toLowerCase().startsWith('image') ? (
+                                    {f.type?.toLowerCase().startsWith('image') ? (
                                         <Box
                                             component="img"
                                             src={f.url || f.filePath}
@@ -88,7 +92,7 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                             }}
                                         />
                                     ) : (
-                                        <File size={28} color="#94A3B8" />
+                                        <File size={28} color="var(--text-2nd-color)" />
                                     )}
                                 </Box>
 
@@ -116,7 +120,7 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                     >
                                         <Typography
                                             variant="caption"
-                                            sx={{ color: '#94A3B8', fontSize: '0.65rem' }}
+                                            sx={{ color: 'var(--text-2nd-color)', fontSize: '0.65rem' }}
                                         >
                                             {f.size}
                                         </Typography>
@@ -130,7 +134,7 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                                 href={f.url}
                                                 download={f.name}
                                                 style={{
-                                                    color: '#94A3B8',
+                                                    color: 'var(--text-2nd-color)',
                                                     display: 'flex'
                                                 }}
                                             >

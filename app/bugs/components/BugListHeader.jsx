@@ -1,5 +1,5 @@
 import { Box, Stack, InputBase, IconButton, Tooltip, Chip, Button, Tabs, Tab } from '@mui/material';
-import { Filter, SortAsc, SlidersHorizontal } from 'lucide-react';
+import { Filter, SortAsc, SlidersHorizontal, X } from 'lucide-react';
 
 export default function BugListHeader({
   bugCount,
@@ -49,7 +49,7 @@ export default function BugListHeader({
           px: 1,
           py: 0.35,
           flex: 1.5,
-          border: '1px solid #E2E8F0',
+          border: '1px solid #e0e0e0',
           transition: 'all 0.2s ease',
           '&:focus-within': {
             borderColor: '#6366F1',
@@ -57,7 +57,7 @@ export default function BugListHeader({
             boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)',
           },
           '&:hover': {
-            borderColor: '#CBD5E1',
+            borderColor: '#d0d0d0',
             bgcolor: 'white'
           }
         }}>
@@ -83,10 +83,10 @@ export default function BugListHeader({
             size="small"
             onClick={(e) => setFilterAnchorEl(e.currentTarget)}
             sx={{
-              bgcolor: statusFilter !== 'ALL' ? 'rgba(99, 102, 241, 0.1)' : '#F8FAFC',
-              color: statusFilter !== 'ALL' ? '#6366F1' : '#64748B',
+              bgcolor: statusFilter !== 'ALL' ? 'rgba(99, 102, 241, 0.1)' : '#fafafa',
+              color: statusFilter !== 'ALL' ? '#6366F1' : 'var(--text-2nd-color)',
               border: '1px solid',
-              borderColor: statusFilter !== 'ALL' ? '#6366F1' : '#E2E8F0',
+              borderColor: statusFilter !== 'ALL' ? '#6366F1' : '#e0e0e0',
               borderRadius: 1.5,
               width: 36,
               height: 36,
@@ -109,9 +109,9 @@ export default function BugListHeader({
             size="small"
             onClick={(e) => setSortAnchorEl(e.currentTarget)}
             sx={{
-              bgcolor: '#F8FAFC',
-              color: '#64748B',
-              border: '1px solid #E2E8F0',
+              bgcolor: '#fafafa',
+              color: 'var(--text-2nd-color)',
+              border: '1px solid #e0e0e0',
               borderRadius: 1.5,
               width: 36,
               height: 36,
@@ -134,10 +134,10 @@ export default function BugListHeader({
             size="small"
             onClick={() => setAdvFilterOpen(true)}
             sx={{
-              bgcolor: hasAdvFilters ? 'rgba(99, 102, 241, 0.1)' : '#F8FAFC',
-              color: hasAdvFilters ? '#6366F1' : '#64748B',
+              bgcolor: hasAdvFilters ? 'rgba(99, 102, 241, 0.1)' : '#fafafa',
+              color: hasAdvFilters ? '#6366F1' : 'var(--text-2nd-color)',
               border: '1px solid',
-              borderColor: hasAdvFilters ? '#6366F1' : '#E2E8F0',
+              borderColor: hasAdvFilters ? '#6366F1' : '#e0e0e0',
               borderRadius: 1.5,
               width: 36,
               height: 36,
@@ -154,6 +154,37 @@ export default function BugListHeader({
             <SlidersHorizontal size={16} />
           </IconButton>
         </Tooltip>
+
+        {(statusFilter !== 'ALL' || search || hasAdvFilters) && (
+          <Tooltip title="Clear all filters">
+            <IconButton
+              size="small"
+              onClick={() => {
+                setStatusFilter('ALL');
+                setSearch('');
+                setAdvFilters({ taskNo: '', bugNo: '', status: null, priority: null, assignee: null, reporter: null, startDate: { startDate: '', endDate: '' }, dueDate: { startDate: '', endDate: '' } });
+              }}
+              sx={{
+                bgcolor: 'rgba(239, 68, 68, 0.08)',
+                color: '#EF4444',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: 1.5,
+                width: 36,
+                height: 36,
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: 'rgba(239, 68, 68, 0.15)',
+                  borderColor: '#EF4444',
+                  color: '#DC2626',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.15)'
+                }
+              }}
+            >
+              <X size={16} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
 
       {/* Me vs Team Filter Switch */}
@@ -165,10 +196,10 @@ export default function BugListHeader({
           mt: 1.5,
           minHeight: 34,
           height: 34,
-          bgcolor: '#F8FAFC',
+          bgcolor: '#fafafa',
           borderRadius: 2,
           p: 0.5,
-          border: '1px solid #E2E8F0',
+          border: '1px solid #e0e0e0',
           '& .MuiTabs-flexContainer': {
             height: '100%',
           },
@@ -179,7 +210,7 @@ export default function BugListHeader({
             minHeight: '100%',
             height: '100%',
             borderRadius: 1.5,
-            color: '#64748B',
+            color: 'var(--text-2nd-color)',
             minWidth: 0,
             padding: '4px 8px',
             transition: 'all 0.15s ease',
@@ -188,8 +219,8 @@ export default function BugListHeader({
             },
             '&.Mui-selected': {
               color: '#7367f0',
-              bgcolor: 'white',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03)',
+              bgcolor: 'rgba(115, 103, 240, 0.12)',
+              boxShadow: 'none',
               fontWeight: 700,
             }
           },
@@ -198,6 +229,7 @@ export default function BugListHeader({
           }
         }}
       >
+        <Tab label={`All (${bugCount?.all})`} value="all" />
         <Tab label={`Me (${bugCount?.me})`} value="me" />
         <Tab label={`Team (${bugCount?.team})`} value="team" />
       </Tabs>
@@ -326,7 +358,7 @@ export default function BugListHeader({
               sx={{
                 fontSize: '0.75rem',
                 fontWeight: 600,
-                color: '#64748B',
+                color: 'var(--text-2nd-color)',
                 textTransform: 'none',
                 '&:hover': { color: '#DC2626' }
               }}

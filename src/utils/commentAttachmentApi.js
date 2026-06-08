@@ -35,19 +35,11 @@ export const uploadFilesForComment = async ({ bugId, files = [] }) => {
             }
         }
 
-        const attachments = uploadedResults.map((uploaded, index) => {
-            const nameFromUrl = uploaded?.url?.split('/').pop()?.split('?')[0] || '';
-            const fileName = uploaded?.originalFile?.name || uploaded?.fileName || uploaded?.name || nameFromUrl || `attachment-${index + 1}`;
-            const fileSize = uploaded?.originalFile?.size || uploaded?.size || 0;
-            const mimeType = uploaded?.originalFile?.type || uploaded?.fileType || uploaded?.mimeType || getFileTypeFromName(fileName);
-
+        const attachments = uploadedResults.map((uploaded) => {
             return {
                 id: null, // Let SQL generate incremental ID
                 bugId,
                 commentId: '',
-                fileName,
-                fileSize,
-                mimeType,
                 filePath: uploaded?.url || '',
             };
         });

@@ -1,8 +1,10 @@
 USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 29-05-2026 10:37:04 ******/
+
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 27-05-2026 15:49:48 ******/
 SET ANSI_NULLS ON
 GO
+
 SET QUOTED_IDENTIFIER ON
 GO
 
@@ -272,8 +274,7 @@ GO
                                 b.*,
                                 b.statusId AS [status],
                                 b.priorityId AS [priority],
-                                b.categoryId AS [category],
-                                (SELECT COUNT(1) FROM [' + @DBNAME + '].[dbo].[bug_comment] c WHERE c.bugid = b.id) AS commentCount
+                                b.categoryId AS [category]
                             FROM ' + QUOTENAME(@DBNAME) + '.[dbo].[bug_Bugs] b
                             WHERE 1 = 1
                             '+@Whereclause+'
@@ -412,7 +413,7 @@ GO
                             -- Track History for Status
                             IF @newStatusId IS NOT NULL AND @newStatusId <> @oldStatusId
                             BEGIN
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
                                 VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''statusId'', CAST(@oldStatusId AS NVARCHAR(MAX)), CAST(@newStatusId AS NVARCHAR(MAX)), ''' + REPLACE(@bug_remark, '''', '''''') + ''', ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
@@ -421,7 +422,7 @@ GO
                             BEGIN
                                 SET @priorityHistoryRemark = ''priorityId changed from '' + ISNULL(CAST(@oldPriorityId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newPriorityId AS NVARCHAR(MAX)), ''N/A'')
                                 IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @priorityHistoryRemark = @priorityHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
                                 VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''priorityId'', CAST(@oldPriorityId AS NVARCHAR(MAX)), CAST(@newPriorityId AS NVARCHAR(MAX)), @priorityHistoryRemark, ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
@@ -430,7 +431,7 @@ GO
                             BEGIN
                                 SET @assigneeHistoryRemark = ''assigneeId changed from '' + ISNULL(CAST(@oldAssigneeId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newAssigneeId AS NVARCHAR(MAX)), ''N/A'')
                                 IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @assigneeHistoryRemark = @assigneeHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
                                 VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''assigneeId'', CAST(@oldAssigneeId AS NVARCHAR(MAX)), CAST(@newAssigneeId AS NVARCHAR(MAX)), @assigneeHistoryRemark, ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
@@ -439,7 +440,7 @@ GO
                             BEGIN
                                 SET @categoryHistoryRemark = ''categoryId changed from '' + ISNULL(CAST(@oldCategoryId AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newCategoryId AS NVARCHAR(MAX)), ''N/A'')
                                 IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @categoryHistoryRemark = @categoryHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
                                 VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''categoryId'', CAST(@oldCategoryId AS NVARCHAR(MAX)), CAST(@newCategoryId AS NVARCHAR(MAX)), @categoryHistoryRemark, ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
@@ -448,7 +449,7 @@ GO
                             BEGIN
                                 SET @titleHistoryRemark = ''title changed from '' + ISNULL(CAST(@oldTitle AS NVARCHAR(MAX)), ''N/A'') + '' to '' + ISNULL(CAST(@newTitle AS NVARCHAR(MAX)), ''N/A'')
                                 IF (''' + REPLACE(@bug_remark, '''', '''''') + ''' <> '''') SET @titleHistoryRemark = @titleHistoryRemark + '' | '' + ''' + REPLACE(@bug_remark, '''', '''''') + '''
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
                                 VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''title'', @oldTitle, @newTitle, @titleHistoryRemark, ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
@@ -470,37 +471,27 @@ GO
                                 ,updateddate   = @now
                             WHERE id = ' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + '
 
-                            IF JSON_QUERY(''' + REPLACE(@p, '''', '''''') + ''', ''$.attachments'') IS NOT NULL
-                            BEGIN
-                                -- Delete all existing bug-level attachments, then reinsert current payload list
-                                DELETE FROM [' + @DBNAME + '].[dbo].[bug_attch]
-                                WHERE bugid = ' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + '
-                                AND commentid IS NULL
-
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_attch]
-                                (
-                                    bugid,
-                                    filepath,
-                                    entrydate
-                                )
-                                SELECT
-                                    ' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ',
-                                    COALESCE(filePathCamel, filePathLower),
-                                    @now
-                                FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments'')
-                                WITH
-                                (
-                                    filePathCamel NVARCHAR(500) ''$.filePath'',
-                                    filePathLower NVARCHAR(500) ''$.filepath''
-                                )
-                                WHERE COALESCE(filePathCamel, filePathLower) IS NOT NULL
-                            END
+                            -- Insert Attachments
+                            INSERT INTO [' + @DBNAME + '].[dbo].[bug_attch]
+                            (
+                                bugId,
+                                filePath
+                            )
+                            SELECT
+                                ' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ',
+                                filePath
+                            FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments'')
+                            WITH
+                            (
+                                filePath NVARCHAR(500) ''$.filePath''
+                            )
+                            WHERE filePath IS NOT NULL
 
                             -- Log attachments in history
                             IF EXISTS (SELECT 1 FROM OPENJSON(''' + REPLACE(@p, '''', '''''') + ''',''$.attachments''))
                             BEGIN
-                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, field, oldvalue, newvalue, remark, ipaddress, entrydate)
-                                VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''attachments'', ''none'', ''added'', ''attachments updated | Updated via bugupdate'', ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
+                                INSERT INTO [' + @DBNAME + '].[dbo].[bug_history] (bugid, userid, fieldName, oldValue, newValue, remark, ipaddress, entrydate)
+                                VALUES (' + ISNULL(CAST(@bug_id AS NVARCHAR(20)), 'NULL') + ', ''' + REPLACE(@appuserid, '''', '''''') + ''', ''attachments'', NULL, ''added'', ''attachments updated | Updated via bugupdate'', ''' + REPLACE(@IPAddress, '''', '''''') + ''', @now)
                             END
 
                             SET @effectiveTitle = ISNULL(@newTitle, @oldTitle)
@@ -793,9 +784,6 @@ GO
                             bh.id,
                             bh.bugid,
                             bh.userid,
-							bh.field,
-							bh.oldvalue,
-							bh.newvalue,
                             bh.remark,
                             bh.entrydate
                         FROM [' + @DBNAME + '].[dbo].[bug_history] bh WITH (NOLOCK)
@@ -819,3 +807,6 @@ GO
     END CATCH
 
     END
+GO
+
+

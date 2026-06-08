@@ -24,6 +24,7 @@ import CustomAutocomplete from './Common/CustomAutocomplete.jsx';
 import CustomDatePicker from './Common/CustomDatePicker.jsx';
 import ImageDrawEditor from './ImageDrawEditor.jsx';
 import { decodeUrlParams } from '@/utils/urlParams';
+import { getFileNameFromUrl, getMimeTypeFromUrl } from '@/utils/fileUtils';
 
 export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo = '', taskName = '', taskId = '', initialAttachment = null, assigneeids = '', dueDate = '' }) {
   const isEdit = !!bug;
@@ -63,12 +64,10 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const filteredAssignees = (() => {
     let result = assignees;
 
-    // Filter out admin and tester, only show developers
+    // Only include developers, ignore all other designations
     const filteredByRole = result.filter(a => {
       const designation = (a?.designation || '').toLowerCase();
-      const isAdmin = designation.includes('admin');
-      const isTester = designation.includes('tester') || designation.includes('qa');
-      return !isAdmin && !isTester;
+      return designation.includes('developer') || designation.includes('dev');
     });
 
     // First, check if we have task context
@@ -80,7 +79,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
       }
     }
 
-    // Return filtered assignees (only developers, no admin/tester)
+    // Return filtered assignees (only developers)
     return filteredByRole.length > 0 ? filteredByRole : result;
   })();
 
@@ -135,7 +134,6 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             ...att,
             file: editedFile,
             type: editedFile?.type || att?.type,
-            mimeType: editedFile?.type || att?.mimeType,
             previewUrl: editedFile ? URL.createObjectURL(editedFile) : att?.previewUrl,
             url: '',
             filePath: '',
@@ -225,16 +223,26 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     handleDrop,
     handleChange,
     onButtonClick,
-    addFiles
+    addFiles,
+    handleRemoveAttachment,
+    removedAttachments
   } = useAttachmentHandlers(attachments, setAttachments);
 
   const imageAttachments = useMemo(
-    () => attachments.filter(att => (att?.type || att?.mimeType || '').toLowerCase().startsWith('image')),
+    () => attachments.filter(att => {
+      const filePath = att?.url || att?.filepath || '';
+      const type = att?.type || getMimeTypeFromUrl(filePath);
+      return type.toLowerCase().startsWith('image');
+    }),
     [attachments]
   );
 
   const nonImageAttachments = useMemo(
-    () => attachments.filter(att => !(att?.type || att?.mimeType || '').toLowerCase().startsWith('image')),
+    () => attachments.filter(att => {
+      const filePath = att?.url || att?.filepath || '';
+      const type = att?.type || getMimeTypeFromUrl(filePath);
+      return !type.toLowerCase().startsWith('image');
+    }),
     [attachments]
   );
 
@@ -253,9 +261,16 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
   const validateForm = () => {
     let newErrors = {};
+    const assigneeValue = formData.assigneeId;
+    const isAssigneeEmpty =
+      assigneeValue === null ||
+      assigneeValue === undefined ||
+      String(assigneeValue).trim() === '' ||
+      String(assigneeValue) === '0';
+
     if (!formData.title?.trim()) newErrors.title = 'Title is required';
     if (!attachments?.length) newErrors.attachments = 'At least one attachment is required';
-    if (!formData.assigneeId) newErrors.assigneeId = 'Assignee is required';
+    if (isAssigneeEmpty) newErrors.assigneeId = 'Assignee is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -279,6 +294,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
         if (shouldSaveAndNew) {
           const defaultStatus = getDefaultStatus();
           const defaultPriority = getDefaultPriority();
+          const defaultAssigneeId = filteredAssignees.length > 0 ? filteredAssignees[0].id : '';
           setFormData({
             ...INITIAL_FORM_DATA,
             taskNo,
@@ -286,13 +302,14 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             taskId,
             status: defaultStatus,
             priority: defaultPriority,
+            assigneeId: defaultAssigneeId,
             dueDate: getNormalizedDueDate(dueDate)
           });
           setAttachments([]);
           setErrors({});
         }
         if (onSuccess) onSuccess(newBug, shouldSaveAndNew);
-      }, saveAndNew);
+      }, saveAndNew, removedAttachments);
     }
   };
 
@@ -340,7 +357,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
           p: 0,
           overflow: 'hidden',
           bgcolor: '#FFFFFF',
-          borderLeft: { xs: 'none', sm: '1px solid #E2E8F0' },
+          borderLeft: { xs: 'none', sm: '1px solid #EAECEF' },
           boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.12)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }
@@ -354,7 +371,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid #E2E8F0',
+          borderBottom: '1px solid #EAECEF',
           position: 'sticky',
           top: 0,
           zIndex: 10,
@@ -390,9 +407,9 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                     sx={{
                       fontWeight: 850,
                       fontSize: '0.85rem',
-                      color: '#64748B',
-                      bgcolor: '#F1F5F9',
-                      border: '1px solid #E2E8F0',
+                      color: 'var(--text-2nd-color)',
+                      bgcolor: '#EAECEF',
+                      border: '1px solid #EAECEF',
                       borderRadius: 1.5,
                       height: 28,
                       cursor: 'help',
@@ -412,10 +429,10 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             sx={{
               p: 0.5,
               bgcolor: 'transparent',
-              color: '#64748B',
+              color: 'var(--text-2nd-color)',
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: '#F1F5F9',
+                bgcolor: '#EAECEF',
                 transform: 'rotate(90deg)'
               },
               opacity: 0.7,
@@ -441,13 +458,13 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             bgcolor: '#CBD5E1',
             borderRadius: '10px',
             '&:hover': {
-              bgcolor: '#94A3B8'
+              bgcolor: 'var(--text-2nd-color)'
             }
           }
         }}>
           <Grid container spacing={2.5}>
             {/* Title */}
-            <Grid size={{ xs: 12 }} sx={{ mb: 1 }}>
+            <Grid item xs={12} sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 1, display: 'block' }}>
                 TITLE <span style={{ color: '#EF4444' }}>*</span>
               </Typography>
@@ -476,7 +493,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Description */}
-            <Grid size={{ xs: 12 }} sx={{ mb: 1 }}>
+            <Grid item xs={12} sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 1, display: 'block' }}>
                 DESCRIPTION
               </Typography>
@@ -504,7 +521,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Assignee & Category */}
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}>ASSIGNEE <span style={{ color: '#EF4444' }}>*</span></Typography>
               {(() => {
                 const selectedAssignee = filteredAssignees.find((a) => {
@@ -520,7 +537,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                     multiple={false}
                     value={selectedAssignee}
                     onChange={(newValue) => {
-                      setFormData(prev => ({ ...prev, assigneeId: newValue?.id || '' }));
+                      setFormData(prev => ({ ...prev, assigneeId: newValue?.id ? String(newValue.id) : '' }));
                     }}
                     minWidth="100%"
                     error={!!errors.assigneeId}
@@ -530,7 +547,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               })()}
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               {renderAutocomplete(
                 'CATEGORY',
                 'category',
@@ -542,7 +559,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Environment */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography
                 variant="caption"
                 sx={{ fontWeight: 700, color: '#334155', mb: 0.5, display: 'block' }}
@@ -568,7 +585,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                         }))
                       }
                       sx={{
-                        bgcolor: isActive ? '#7367f0' : '#F1F5F9',
+                        bgcolor: isActive ? '#7367f0' : '#EAECEF',
                         color: isActive ? '#fff' : '#475569',
                         fontWeight: 600,
                         fontSize: '0.8rem',
@@ -577,7 +594,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                         py: 0.75,
                         cursor: 'pointer',
                         '&:hover': {
-                          bgcolor: isActive ? '#6366f1' : '#E2E8F0'
+                          bgcolor: isActive ? '#6366f1' : '#EAECEF'
                         }
                       }}
                     />
@@ -587,7 +604,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Priority & Status */}
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               {renderAutocomplete(
                 'PRIORITY',
                 'priority',
@@ -600,7 +617,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
               )}
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               {renderAutocomplete(
                 'STATUS',
                 'status',
@@ -612,7 +629,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Due Date */}
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <CustomDatePicker
                 label="DUE DATE"
                 value={formData.dueDate}
@@ -622,6 +639,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                   className: "textfieldsClass",
                   size: "small"
                 }}
+                disabled={true}
                 sx={{
                   '& .MuiOutlinedInput-root': { height: '42px' },
                   '& .MuiInputBase-input': { fontWeight: 600 }
@@ -630,7 +648,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             {/* Attachments */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 1, display: 'block' }}>ATTACHMENTS <span style={{ color: '#EF4444' }}>*</span></Typography>
 
               <input
@@ -647,15 +665,15 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                   {imageAttachments.map((att, index) => {
                     const originalIndex = attachments.indexOf(att);
                     return (
-                      <Grid key={originalIndex} size={{ xs: 4, sm: 3, md: 2 }}>
+                      <Grid key={originalIndex} xs={4} sm={3} md={2}>
                         <Box
                           sx={{
                             position: 'relative',
                             borderRadius: 1.5,
                             overflow: 'hidden',
                             aspectRatio: '1',
-                            bgcolor: '#F1F5F9',
-                            border: '1px solid #E2E8F0',
+                            bgcolor: '#EAECEF',
+                            border: '1px solid #EAECEF',
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
                             '&:hover': {
@@ -677,7 +695,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                               onClick={(e) => { e.stopPropagation(); setEditingImage(att); setEditingImageIndex(originalIndex); setDrawEditorOpen(true); }}
                               sx={{
                                 bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                color: '#64748B',
+                                color: 'var(--text-2nd-color)',
                                 width: 24,
                                 height: 24,
                                 '&:hover': { bgcolor: '#EEF2FF', color: '#7367f0' },
@@ -688,10 +706,10 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                             </IconButton>
                             <IconButton
                               size="small"
-                              onClick={(e) => { e.stopPropagation(); setAttachments(prev => prev.filter((_, i) => i !== originalIndex)); }}
+                              onClick={(e) => { e.stopPropagation(); handleRemoveAttachment(originalIndex); }}
                               sx={{
                                 bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                color: '#64748B',
+                                color: 'var(--text-2nd-color)',
                                 width: 24,
                                 height: 24,
                                 '&:hover': { bgcolor: '#FEF2F2', color: '#EF4444' },
@@ -734,20 +752,20 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                   {nonImageAttachments.map((att, index) => {
                     const originalIndex = attachments.indexOf(att);
                     return (
-                      <Grid key={originalIndex} size={{ xs: 12 }}>
+                      <Grid key={originalIndex} xs={12}>
                         <Box
                           sx={{
                             p: 1.25,
                             borderRadius: 1.5,
                             bgcolor: '#FFFFFF',
-                            border: '1px solid #F1F5F9',
+                            border: '1px solid #EAECEF',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1.5,
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                              border: '1px solid #E2E8F0',
-                              bgcolor: '#F8FAFC',
+                              border: '1px solid #EAECEF',
+                              bgcolor: '#FAFAFA',
                               boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.04)'
                             }
                           }}
@@ -765,16 +783,16 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                                 </Typography>
                               )}
                             </Stack>
-                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: '#64748B' }}>
+                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-2nd-color)' }}>
                               {typeof att.size === 'string' ? att.size : `${(+att.size / 1024 / 1024).toFixed(2)} MB`}
                             </Typography>
                           </Box>
 
                           <IconButton
                             size="small"
-                            onClick={() => setAttachments(prev => prev.filter((_, i) => i !== originalIndex))}
+                            onClick={() => handleRemoveAttachment(originalIndex)}
                             sx={{
-                              color: '#94A3B8',
+                              color: 'var(--text-2nd-color)',
                               '&:hover': { color: '#EF4444', bgcolor: '#FEF2F2' }
                             }}
                           >
@@ -812,12 +830,12 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
                 }}
               >
                 <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: dragActive ? '#6366F1' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1, border: '1px solid #EEF2F7', transition: 'all 0.2s ease' }}>
-                  <Upload size={20} color={dragActive ? '#FFFFFF' : '#64748B'} />
+                  <Upload size={20} color={dragActive ? '#FFFFFF' : 'var(--text-2nd-color)'} />
                 </Box>
                 <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700 }}>
                   Click to upload or drag and drop
                 </Typography>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: '#64748B', mt: 0.25 }}>
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-2nd-color)', mt: 0.25 }}>
                   PDF, DOC, PNG, JPG (max. 10MB)
                 </Typography>
               </Box>
@@ -841,7 +859,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
           bottom: 0,
           zIndex: 10,
           bgcolor: '#FFFFFF',
-          borderTop: '1px solid #E2E8F0'
+          borderTop: '1px solid #EAECEF'
         }}>
           <Button
             className="secondaryBtnClassname"

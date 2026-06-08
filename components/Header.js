@@ -33,11 +33,12 @@ import {
     CheckCheck,
     Plus,
     RefreshCw,
+    X,
 } from 'lucide-react';
 import { Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { decodeUrlParams } from '@/utils/urlParams';
-    
+
 const NOTIFICATION_ICONS = {
     BUG_ASSIGNED: <Bug size={16} color="#6366F1" />,
     COMMENT_ADDED: <MessageSquare size={16} color="#10B981" />,
@@ -76,7 +77,25 @@ function HeaderContent() {
     const decodedParams = decodeUrlParams(dataParam);
     const taskNoParam = decodedParams.taskno;
     const taskNameParam = decodedParams.taskname;
-    const { totalBugCount, todayBugCount, triggerReportBug } = useBugContext();
+    const { triggerReportBug, bugs: globalBugs, totalBugCount, todayBugCount } = useBugContext();
+    const taskId = decodedParams.taskid;
+
+    const isToday = (dateStr) => {
+        if (!dateStr) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const d = new Date(dateStr);
+        return d >= today && d < tomorrow;
+    };
+
+    const filteredBugs = taskId
+        ? (globalBugs || []).filter(bug => String(bug.taskId || '') === String(taskId))
+        : (globalBugs || []);
+
+    const displayTotal = taskId ? filteredBugs.length : totalBugCount;
+    const displayToday = taskId ? filteredBugs.filter(bug => isToday(bug.entrydate)).length : todayBugCount;
     const [currentUser, setCurrentUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -222,9 +241,6 @@ function HeaderContent() {
     const userImageSrc = ImageUrl(currentUser);
     const open = Boolean(anchorEl);
     const profileOpen = Boolean(profileAnchorEl);
-    const totalCount = Number(totalBugCount || 0);
-    const todayCount = Number(todayBugCount || 0);
-
     const bugCountSummary = pathname.includes('/bugs') && (
         <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{
@@ -234,11 +250,13 @@ function HeaderContent() {
                 py: 0.55,
                 borderRadius: '8px',
                 border: '1px solid rgba(99, 102, 241, 0.2)',
-                minWidth: 60,
-                textAlign: 'center'
+                width: 72,
+                minWidth: 72,
+                textAlign: 'center',
+                flexShrink: 0
             }}>
                 <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
-                    {totalCount}
+                    {displayTotal}
                     <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
                         Total
                     </Box>
@@ -252,16 +270,48 @@ function HeaderContent() {
                 py: 0.55,
                 borderRadius: '8px',
                 border: '1px solid rgba(16, 185, 129, 0.2)',
-                minWidth: 60,
-                textAlign: 'center'
+                width: 72,
+                minWidth: 72,
+                textAlign: 'center',
+                flexShrink: 0
             }}>
                 <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
-                    {todayCount}
+                    {displayToday}
                     <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
                         Today
                     </Box>
                 </Typography>
             </Box>
+
+            {dataParam && (
+                <Button
+                    size="small"
+                    startIcon={<X size={14} />}
+                    onClick={() => router.push('/bugs')}
+                    sx={{
+                        bgcolor: 'rgba(239, 68, 68, 0.08)',
+                        color: '#EF4444',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        borderRadius: 1.5,
+                        minWidth: 0,
+                        px: 1,
+                        py: 0.35,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                            bgcolor: 'rgba(239, 68, 68, 0.15)',
+                            borderColor: '#EF4444',
+                            color: '#DC2626',
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.15)'
+                        }
+                    }}
+                >
+                    Clear
+                </Button>
+            )}
         </Stack>
     );
 
@@ -285,7 +335,7 @@ function HeaderContent() {
             alignItems: 'center',
             justifyContent: 'space-between',
             px: 2,
-            borderBottom: '1px solid #F1F5F9',
+            borderBottom: '1px solid #EAECEF',
             bgcolor: 'rgba(255, 255, 255, 0.9)',
             backdropFilter: 'blur(10px)',
             position: 'sticky',
@@ -316,7 +366,7 @@ function HeaderContent() {
                                                 variant="h6"
                                                 sx={{
                                                     fontWeight: 600,
-                                                    color: '#64748B',
+                                                    color: 'var(--text-2nd-color)',
                                                     letterSpacing: '-0.02em',
                                                     fontSize: '1.05rem',
                                                     lineHeight: 1.1,
@@ -368,7 +418,6 @@ function HeaderContent() {
                     </Box>
                 )}
             </Box>
-
             {/* Actions & User Profile */}
             <Stack direction="row" spacing={2} alignItems="center">
                 {pathname.includes('/bugs') && permissions.canReportBug(currentUser) && (
@@ -382,18 +431,18 @@ function HeaderContent() {
                 )}
 
                 {/* <Stack direction="row" spacing={0.25}>
-                    <Tooltip title="Notifications">
-                        <IconButton
-                            size="small"
-                            onClick={handleBellClick}
-                            sx={{ p: 0.75, color: '#94A3B8', '&:hover': { bgcolor: '#F8FAFC', color: '#6366F1' } }}
-                        >
-                            <Badge badgeContent={unreadCount || null} color="error" overlap="circular" sx={{ '& .MuiBadge-badge': { fontSize: '0.62rem', height: 16, minWidth: 16 } }}>
-                                <Bell size={18} />
-                            </Badge>
-                        </IconButton>
-                    </Tooltip>
-                </Stack> */}
+                                                <Tooltip title="Notifications">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={handleBellClick}
+                                                        sx={{ p: 0.75, color: 'var(--text-2nd-color)', '&:hover': { bgcolor: '#FAFAFA', color: '#6366F1' } }}
+                                                    >
+                                                        <Badge badgeContent={unreadCount || null} color="error" overlap="circular" sx={{ '& .MuiBadge-badge': { fontSize: '0.62rem', height: 16, minWidth: 16 } }}>
+                                                            <Bell size={18} />
+                                                        </Badge>
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Stack> */}
 
                 {/* Notification Popover */}
                 <Popover
@@ -409,7 +458,7 @@ function HeaderContent() {
                             maxHeight: 480,
                             borderRadius: 2.5,
                             boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                            border: '1px solid #F1F5F9',
+                            border: '1px solid #EAECEF',
                             overflow: 'hidden',
                             display: 'flex',
                             flexDirection: 'column',
@@ -421,7 +470,7 @@ function HeaderContent() {
                         <Box>
                             <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Notifications</Typography>
                             {unreadCount > 0 && (
-                                <Typography variant="caption" sx={{ color: '#64748B' }}>
+                                <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)' }}>
                                     {unreadCount} unread
                                 </Typography>
                             )}
@@ -462,14 +511,14 @@ function HeaderContent() {
                                                 py: 1.5,
                                                 px: 2.5,
                                                 cursor: n.isRead ? 'default' : 'pointer',
-                                                bgcolor: n.isRead ? 'transparent' : NOTIFICATION_COLORS[n.type] || '#F8FAFC',
+                                                bgcolor: n.isRead ? 'transparent' : NOTIFICATION_COLORS[n.type] || '#FAFAFA',
                                                 transition: 'background 0.2s',
-                                                '&:hover': { bgcolor: '#F8FAFC' },
+                                                '&:hover': { bgcolor: '#FAFAFA' },
                                                 position: 'relative',
                                             }}
                                         >
                                             <ListItemAvatar sx={{ minWidth: 40, mt: 0.5 }}>
-                                                <Avatar sx={{ width: 32, height: 32, bgcolor: n.isRead ? '#F1F5F9' : '#EEF2FF' }}>
+                                                <Avatar sx={{ width: 32, height: 32, bgcolor: n.isRead ? '#EAECEF' : '#EEF2FF' }}>
                                                     {NOTIFICATION_ICONS[n.type] || <Bell size={14} />}
                                                 </Avatar>
                                             </ListItemAvatar>
@@ -486,11 +535,11 @@ function HeaderContent() {
                                                 }
                                                 secondary={
                                                     <Box>
-                                                        <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mt: 0.25, fontSize: '0.75rem' }}>
+                                                        <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', display: 'block', mt: 0.25, fontSize: '0.75rem' }}>
                                                             {n.message}
                                                         </Typography>
-                                                        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500, fontSize: '0.7rem' }}>
-                                                            {timeAgo(n.createdAt)}
+                                                        <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500, fontSize: '0.7rem' }}>
+                                                            {timeAgo(n.entrydate)}
                                                         </Typography>
                                                     </Box>
                                                 }
@@ -505,7 +554,7 @@ function HeaderContent() {
                 </Popover>
 
                 {/* User Profile */}
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 0.5, cursor: 'pointer', borderRadius: 2, p: 0.5, '&:hover': { bgcolor: '#F8FAFC' } }} onClick={handleProfileClick}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 0.5, cursor: 'pointer', borderRadius: 2, p: 0.5, '&:hover': { bgcolor: '#FAFAFA' } }} onClick={handleProfileClick}>
                     <Box sx={{ textAlign: 'right', display: { xs: 'none', md: 'block' } }}>
                         <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.1, textTransform: 'capitalize' }}>
                             {currentUser?.name || 'User'}
@@ -522,7 +571,7 @@ function HeaderContent() {
                             fontSize: '14px',
                             textTransform: 'capitalize',
                             backgroundColor: userImageSrc ? 'transparent' : colors,
-                            border: '1px solid #F1F5F9'
+                            border: '1px solid #EAECEF'
                         }}
                     >
                         {!userImageSrc && currentUser?.name?.charAt(0)}
@@ -543,12 +592,12 @@ function HeaderContent() {
                         minWidth: 220,
                         borderRadius: 2,
                         boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
-                        border: '1px solid #F1F5F9',
+                        border: '1px solid #EAECEF',
                         overflow: 'hidden',
                     }
                 }}
             >
-                <Box sx={{ p: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #E5E7EB' }}>
+                <Box sx={{ p: 2, bgcolor: '#FAFAFA', borderBottom: '1px solid #E5E7EB' }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
                         <Avatar
                             src={userImageSrc}
@@ -558,7 +607,7 @@ function HeaderContent() {
                                 fontSize: '14px',
                                 textTransform: 'capitalize',
                                 backgroundColor: userImageSrc ? 'transparent' : colors,
-                                border: '1px solid #F1F5F9'
+                                border: '1px solid #EAECEF'
                             }}
                         >
                             {!userImageSrc && currentUser?.name?.charAt(0)}
@@ -567,10 +616,10 @@ function HeaderContent() {
                             <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {currentUser?.name || 'User'}
                             </Typography>
-                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {currentUser?.email || ''}
                             </Typography>
-                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.04em', mt: 0.25 }}>
+                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-2nd-color)', textTransform: 'uppercase', letterSpacing: '0.04em', mt: 0.25 }}>
                                 {currentUser?.role?.replace(/_/g, ' ') || 'Guest'}
                             </Typography>
                         </Box>
@@ -605,10 +654,10 @@ function HeaderContent() {
                             }
                         }}
                     >
-            Logout
-        </MenuItem>
-    </Box>
-</Popover>
+                        Logout
+                    </MenuItem>
+                </Box>
+            </Popover>
 
         </Box>
     );

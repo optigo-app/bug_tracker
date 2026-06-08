@@ -1,184 +1,210 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   LayoutDashboard,
   Bug,
   Folder,
-  LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
-  Avatar,
-  Stack,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider as MuiDivider,
   Tooltip,
   IconButton,
 } from '@mui/material';
 
 const menuItems = [
-  { icon: <LayoutDashboard size={20} />, label: 'Dashboard', href: '/' },
-  { icon: <Folder size={20} />, label: 'Tasks', href: '/tasks' },
-  { icon: <Bug size={20} />, label: 'Bug list', href: '/bugs' },
+  { Icon: LayoutDashboard, label: 'Dashboard', href: '/' },
+  { Icon: Folder, label: 'Tasks', href: '/tasks' },
+  { Icon: Bug, label: 'Bug list', href: '/bugs' },
 ];
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ isFullSidebar, onToggleFull }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [logoHovered, setLogoHovered] = useState(false);
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const collapseTimerRef = useRef(null);
 
-  useEffect(() => {
-    // Get user profile from sessionStorage
-    const userProfileData = sessionStorage.getItem('UserProfileData');
-    if (userProfileData) {
-      try {
-        const profile = JSON.parse(userProfileData);
-        setCurrentUser({
-          id: profile.id,
-          name: `${profile.firstname} ${profile.lastname}`.trim() || profile.id,
-          role: profile.designation || 'User',
-          email: profile.userid,
-          photo: profile.empphoto
-        });
-      } catch (error) {
-        console.error('Error parsing UserProfileData:', error);
-        setCurrentUser(null);
-      }
+  const isCollapsed = !isFullSidebar && !hoverExpanded;
+
+  const clearCollapseTimer = () => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
     }
-  }, []);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleLogoEnter = () => {
+    if (!isFullSidebar) {
+      clearCollapseTimer();
+      setHoverExpanded(true);
+    }
   };
 
-  const handleLogout = async () => {
-    handleClose();
-    // Clear all session data
-    document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    sessionStorage.clear();
-
-    // Redirect to auto-login page
-    router.push('/auto-login');
-    router.refresh();
+  const handleSidebarLeave = () => {
+    if (!isFullSidebar) {
+      clearCollapseTimer();
+      collapseTimerRef.current = setTimeout(() => {
+        setHoverExpanded(false);
+      }, 200);
+    }
   };
+
+  const handleSidebarEnter = () => {
+    clearCollapseTimer();
+  };
+
+  // Colors from variables.scss
+  const checkedColor = '#685dd8';   // $button-Bordercolor
+  const uncheckedColor = '#7D7f85'; // $secondaryColor
 
   return (
-    <aside className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
+    <aside
+      className={`sidebar${isCollapsed ? ' sidebar-collapsed' : ''}`}
+      onMouseEnter={handleSidebarEnter}
+      onMouseLeave={handleSidebarLeave}
+    >
       {/* ── Header ─────────────────────────────────────── */}
       <Box
         sx={{
-          px: collapsed ? 0 : 1,
-          mb: 4,
+          px: isCollapsed ? 0 : 1,
           display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: collapsed ? 'center' : 'space-between',
+          alignItems: 'center',
+          justifyContent: isCollapsed ? 'center' : 'space-between',
           transition: 'padding 0.3s',
         }}
       >
-        {/* Logo icon — in collapsed mode it is the click target to maximize */}
-        <Tooltip
-          title={collapsed ? 'Expand sidebar' : ''}
-          placement="right"
-          arrow
-        >
+        {/* Logo icon */}
+        <Tooltip title={isCollapsed ? 'Expand sidebar' : ''} placement="right" arrow>
           <Box
-            onClick={collapsed ? onToggle : undefined}
-            onMouseEnter={() => collapsed && setLogoHovered(true)}
-            onMouseLeave={() => setLogoHovered(false)}
+            onMouseEnter={handleLogoEnter}
+            onClick={() => router.push('/')}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: collapsed ? 0 : 1.5,
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              width: '100%',
+              gap: isCollapsed ? 0 : 1.5,
               overflow: 'hidden',
-              cursor: collapsed ? 'pointer' : 'default',
+              cursor: 'pointer',
             }}
           >
-            {/* Bug icon box — grows on hover in collapsed mode */}
-            <Box
-              sx={{
-                width: 28,
-                height: 28,
-                bgcolor: 'primary.main',
-                borderRadius: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                flexShrink: 0,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Bug size={16} />
-            </Box>
-
-            {/* Brand text — hidden when collapsed */}
-            <Box
-              sx={{
-                overflow: 'hidden',
-                maxWidth: collapsed ? 0 : 140,
-                opacity: collapsed ? 0 : 1,
-                transition: 'max-width 0.3s ease, opacity 0.2s ease',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.2 }}>
-                BugTracker
-              </Typography>
-            </Box>
+            {isCollapsed ? (
+              <Box
+                component="img"
+                src="/bgtr_icon.png"
+                alt="BugTracker"
+                sx={{
+                  height: 34,
+                  width: 'auto',
+                  maxWidth: 160,
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  transition: 'all 0.2s ease',
+                }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src="/bugTracker_logo.png"
+                alt="BugTracker"
+                sx={{
+                  height: 34,
+                  width: 'auto',
+                  maxWidth: 160,
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  transition: 'all 0.2s ease',
+                }}
+              />
+            )}
           </Box>
         </Tooltip>
 
-        {/* Radio-style toggle — visible ONLY when expanded */}
-        {!collapsed && (
+        {/* Checkbox toggle — visible when expanded (full or hover) */}
+        {!isCollapsed && (
           <IconButton
             size="small"
-            onClick={onToggle}
-            sx={{ 
-                p: 0.5, 
-                borderRadius: '8px', 
-                border: '1px solid #F1F5F9',
-                color: '#94A3B8',
-                '&:hover': { color: '#6366F1', bgcolor: '#F5F7FA' }
+            onClick={onToggleFull}
+            sx={{
+              p: 0.6,
+              color: isFullSidebar ? checkedColor : uncheckedColor,
+              '&:hover': { color: checkedColor, bgcolor: '#F5F7FA' },
             }}
           >
-            <PanelLeftClose size={16} />
+            {isFullSidebar ? (
+              // Checked: filled purple circle
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  border: `1.5px solid ${checkedColor}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: checkedColor }} />
+              </Box>
+            ) : (
+              // Unchecked: empty gray circle
+              <Box
+                sx={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  border: `1.5px solid ${uncheckedColor}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'transparent' }} />
+              </Box>
+            )}
           </IconButton>
         )}
       </Box>
+
+      <hr className="sidebar-separator" />
 
       {/* ── Navigation ─────────────────────────────────── */}
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
+          const iconColor = isActive ? '#fff' : '#7D7f85';
 
-          if (collapsed) {
+          if (isCollapsed) {
             return (
               <Tooltip key={item.label} title={item.label} placement="right" arrow>
                 <Link
                   href={item.href}
-                  className={`nav-item nav-item-collapsed${isActive ? ' active' : ''}`}
+                  className="nav-item nav-item-collapsed"
                 >
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.3 }}>
-                    {item.icon}
+                    <Box
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        bgcolor: isActive ? '#7367f0' : 'transparent',
+                        boxShadow: isActive ? '0px 2px 6px rgba(115, 103, 240, 0.3)' : 'none',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <item.Icon size={20} color={iconColor} />
+                    </Box>
                     <Typography
                       sx={{
-                        fontSize: '0.58rem',
+                        mt: 0.5,
+                        fontSize: '0.75rem',
                         fontWeight: 600,
                         lineHeight: 1,
                         color: 'inherit',
@@ -199,7 +225,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               href={item.href}
               className={`nav-item${isActive ? ' active' : ''}`}
             >
-              {item.icon}
+              <item.Icon size={20} color={iconColor} />
               <span>{item.label}</span>
             </Link>
           );

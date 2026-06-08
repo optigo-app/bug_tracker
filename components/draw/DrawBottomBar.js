@@ -11,6 +11,7 @@ import {
   Square,
   Trash2,
   Type,
+  StickyNote,
   Undo2,
   ChevronUp,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const TOOL_ITEMS = [
   { id: "eraser", label: "Delete", icon: Eraser },
   { id: "arrow", label: "Arrow", icon: ArrowUpRight },
   { id: "text", label: "Text", icon: Type },
+  { id: "note", label: "Sticky Note", icon: StickyNote },
   { id: "media", label: "Media", icon: Image },
   { id: "shape", label: "Shape", icon: Square },
 ];
@@ -169,6 +171,7 @@ function shortcutSuffix(toolId) {
     eraser: " (E)",
     arrow: " (A)",
     text: " (T)",
+    note: " (N)",
     media: " (U)",
     shape: " (S)",
   };

@@ -1,6 +1,5 @@
 import { Box, Typography, Stack, Tooltip, Button } from '@mui/material';
-import { Building2, Paperclip } from 'lucide-react';
-import { MessageSquare } from 'lucide-react';
+import { Building2, Paperclip, MessageSquareText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
@@ -9,7 +8,7 @@ import { formatDate } from '../constants';
 export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUndoReassign }) {
   const hasComments = bug.commentCount > 0;
   const hasAttach = bug.attachmentCount > 0;
-  const priority = (bug.priority || '').toUpperCase();
+  const priority = typeof bug.priority === 'object' ? (bug.priority?.label || '')?.toUpperCase() : (bug.priority || '')?.toUpperCase();
   const isHighPriority = priority === 'CRITICAL';
 
   // Timer state for reassignment undo
@@ -39,12 +38,11 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
     <Box
       onClick={onClick}
       sx={{
-        px: 2.5,
-        py: 2,
+        px: 2,
+        py: 1.5,
         cursor: 'pointer',
-        borderLeft: isSelected ? '3px solid #6366f1' : 'none',
         bgcolor: isSelected
-          ? '#eef2ff'
+          ? '#F0EFFF'
           : isHighPriority
             ? 'rgba(239, 68, 68, 0.03)'
             : 'white',
@@ -53,126 +51,123 @@ export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUn
         position: 'relative',
         '&:hover': {
           bgcolor: isSelected
-            ? '#e0e7ff'
+            ? '#E8E5FE'
             : isHighPriority
               ? 'rgba(239, 68, 68, 0.06)'
-              : '#F9FAFB',
-          transform: 'translateX(2px)'
+              : '#F9FAFB'
         }
       }}
     >
-      {/* Row 1: ID, Project & Labels */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          {bug.bugNo && (
-            <Typography sx={{
-              fontSize: '0.65rem',
-              fontWeight: 800,
-              color: '#7367f0',
-              bgcolor: '#EEF2FF',
-              px: 0.6, py: 0.15, borderRadius: '6px',
-              fontFamily: 'monospace'
-            }}>
-              {bug.bugNo ?? ''}
-            </Typography>
-          )}
-          {bug.taskNo && (
-            <Tooltip title={bug.taskName || 'Task'} arrow>
-              <Typography sx={{
-                fontSize: '0.65rem',
-                fontWeight: 800,
-                color: '#64748B',
-                bgcolor: '#F1F5F9',
-                px: 0.6, py: 0.15, borderRadius: '6px',
-                fontFamily: 'monospace',
-                cursor: 'help'
-              }}>
-                {bug.taskNo}
+      <Stack spacing={0.75}>
+        {/* Row 1: Top Meta Info & Top Right Chips */}
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ color: '#64748B', flexWrap: 'wrap', rowGap: 0.5 }}>
+            {bug.bugNo && (
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#7367f0', fontFamily: 'monospace' }}>
+                {bug.bugNo}
               </Typography>
+            )}
+            {bug.taskNo && (
+              <>
+                {bug.bugNo && <Typography sx={{ fontSize: '0.7rem', color: '#CBD5E1' }}>•</Typography>}
+                <Tooltip title={bug.taskName || 'Task'} arrow>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace' }}>
+                    {bug.taskNo}
+                  </Typography>
+                </Tooltip>
+              </>
+            )}
+            {bug.projectName && (
+              <>
+                {(bug.bugNo || bug.taskNo) && <Typography sx={{ fontSize: '0.7rem', color: '#CBD5E1' }}>•</Typography>}
+                <Stack direction="row" spacing={0.4} alignItems="center">
+                  <Building2 size={12} />
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 500 }}>{bug.projectName}</Typography>
+                </Stack>
+              </>
+            )}
+          </Stack>
+
+          {/* Top Right Comment Chip */}
+          {hasComments && (
+            <Tooltip title={`${bug.commentCount} comment${bug.commentCount > 1 ? 's' : ''}`} arrow>
+              <Box sx={{
+                bgcolor: 'rgba(115, 103, 240, 0.08)',
+                borderRadius: '6px',
+                px: 0.8, py: 0.25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.4,
+                border: '1px solid rgba(115, 103, 240, 0.12)',
+                ml: 1
+              }}>
+                <MessageSquareText size={11} color="#7367f0" />
+                <Typography sx={{ fontSize: '0.65rem', color: '#7367f0', fontWeight: 700 }}>{bug.commentCount}</Typography>
+              </Box>
             </Tooltip>
-          )}
-          {bug.projectName && (
-            <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: '#A5A3AE' }}>
-              <Building2 size={11} />
-              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600 }}>{bug.projectName}</Typography>
-            </Stack>
           )}
         </Stack>
 
-        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          {hasAttach && (
-            <Box sx={{ bgcolor: 'rgba(115, 103, 240, 0.08)', borderRadius: '4px', p: 0.35, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Paperclip size={11} color="#7367f0" />
-            </Box>
-          )}
-          {hasComments && (
-            <Box sx={{ bgcolor: 'rgba(115, 103, 240, 0.08)', borderRadius: '4px', p: 0.35, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3 }}>
-              <MessageSquare size={11} color="#7367f0" />
-              <Typography sx={{ fontSize: '0.6rem', color: '#7367f0', fontWeight: 700 }}>{bug.commentCount}</Typography>
-            </Box>
-          )}
-        </Box>
-      </Stack>
+        {/* Row 2: Title */}
+        <Typography
+          sx={{
+            fontSize: '0.85rem', fontWeight: 600, color: 'var(-title-color)', lineHeight: 1.4,
+            overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          {bug.title}
+        </Typography>
 
-      {/* Row 2: Title */}
-      <Typography
-        sx={{
-          fontSize: '0.85rem', fontWeight: 700, color: '#2F2B3D', lineHeight: 1.3,
-          mb: 0.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          textOverflow: 'ellipsis'
-        }}
-      >
-        {bug.title}
-      </Typography>
+        {/* Row 3: Footer */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
+          {/* Left Side: Badges & Icons */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              {bug.status && <StatusBadge status={bug.status} />}
+              {bug.priority && <PriorityBadge priority={bug.priority} />}
+            </Stack>
 
-      {/* Row 3: Description snippet */}
-      {/* <Typography sx={{
-        fontSize: '0.7rem',
-        color: '#6F6B7D',
-        overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-        mb: 1,
-        lineHeight: 1.3,
-        textOverflow: 'ellipsis'
-      }}>
-        {bug.description || ''}
-      </Typography> */}
-
-      {/* Row 4: Footer - Status, Priority & Date */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        {bug.status || bug.priority ? (
-          <Stack direction="row" spacing={0.75} alignItems="center">
-            {bug.status && <StatusBadge status={bug.status} />}
-            {bug.priority && <PriorityBadge priority={bug.priority} />}
+            {hasAttach && (
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ color: '#94A3B8' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Paperclip size={13} />
+                </Box>
+              </Stack>
+            )}
           </Stack>
-        ) : null}
-        <Stack direction="row" spacing={0.5} alignItems="center">
-          {timeLeft > 0 && (
-            <Button
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onUndoReassign?.();
-              }}
-              sx={{
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                px: 1,
-                py: 0.25,
-                minWidth: 'auto',
-                height: 20,
-                bgcolor: '#FEF3C7',
-                color: '#D97706',
-                borderRadius: 1,
-                textTransform: 'none',
-                '&:hover': { bgcolor: '#FDE68A' }
-              }}
-            >
-              Undo ({timeLeft}s)
-            </Button>
-          )}
-          <Typography sx={{ fontSize: '0.65rem', color: '#A5A3AE', fontWeight: 500, whiteSpace: 'nowrap' }}>
-            {formatDate(bug.createdAt)}
-          </Typography>
+
+          {/* Right Side: Date & Undo */}
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            {timeLeft > 0 && (
+              <Button
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUndoReassign?.();
+                }}
+                sx={{
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  px: 1,
+                  py: 0.25,
+                  minWidth: 'auto',
+                  height: 20,
+                  bgcolor: '#FEF3C7',
+                  color: '#D97706',
+                  borderRadius: 1,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: '#FDE68A' }
+                }}
+              >
+                Undo ({timeLeft}s)
+              </Button>
+            )}
+            <Typography sx={{ fontSize: '0.65rem', color: 'var(--text-2nd-color)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              {formatDate(bug.entrydate)}
+            </Typography>
+          </Stack>
         </Stack>
       </Stack>
     </Box>

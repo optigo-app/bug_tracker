@@ -33,6 +33,7 @@ import {
     Pause,
     RefreshCcw
 } from 'lucide-react';
+import { getFileNameFromUrl, getMimeTypeFromUrl } from '@/utils/fileUtils';
 
 /**
  * Enhanced AttachmentViewer
@@ -63,14 +64,17 @@ export default function AttachmentViewer({
     const viewerRef = useRef(null);
 
     // Map API attachment format
-    const mappedAttachments = useMemo(() => attachments.map(f => ({
-        ...f,
-        name: f.name || f.fileName || 'Untitled File',
-        url: f.url || f.filePath,
-        type: f.type || f.mimeType || 'application/octet-stream',
-        size: f.size || 'Unknown size',
-        uploadedAt: f.uploadedAt || new Date().toLocaleDateString()
-    })), [attachments]);
+    const mappedAttachments = useMemo(() => attachments.map(f => {
+        const filePath = f.url || f.filepath || '';
+        return {
+            ...f,
+            name: f.name || getFileNameFromUrl(filePath) || 'Untitled File',
+            url: filePath,
+            type: f.type || getMimeTypeFromUrl(filePath) || 'application/octet-stream',
+            size: f.size || 'Unknown size',
+            uploadedAt: f.uploadedAt || new Date().toLocaleDateString()
+        };
+    }), [attachments]);
 
     const currentFile = mappedAttachments[currentIndex];
     const isImage = currentFile?.type?.toLowerCase().startsWith('image');
@@ -186,25 +190,17 @@ export default function AttachmentViewer({
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (!open) return;
-            
-            // Zoom: Ctrl + / Ctrl -
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === '=' || e.key === '+') { e.preventDefault(); handleZoom(0.5); }
                 if (e.key === '-') { e.preventDefault(); handleZoom(-0.5); }
                 if (e.key === '0') { e.preventDefault(); resetView(); }
             }
-
-            // Navigation
             if (e.key === 'ArrowRight') goToNext();
             if (e.key === 'ArrowLeft') goToPrev();
-
-            // Bug Navigation (with Ctrl)
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'ArrowRight') { e.preventDefault(); goToNextBug(); }
                 if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrevBug(); }
             }
-
-            // Utils
             if (e.key === 'r') setRotation(prev => (prev + 90) % 360);
             if (e.key === 'i') setShowInfo(prev => !prev);
             if (e.key === 'f') setFullMode(prev => !prev);
@@ -228,7 +224,7 @@ export default function AttachmentViewer({
             TransitionProps={{ timeout: 400 }}
             PaperProps={{
                 sx: {
-                    bgcolor: '#f8fafc',
+                    bgcolor: '#FAFAFA',
                     borderRadius: fullMode ? 0 : 4,
                     overflow: 'hidden',
                     height: fullMode ? '100vh' : '85vh',
@@ -244,18 +240,18 @@ export default function AttachmentViewer({
                 alignItems: 'center', 
                 justifyContent: 'space-between',
                 bgcolor: 'white',
-                borderBottom: '1px solid #e2e8f0',
+                borderBottom: '1px solid #EAECEF',
                 zIndex: 100
             }}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                    <IconButton onClick={onClose} size="small" sx={{ color: '#64748b' }}>
+                    <IconButton onClick={onClose} size="small" sx={{ color: 'var(--text-2nd-color)' }}>
                         <X size={20} />
                     </IconButton>
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1 }}>
                             {currentBug ? `${currentBug.bugNo || currentBug.id}: ${currentBug.title}` : currentFile.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                        <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)' }}>
                             {currentIndex + 1} of {mappedAttachments.length}
                             {currentBug && ` • ${currentFile.name}`}
                         </Typography>
@@ -264,7 +260,7 @@ export default function AttachmentViewer({
 
                 <Stack direction="row" spacing={1} alignItems="center">
                     {bugs.length > 0 && (
-                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
+                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#EAECEF', p: 0.5, borderRadius: 2 }}>
                             <Tooltip title="Previous Bug (Ctrl + Left Arrow)">
                                 <IconButton size="small" onClick={goToPrevBug} disabled={bugs.length <= 1 || currentBugIndexVal <= 0}>
                                     <ChevronLeft size={18} />
@@ -279,7 +275,7 @@ export default function AttachmentViewer({
                     )}
 
                     {isImage && (
-                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#f1f5f9', p: 0.5, borderRadius: 2 }}>
+                        <Stack direction="row" spacing={0.5} sx={{ bgcolor: '#EAECEF', p: 0.5, borderRadius: 2 }}>
                             <Tooltip title="Zoom Out (Ctrl -)">
                                 <IconButton size="small" onClick={() => handleZoom(-0.25)}><ZoomOut size={18} /></IconButton>
                             </Tooltip>
@@ -316,7 +312,7 @@ export default function AttachmentViewer({
                         </IconButton>
                     </Tooltip>
 
-                    <Button
+                    {/* <Button
                         variant="contained"
                         size="small"
                         disableElevation
@@ -326,7 +322,7 @@ export default function AttachmentViewer({
                         sx={{ borderRadius: 2, textTransform: 'none', ml: 1 }}
                     >
                         Download
-                    </Button>
+                    </Button> */}
                 </Stack>
             </Box>
 
@@ -337,7 +333,7 @@ export default function AttachmentViewer({
                 <Slide direction="right" in={showInfo} mountOnEnter unmountOnExit>
                     <Paper sx={{ 
                         width: 280, 
-                        borderRight: '1px solid #e2e8f0', 
+                        borderRight: '1px solid #EAECEF', 
                         zIndex: 50, 
                         p: 3, 
                         bgcolor: 'white',
@@ -375,7 +371,7 @@ export default function AttachmentViewer({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    bgcolor: '#f1f5f9'
+                    bgcolor: '#EAECEF'
                 }}>
                     {/* Viewport for content */}
                     <Box 
@@ -504,7 +500,7 @@ function DetailItem({ label, value }) {
 function ShortcutItem({ icon, text, desc }) {
     return (
         <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box sx={{ p: 0.5, bgcolor: '#f1f5f9', borderRadius: 1, display: 'flex' }}>{icon}</Box>
+            <Box sx={{ p: 0.5, bgcolor: '#EAECEF', borderRadius: 1, display: 'flex' }}>{icon}</Box>
             <Box>
                 <Typography variant="caption" display="block" sx={{ fontWeight: 700, lineHeight: 1 }}>{text}</Typography>
                 <Typography variant="caption" color="text.secondary">{desc}</Typography>
@@ -521,6 +517,6 @@ const navBtnStyle = (dir) => ({
     zIndex: 10,
     bgcolor: 'white',
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    '&:hover': { bgcolor: '#f8fafc' },
+    '&:hover': { bgcolor: '#FAFAFA' },
     display: { xs: 'none', md: 'flex' }
 });

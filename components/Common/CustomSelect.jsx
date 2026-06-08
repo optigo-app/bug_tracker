@@ -20,7 +20,7 @@ const CustomSelect = ({
 }) => {
 
   const selectedStyle = getOptionStyle?.(value) || {
-    bg: '#F1F5F9',
+    bg: '#EAECEF',
     color: '#334155',
     border: '#CBD5F5'
   };
@@ -67,7 +67,7 @@ const CustomSelect = ({
             mt: 1,
             borderRadius: 2,
             overflow: 'hidden',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #EAECEF',
             boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
             py: 0.5
           }
@@ -99,7 +99,7 @@ const CustomSelect = ({
               transition: 'all 0.15s ease',
 
               '&:hover': {
-                backgroundColor: '#F1F5F9'
+                backgroundColor: '#EAECEF'
               },
 
               '&.Mui-selected': {

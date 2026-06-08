@@ -1,5 +1,5 @@
 import { CommonAPI } from "../../src/utils/commonApi";
-import { getClientIpAddress } from "../../src/utils/apiConfig";
+import { getClientIpAddress } from "../../utils/glocalfunc";
 
 const getAuthData = () => {
     if (typeof window === 'undefined') return null;

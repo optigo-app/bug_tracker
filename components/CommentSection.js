@@ -8,8 +8,9 @@ import {
     Typography,
     Divider
 } from '@mui/material';
-import { MessageSquare, File } from 'lucide-react';
+import { MessageSquareText, File } from 'lucide-react';
 import { getAvatarColor, getInitials, handleImageError, formatCommentDate } from '@/utils/glocalfunc';
+import { getFileNameFromUrl, getMimeTypeFromUrl } from '@/utils/fileUtils';
 import CommentInput from '@/components/CommentInput';
 
 export default function CommentSection({
@@ -28,13 +29,16 @@ export default function CommentSection({
                         const userName = getUserName(c.userId);
                         const cc = getAvatarColor(userName);
                         const normalizedAttachments = Array.isArray(c.attachments)
-                            ? c.attachments.map((file) => ({
-                                ...file,
-                                id: file.id,
-                                name: file.name || file.fileName || 'Attachment',
-                                type: file.type || file.mimeType || 'file',
-                                url: file.url || file.filePath || '',
-                            }))
+                            ? c.attachments.map((file) => {
+                                const filePath = file.url || file.filepath || '';
+                                return {
+                                    ...file,
+                                    id: file.id,
+                                    name: file.name || getFileNameFromUrl(filePath) || 'Attachment',
+                                    type: file.type || getMimeTypeFromUrl(filePath) || 'file',
+                                    url: filePath,
+                                };
+                            })
                             : [];
                         return (
                             <React.Fragment key={c.id}>
@@ -64,8 +68,8 @@ export default function CommentSection({
                                             <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E293B' }}>
                                                 {userName}
                                             </Typography>
-                                            <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 500 }}>
-                                                {formatCommentDate(c.createdAt)}
+                                            <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500 }}>
+                                                {formatCommentDate(c.entrydate)}
                                             </Typography>
                                         </Stack>
                                         <Typography variant="body2" sx={{
@@ -88,14 +92,14 @@ export default function CommentSection({
                                                             gap: 1,
                                                             p: 0.75,
                                                             pr: 1.25,
-                                                            bgcolor: '#F8FAFC',
+                                                            bgcolor: '#FAFAFA',
                                                             border: '1px solid #E5E7EB',
                                                             borderRadius: 1.5,
                                                             cursor: 'pointer',
-                                                            '&:hover': { bgcolor: '#F1F5F9' }
+                                                            '&:hover': { bgcolor: '#EAECEF' }
                                                         }}
                                                     >
-                                                        {(file.type || file.mimeType || '').toLowerCase().startsWith('image') ? (
+                                                        {file.type?.toLowerCase().startsWith('image') ? (
                                                             <Box
                                                                 component="img"
                                                                 src={file.url}
@@ -108,7 +112,7 @@ export default function CommentSection({
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <File size={20} color="#94A3B8" />
+                                                            <File size={20} color="var(--text-2nd-color)" />
                                                         )}
                                                         <Typography sx={{
                                                             fontSize: '0.7rem',
@@ -123,14 +127,14 @@ export default function CommentSection({
                                         )}
                                     </Box>
                                 </Box>
-                                {idx < comments.length - 1 && <Divider sx={{ mx: 1, borderColor: '#F8FAFC' }} />}
+                                {idx < comments.length - 1 && <Divider sx={{ mx: 1, borderColor: '#FAFAFA' }} />}
                             </React.Fragment>
                         );
                     })}
                 </Stack>
             ) : (
                 <Box sx={{ textAlign: 'center', py: 5 }}>
-                    <MessageSquare size={24} color="#CBD5E1" />
+                    <MessageSquareText size={24} color="var(--text-2nd-color)" />
                     <Typography variant="body2" color="text.disabled" sx={{ mt: 1, fontStyle: 'italic' }}>
                         No comments yet. Be the first.
                     </Typography>

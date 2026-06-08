@@ -9,8 +9,7 @@ import { Box } from '@mui/material';
 export default function MainLayout({ children }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/auto-login';
-  const isBugsPage = pathname?.startsWith('/bugs');
-  const [collapsed, setCollapsed] = useState(false);
+  const [isFullSidebar, setIsFullSidebar] = useState(false);
 
   if (isAuthPage) {
     return <>{children}</>;
@@ -18,7 +17,7 @@ export default function MainLayout({ children }) {
 
   return (
     <div className="layout-container">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
+      <Sidebar isFullSidebar={isFullSidebar} onToggleFull={() => setIsFullSidebar((prev) => !prev)} />
       <Box
         component="main"
         className="main-content"
@@ -27,7 +26,7 @@ export default function MainLayout({ children }) {
           display: 'flex',
           flexDirection: 'column',
           height: '100vh',
-          bgcolor: '#F8FAFC',
+          bgcolor: '#FAFAFA',
           overflow: 'hidden', // Always hide main scroll to let children handle it
           transition: 'margin-left 0.3s ease',
         }}

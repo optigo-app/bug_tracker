@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
-import { Box, Typography, IconButton, Paper } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, IconButton, Paper, Skeleton } from '@mui/material';
 import { ChevronLeft, ChevronRight, Download, File, ExternalLink, MessageSquare } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectFade } from 'swiper/modules';
 import Stack from '@mui/material/Stack';
 import { handleImageError } from '@/utils/glocalfunc';
+import { getFileNameFromUrl, getMimeTypeFromUrl } from '@/utils/fileUtils';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -15,13 +16,22 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
 const AttachmentSlider = ({ attachments = [], onImageClick }) => {
+  const [loadedImages, setLoadedImages] = useState({});
+
+  const handleImageLoad = (index) => {
+    setLoadedImages(prev => ({ ...prev, [index]: true }));
+  };
+
   // Map API attachment format to expected structure
-  const mappedAttachments = attachments.map(f => ({
-    ...f,
-    name: f.name || f.fileName,
-    url: f.url || f.filePath,
-    type: f.type || f.mimeType
-  }));
+  const mappedAttachments = attachments.map(f => {
+    const filePath = f.url || f.filepath || '';
+    return {
+      ...f,
+      name: f.name || getFileNameFromUrl(filePath),
+      url: filePath,
+      type: f.type || getMimeTypeFromUrl(filePath)
+    };
+  });
 
   if (!mappedAttachments || mappedAttachments.length === 0) return null;
 
@@ -35,7 +45,6 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
         slidesPerView={1}
         effect="fade"
         fadeEffect={{ crossFade: true }}
-        autoHeight={true}
         navigation={{
           nextEl: '.swiper-next',
           prevEl: '.swiper-prev',
@@ -44,18 +53,19 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
           borderRadius: 0,
           overflow: 'hidden',
           backgroundColor: 'transparent',
+          height: '400px',
         }}
       >
         {mappedAttachments.map((file, index) => (
-          <SwiperSlide key={file.id || index}>
-            <Box 
+          <SwiperSlide key={`${file.id || index}-${file.url}`}>
+            <Box
               onClick={() => onImageClick?.(index)}
-              sx={{ 
-                width: '100%', 
-                height: '100%', 
-                display: 'flex', 
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center', 
+                alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
                 p: 0.5,
@@ -63,21 +73,37 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
               }}
             >
               {isImage(file.type) ? (
-                <Box
-                  component="img"
-                  src={file.url}
-                  alt={file.name}
-                  onError={handleImageError}
-                  sx={{
-                    width: '100%',
-                    maxHeight: '600px',
-                    objectFit: 'contain',
-                    height: 'auto',
-                    display: 'block',
-                    borderRadius: '8px',
-                    border: '1px solid #F1F5F9', // Subtle integrated border
-                  }}
-                />
+                <>
+                  {!loadedImages[index] && (
+                    <Skeleton
+                      variant="rectangular"
+                      sx={{
+                        width: '100%',
+                        maxHeight: '600px',
+                        height: '300px',
+                        borderRadius: '8px',
+                        bgcolor: '#EAECEF'
+                      }}
+                    />
+                  )}
+                  <Box
+                    component="img"
+                    src={file.url}
+                    alt={file.name}
+                    crossOrigin="anonymous"
+                    onError={handleImageError}
+                    onLoad={() => handleImageLoad(index)}
+                    sx={{
+                      width: '100%',
+                      maxHeight: '600px',
+                      objectFit: 'contain',
+                      height: 'auto',
+                      display: loadedImages[index] ? 'block' : 'none',
+                      borderRadius: '8px',
+                      border: '1px solid #EAECEF',
+                    }}
+                  />
+                </>
               ) : (
                 <Stack alignItems="center" spacing={2}>
                   <Box sx={{ 
@@ -85,14 +111,14 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
                     bgcolor: 'white', 
                     borderRadius: '32px', 
                     boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
-                    border: '1px solid #F1F5F9'
+                    border: '1px solid #EAECEF'
                   }}>
                     <File size={64} color="#6366F1" />
                   </Box>
                   <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', letterSpacing: '-0.01em' }}>
                     {file.name}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#94A3B8', fontWeight: 600 }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600 }}>
                     {file.size} · {(file.type || '').toUpperCase()}
                   </Typography>
                 </Stack>

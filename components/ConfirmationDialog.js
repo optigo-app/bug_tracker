@@ -8,7 +8,8 @@ import {
     Button,
     Typography,
     Box,
-    Stack
+    Stack,
+    CircularProgress
 } from '@mui/material';
 import { AlertTriangle, X } from 'lucide-react';
 
@@ -20,7 +21,8 @@ export default function ConfirmationDialog({
     message = 'Are you sure you want to perform this action?',
     confirmText = 'Confirm',
     cancelText = 'Cancel',
-    type = 'danger' // 'danger' or 'info'
+    type = 'danger', // 'danger' or 'info'
+    loading = false
 }) {
     const isDanger = type === 'danger';
 
@@ -75,28 +77,29 @@ export default function ConfirmationDialog({
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
                             {title}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#64748B', fontWeight: 500, px: 2, lineHeight: 1.6 }}>
+                        <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500, px: 2, lineHeight: 1.6 }}>
                             {message}
                         </Typography>
                     </Box>
                 </Stack>
             </DialogContent>
 
-            <DialogActions sx={{ p: 3, pt: 2, gap: 1.5, bgcolor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+            <DialogActions sx={{ p: 3, pt: 2, gap: 1.5, bgcolor: '#FAFAFA', borderTop: '1px solid #EAECEF' }}>
                 <Button
                     fullWidth
                     variant="outlined"
                     onClick={onClose}
+                    disabled={loading}
                     sx={{
                         borderRadius: 2,
                         fontWeight: 600,
-                        color: '#64748B',
-                        borderColor: '#E2E8F0',
+                        color: 'var(--text-2nd-color)',
+                        borderColor: '#EAECEF',
                         py: 1.25,
                         textTransform: 'none',
                         transition: 'all 0.2s',
                         '&:hover': {
-                            bgcolor: '#F8FAFC',
+                            bgcolor: '#FAFAFA',
                             borderColor: '#CBD5E1',
                         }
                     }}
@@ -107,6 +110,7 @@ export default function ConfirmationDialog({
                     fullWidth
                     variant="contained"
                     onClick={onConfirm}
+                    disabled={loading}
                     sx={{
                         borderRadius: 2,
                         fontWeight: 700,
@@ -126,7 +130,14 @@ export default function ConfirmationDialog({
                         }
                     }}
                 >
-                    {confirmText}
+                    {loading ? (
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <CircularProgress size={16} color="inherit" />
+                            <span>{confirmText}</span>
+                        </Stack>
+                    ) : (
+                        confirmText
+                    )}
                 </Button>
             </DialogActions>
         </Dialog>

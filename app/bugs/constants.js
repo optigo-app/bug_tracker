@@ -9,7 +9,7 @@ export const STATUS = {
 };
 
 export const PRIORITY = {
-  LOW: { bg: '#F1F5F9', color: '#64748B', label: 'Low' },
+  LOW: { bg: '#f5f5f5', color: 'var(--text-2nd-color)', label: 'Low' },
   MEDIUM: { bg: '#E0E7FF', color: '#6366F1', label: 'Medium' },
   HIGH: { bg: '#FEE2E2', color: '#DC2626', label: 'High' },
   CRITICAL: { bg: '#FEF2F2', color: '#DC2626', label: 'Critical' },
@@ -21,18 +21,18 @@ export const slimScroll = {
     height: '6px',
   },
   '&::-webkit-scrollbar-track': {
-    bgcolor: '#F8FAFC',
+    bgcolor: '#fafafa',
   },
   '&::-webkit-scrollbar-thumb': {
-    background: '#E2E8F0',
+    background: '#e0e0e0',
     borderRadius: '10px',
-    border: '1px solid #F8FAFC',
+    border: '1px solid #fafafa',
   },
   '&::-webkit-scrollbar-thumb:hover': {
-    background: '#CBD5E1',
+    background: '#d0d0d0',
   },
   scrollbarWidth: 'thin',
-  scrollbarColor: '#E2E8F0 #F8FAFC',
+  scrollbarColor: '#e0e0e0 #fafafa',
 };
 
 export function formatDateTime(d) {

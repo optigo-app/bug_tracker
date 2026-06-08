@@ -14,6 +14,7 @@ const CustomDatePicker = ({
     customProps = {},
     sx = {},
     textFieldProps = {},
+    disabled=false
 }) => {
     const customDatePickerProps = {
         slotProps: {
@@ -74,6 +75,7 @@ const CustomDatePicker = ({
                 {...customDatePickerProps}
                 {...customProps}
                 {...styleprops}
+                disabled={disabled}
                 sx={{ minWidth: width, ...sx }}
                 format="DD/MM/YYYY"
             />

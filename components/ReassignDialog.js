@@ -167,15 +167,15 @@ export default function ReassignDialog({
                 px: 3,
                 fontSize: '1.15rem',
                 letterSpacing: '-0.01em',
-                bgcolor: '#F8FAFC',
-                borderBottom: '1px solid #E2E8F0'
+                bgcolor: '#FAFAFA',
+                borderBottom: '1px solid #EAECEF'
             }}>
                 forward Bug
                 {bug && (
                     <Typography sx={{
                         fontSize: '0.85rem',
                         fontWeight: 500,
-                        color: '#64748B',
+                        color: 'var(--text-2nd-color)',
                         mt: 0.5,
                         display: 'block'
                     }}>

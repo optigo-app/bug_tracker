@@ -47,10 +47,10 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
     position: 'relative',
     overflow: 'hidden',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-    border: '1px solid #E2E8F0',
+    border: '1px solid #e0e0e0',
     borderRadius: 3,
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+    background: 'linear-gradient(135deg, #FFFFFF 0%, #fafafa 100%)',
     '&:hover': {
       boxShadow: `0 8px 24px ${color}20`,
       transform: 'translateY(-4px)',
@@ -109,7 +109,7 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
         fontSize: '0.75rem',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        color: '#64748B'
+        color: 'var(--text-2nd-color)'
       }}>
         {title}
       </Typography>
@@ -125,7 +125,7 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
           mt: 0.5,
           display: 'block',
           fontWeight: 500,
-          color: '#94A3B8',
+          color: 'var(--text-2nd-color)',
           fontSize: '0.8rem'
         }}>
           {subvalue}
@@ -198,7 +198,7 @@ export default function Home() {
         }
       });
       const taskBugStatusData = JSON?.parse(sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData'));
-      const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', '#64748B'];
+      const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
           const label = taskBugStatusData?.find(item => String(item?.id) === String(statusId));
@@ -212,7 +212,7 @@ export default function Home() {
         .sort((a, b) => b.value - a.value);
       const recentActivity = [];
       recentActivityResult.forEach(history => {
-        const date = new Date(history.createdAt);
+        const date = new Date(history.entrydate);
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);
@@ -235,9 +235,9 @@ export default function Home() {
 
         let action = '';
         let badge = null;
-        if (history.field === 'statusId') {
-          const oldStatusLabel = taskBugStatusData?.find(item => item.id == history.oldValue)?.labelname || history.oldValue;
-          const newStatusLabel = taskBugStatusData?.find(item => item.id == history.newValue)?.labelname || history.newValue;
+        if (history.fieldName === 'statusId' || history.field === 'statusId') {
+          const oldStatusLabel = taskBugStatusData?.find(item => item.id == history.oldvalue)?.labelname || history.oldvalue;
+          const newStatusLabel = taskBugStatusData?.find(item => item.id == history.newvalue)?.labelname || history.newvalue;
           action = `Status changed from ${oldStatusLabel} to ${newStatusLabel}`;
           const newValueLower = newStatusLabel?.toLowerCase() || '';
           if (newValueLower === 'new') {
@@ -247,20 +247,20 @@ export default function Home() {
           } else if (newValueLower === 'reopen') {
             badge = { bg: '#FEF3C7', color: '#D97706', label: 'REOPEN' };
           }
-        } else if (history.field === 'assigneeId') {
-          action = `Assigned to ${history.newValue}`;
-        } else if (history.field === 'priority') {
-          action = `Priority changed to ${history.newValue}`;
-        } else if (history.field === 'attachments') {
+        } else if (history.fieldName === 'assigneeId' || history.field === 'assigneeId') {
+          action = `Assigned to ${history.newvalue}`;
+        } else if (history.fieldName === 'priority' || history.field === 'priority') {
+          action = `Priority changed to ${history.newvalue}`;
+        } else if (history.fieldName === 'attachments' || history.field === 'attachments') {
           action = 'Attachment added';
           badge = { bg: '#EFF6FF', color: '#3B82F6', label: 'ATTACHMENT' };
         } else {
-          action = `${history.field} updated`;
+          action = `${history.fieldName || history.field} updated`;
         }
 
         recentActivity.push({
           id: history.bugId,
-          user: history.userId,
+          user: history.userid || history.userId,
           action: action,
           time: timeStr,
           badge
@@ -286,10 +286,10 @@ export default function Home() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', bgcolor: '#F8FAFC' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', bgcolor: '#fafafa' }}>
         <Stack alignItems="center" spacing={2}>
           <CircularProgress size={40} thickness={4} sx={{ color: '#7367f0' }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: '#64748B' }}>Loading dashboard...</Typography>
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-2nd-color)' }}>Loading dashboard...</Typography>
         </Stack>
       </Box>
     );
@@ -302,7 +302,7 @@ export default function Home() {
     }}>
       {/* Stats Grid */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, md: 4, lg: 3 }}>
+        <Grid item xs={12} md={4} lg={3}>
           <StatCard
             title="Total Bugs"
             value={stats?.totalBugs || 0}
@@ -313,12 +313,12 @@ export default function Home() {
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 8, lg: 9 }}>
+        <Grid item xs={12} md={8} lg={9}>
           <Paper sx={{
             p: { xs: 2, md: 2.5 },
             borderRadius: 3,
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #e0e0e0',
             background: 'white',
             height: '100%'
           }}>
@@ -329,16 +329,16 @@ export default function Home() {
               <Chip
                 label={`${statusData.length} statuses`}
                 size="small"
-                sx={{ fontWeight: 700, bgcolor: '#F1F5F9', color: '#475569' }}
+                sx={{ fontWeight: 700, bgcolor: '#f5f5f5', color: '#475569' }}
               />
             </Stack>
 
             {statusData.length > 0 ? (
               <Grid container spacing={1.5}>
                 {statusData.map((status) => (
-                  <Grid key={status.statusId} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
+                  <Grid key={status.statusId} item xs={6} sm={4} md={3} lg={2.4} >
                     <Box sx={{
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid #e0e0e0',
                       borderRadius: 2,
                       px: 1.5,
                       py: 1.25,
@@ -382,7 +382,7 @@ export default function Home() {
               </Grid>
             ) : (
               <Box sx={{ py: 3, textAlign: 'center' }}>
-                <Typography variant="body2" sx={{ color: '#94A3B8', fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600 }}>
                   No status data available
                 </Typography>
               </Box>
@@ -393,13 +393,13 @@ export default function Home() {
       {/* Main Content Grid */}
       <Grid container spacing={3}>
         {/* Weekly Activity Chart */}
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           <Paper sx={{
             p: 3,
             borderRadius: 3,
             height: '100%',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #e0e0e0',
             background: 'white',
             transition: 'all 0.3s ease',
             '&:hover': {
@@ -417,7 +417,7 @@ export default function Home() {
                 </Typography>
                 <Typography variant="caption" sx={{
                   fontWeight: 500,
-                  color: '#64748B',
+                  color: 'var(--text-2nd-color)',
                   fontSize: '0.85rem'
                 }}>
                   Reported bugs over the last 7 days
@@ -433,18 +433,18 @@ export default function Home() {
                       <stop offset="95%" stopColor="#7367f0" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#64748B', fontSize: 12, fontWeight: 500 }}
+                    tick={{ fill: 'var(--text-2nd-color)', fontSize: 12, fontWeight: 500 }}
                     dy={10}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#64748B', fontSize: 12, fontWeight: 500 }}
+                    tick={{ fill: 'var(--text-2nd-color)', fontSize: 12, fontWeight: 500 }}
                   />
                   <RechartsTooltip
                     contentStyle={{
@@ -470,13 +470,13 @@ export default function Home() {
         </Grid>
 
         {/* Bug Distribution */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{
             p: 3,
             borderRadius: 3,
             height: '100%',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #e0e0e0',
             background: 'white',
             transition: 'all 0.3s ease',
             '&:hover': {
@@ -494,7 +494,7 @@ export default function Home() {
               fontWeight: 500,
               mb: 4,
               display: 'block',
-              color: '#64748B',
+              color: 'var(--text-2nd-color)',
               fontSize: '0.85rem'
             }}>
               By current status
@@ -529,27 +529,29 @@ export default function Home() {
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>TOTAL</Typography>
               </Box>
             </Box>
-            <Stack spacing={2} sx={{ mt: 3 }}>
+            <Grid container spacing={2} sx={{ mt: 3 }}>
               {statusData?.map((item) => (
-                <Box key={item.name} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color }} />
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.name}</Typography>
-                  </Stack>
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.value}</Typography>
-                </Box>
+                <Grid item xs={6} key={item.name}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.name}</Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.value}</Typography>
+                  </Box>
+                </Grid>
               ))}
-            </Stack>
+            </Grid>
           </Paper>
         </Grid>
 
         {/* Recent Activity List */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Paper sx={{
             p: 3,
             borderRadius: 3,
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #e0e0e0',
             background: 'white',
             transition: 'all 0.3s ease',
             '&:hover': {
@@ -566,7 +568,7 @@ export default function Home() {
                 </Typography>
                 <Typography variant="caption" sx={{
                   fontWeight: 500,
-                  color: '#64748B',
+                  color: 'var(--text-2nd-color)',
                   fontSize: '0.85rem'
                 }}>
                   Latest updates from your team
@@ -576,10 +578,11 @@ export default function Home() {
                 size="small"
                 variant="outlined"
                 endIcon={<ArrowUpRight size={14} />}
+                onClick={() => router.push('/bugs')}
                 sx={{
                   borderRadius: 2,
-                  borderColor: '#E2E8F0',
-                  color: '#64748B',
+                  borderColor: '#e0e0e0',
+                  color: 'var(--text-2nd-color)',
                   fontWeight: 600,
                   textTransform: 'none',
                   '&:hover': {
@@ -600,18 +603,20 @@ export default function Home() {
                 const userImageSrc = user ? ImageUrl({ empphoto: user.empphoto }) : null;
                 return (
                   <React.Fragment key={activity.id || idx}>
-                    <ListItem sx={{
-                      px: 2,
-                      py: 2,
-                      borderRadius: 2.5,
-                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      cursor: 'pointer',
-                      alignItems: 'flex-start',
-                      '&:hover': {
-                        bgcolor: '#F8FAFC',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
-                      }
-                    }}>
+                    <ListItem
+                      onClick={() => activity.id && router.push(`/bugs?selectedId=${activity.id}`)}
+                      sx={{
+                        px: 2,
+                        py: 2,
+                        borderRadius: 2.5,
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        cursor: 'pointer',
+                        alignItems: 'flex-start',
+                        '&:hover': {
+                          bgcolor: '#fafafa',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)'
+                        }
+                      }}>
                       <ListItemAvatar>
                         <Avatar
                           src={userImageSrc}
@@ -622,7 +627,7 @@ export default function Home() {
                             fontSize: '0.875rem',
                             width: 40,
                             height: 40,
-                            border: '1px solid #F1F5F9'
+                            border: '1px solid #f5f5f5'
                           }}
                         >
                           {!userImageSrc && userName?.charAt(0)}
@@ -639,17 +644,21 @@ export default function Home() {
                           </Stack>
                         }
                         secondary={
-                          <Typography variant="caption" sx={{ fontWeight: 500, display: 'block', color: '#64748B', lineHeight: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 500, display: 'block', color: 'var(--text-2nd-color)', lineHeight: 1.5 }}>
                             {activity.action}
-                            <Box component="span" sx={{ color: '#94A3B8', ml: 0.5 }}>
+                            <Box component="span" sx={{ color: 'var(--text-2nd-color)', ml: 0.5 }}>
                               · {activity.time}
                             </Box>
                           </Typography>
                         }
                       />
-                      <Button
+                      {/* <Button
                         size="small"
                         variant="contained"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activity.id) router.push(`/bugs?selectedId=${activity.bugid}`);
+                        }}
                         sx={{
                           fontWeight: 700,
                           flexShrink: 0,
@@ -665,7 +674,7 @@ export default function Home() {
                         }}
                       >
                         View
-                      </Button>
+                      </Button> */}
                     </ListItem>
                     {idx < recentActivity.slice(0, 5).length - 1 && <Divider sx={{ borderStyle: 'dashed', mx: 1 }} />}
                   </React.Fragment>
