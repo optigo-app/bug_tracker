@@ -15,6 +15,7 @@ export const BugProvider = ({ children }) => {
   const [bugsLoaded, setBugsLoaded] = useState(false);
   const [reportBugSignal, setReportBugSignal] = useState(0);
   const [refreshDetailSignal, setRefreshDetailSignal] = useState(0);
+  const [dashboardScope, setDashboardScope] = useState('me');
 
   const triggerReportBug = useCallback(() => setReportBugSignal(prev => prev + 1), []);
   const triggerRefreshDetail = useCallback(() => setRefreshDetailSignal(prev => prev + 1), []);
@@ -83,6 +84,8 @@ export const BugProvider = ({ children }) => {
         triggerReportBug,
         refreshDetailSignal,
         triggerRefreshDetail,
+        dashboardScope,
+        setDashboardScope,
       }}
     >
       {children}

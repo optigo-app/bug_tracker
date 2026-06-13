@@ -6,7 +6,7 @@ export default function PriorityBadge({ priority, py = 0.35 , px = 1, fontSize =
   const priorityLabel = typeof priority === 'string' ? priority : (priority?.label || priority);
 
   // Use global priorityColors based on label (lowercase for matching)
-  const normalizedKey = priorityLabel.toLowerCase();
+  const normalizedKey = String(priorityLabel || '').toLowerCase();
   const colorConfig = priorityColors[normalizedKey] || priorityColors.normal || { color: '#6D6B77', backgroundColor: '#fafafa' };
 
   return (

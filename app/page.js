@@ -18,11 +18,14 @@ import {
   Paper,
   Stack,
   Button,
-  CircularProgress
+  ToggleButton,
+  ToggleButtonGroup,
+  Skeleton
 } from '@mui/material';
 import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
 import { checkAuth } from '@/utils/authCheck';
 import { getDashboardApi } from '@/app/api/dashboardApi';
+import { useBugContext } from '@/contexts/BugContext';
 import {
   Bug,
   ArrowUpRight,
@@ -41,7 +44,7 @@ import {
   Cell
 } from 'recharts';
 
-const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
+const StatCard = ({ title, value, subvalue, icon, color, trend, loading }) => (
   <Card sx={{
     height: '100%',
     position: 'relative',
@@ -70,66 +73,77 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
     }} />
 
     <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
-        <Box sx={{
-          p: 1.5,
-          borderRadius: 2.5,
-          background: `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)`,
-          color: 'white',
-          display: 'flex',
-          boxShadow: `0 4px 12px ${color}40`,
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            transform: 'scale(1.1) rotate(5deg)'
-          }
-        }}>
-          {icon}
-        </Box>
-        {trend && (
-          <Chip
-            label={trend}
-            size="small"
-            icon={<TrendingUp size={14} />}
-            sx={{
-              height: 26,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+      {loading ? (
+        <>
+          <Skeleton variant="circular" width={48} height={48} sx={{ mb: 2.5 }} />
+          <Skeleton variant="text" width="60%" height={16} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width="40%" height={40} sx={{ mb: 0.5 }} />
+          <Skeleton variant="text" width="80%" height={16} />
+        </>
+      ) : (
+        <>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2.5 }}>
+            <Box sx={{
+              p: 1.5,
+              borderRadius: 2.5,
+              background: `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)`,
               color: 'white',
-              border: 'none',
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
-              '& .MuiChip-icon': { color: 'white' }
-            }}
-          />
-        )}
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{
-        fontWeight: 700,
-        mb: 1,
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.08em',
-        color: 'var(--text-2nd-color)'
-      }}>
-        {title}
-      </Typography>
-      <Typography variant="h3" sx={{
-        fontWeight: 800,
-        letterSpacing: '-0.02em',
-        mb: 0.5
-      }}>
-        {value}
-      </Typography>
-      {subvalue && (
-        <Typography variant="caption" sx={{
-          mt: 0.5,
-          display: 'block',
-          fontWeight: 500,
-          color: 'var(--text-2nd-color)',
-          fontSize: '0.8rem'
-        }}>
-          {subvalue}
-        </Typography>
+              display: 'flex',
+              boxShadow: `0 4px 12px ${color}40`,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.1) rotate(5deg)'
+              }
+            }}>
+              {icon}
+            </Box>
+            {trend && (
+              <Chip
+                label={trend}
+                size="small"
+                icon={<TrendingUp size={14} />}
+                sx={{
+                  height: 26,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                  '& .MuiChip-icon': { color: 'white' }
+                }}
+              />
+            )}
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{
+            fontWeight: 700,
+            mb: 1,
+            fontSize: '0.75rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--text-2nd-color)'
+          }}>
+            {title}
+          </Typography>
+          <Typography variant="h3" sx={{
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            mb: 0.5
+          }}>
+            {value}
+          </Typography>
+          {subvalue && (
+            <Typography variant="caption" sx={{
+              mt: 0.5,
+              display: 'block',
+              fontWeight: 500,
+              color: 'var(--text-2nd-color)',
+              fontSize: '0.8rem'
+            }}>
+              {subvalue}
+            </Typography>
+          )}
+        </>
       )}
     </CardContent>
   </Card>
@@ -137,10 +151,13 @@ const StatCard = ({ title, value, subvalue, icon, color, trend }) => (
 
 export default function Home() {
   const router = useRouter();
+  const { dashboardScope, setDashboardScope } = useBugContext();
   const [stats, setStats] = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [statusData, setStatusData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [issueDistributionData, setIssueDistributionData] = useState([]);
+  const [showAllStatuses, setShowAllStatuses] = useState(false);
   const [loading, setLoading] = useState(true);
   const [taskAssignees, setTaskAssignees] = useState([]);
 
@@ -158,17 +175,28 @@ export default function Home() {
         console.error('Error parsing taskAssigneeData:', error);
       }
     }
-    fetchDashboardData();
-  }, [router]);
+    fetchDashboardData(dashboardScope);
+  }, [router, dashboardScope]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (scope) => {
     try {
       setLoading(true);
-      const response = await getDashboardApi();
+      let userId = null;
+      const userProfileData = localStorage.getItem('UserProfileData');
+      if (userProfileData) {
+        try {
+          const profile = JSON.parse(userProfileData);
+          userId = profile.id;
+        } catch (error) {
+          console.error('Error parsing UserProfileData:', error);
+        }
+      }
+      const response = await getDashboardApi({ filterType: scope, userId });
       const totalBugsResult = response?.rd || [];
       const statusCountsResult = response?.rd1 || [];
       const weeklyTrendResult = response?.rd2 || [];
       const recentActivityResult = response?.rd3 || [];
+      const allStatusCountsResult = response?.rd5 || [];
       const totalBugs = totalBugsResult[0]?.totalBugs || 0;
       const statusMap = {};
       statusCountsResult.forEach(row => {
@@ -198,6 +226,7 @@ export default function Home() {
         }
       });
       const taskBugStatusData = JSON?.parse(localStorage.getItem('taskbugstatusData'));
+      const taskAssigneeData = JSON?.parse(localStorage.getItem('taskAssigneeData')) || [];
       const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
@@ -207,6 +236,17 @@ export default function Home() {
             value: Number(count || 0),
             color: colors[index % colors.length],
             statusId
+          };
+        })
+        .sort((a, b) => b.value - a.value);
+      const issueDistribution = allStatusCountsResult
+        .map((row, index) => {
+          const label = taskBugStatusData?.find(item => String(item?.id) === String(row.statusId));
+          return {
+            name: label?.labelname || `Status ${row.statusId}`,
+            value: Number(row.count || 0),
+            color: colors[index % colors.length],
+            statusId: row.statusId
           };
         })
         .sort((a, b) => b.value - a.value);
@@ -239,7 +279,7 @@ export default function Home() {
           const oldStatusLabel = taskBugStatusData?.find(item => item.id == history.oldvalue)?.labelname || history.oldvalue;
           const newStatusLabel = taskBugStatusData?.find(item => item.id == history.newvalue)?.labelname || history.newvalue;
           action = `Status changed from ${oldStatusLabel} to ${newStatusLabel}`;
-          const newValueLower = newStatusLabel?.toLowerCase() || '';
+          const newValueLower = String(newStatusLabel || '').toLowerCase();
           if (newValueLower === 'new') {
             badge = { bg: '#FEF2F2', color: '#EF4444', label: 'NEW' };
           } else if (newValueLower === 'fixed' || newValueLower === 'closed') {
@@ -275,6 +315,7 @@ export default function Home() {
       setStats(stats);
       setWeeklyData(weeklyData);
       setStatusData(statusData);
+      setIssueDistributionData(issueDistribution);
       setRecentActivity(recentActivity);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -283,17 +324,6 @@ export default function Home() {
     }
   };
 
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', bgcolor: '#fafafa' }}>
-        <Stack alignItems="center" spacing={2}>
-          <CircularProgress size={40} thickness={4} sx={{ color: '#7367f0' }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'var(--text-2nd-color)' }}>Loading dashboard...</Typography>
-        </Stack>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{
@@ -310,6 +340,7 @@ export default function Home() {
             icon={<Bug size={24} />}
             color="#4F46E5"
             trend={stats?.bugsTrend}
+            loading={loading}
           />
         </Grid>
 
@@ -326,66 +357,140 @@ export default function Home() {
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 Status Breakdown
               </Typography>
-              <Chip
-                label={`${statusData.length} statuses`}
-                size="small"
-                sx={{ fontWeight: 700, bgcolor: '#f5f5f5', color: '#475569' }}
-              />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <ToggleButtonGroup
+                  value={dashboardScope}
+                  exclusive
+                  onChange={(e, newValue) => {
+                    if (newValue !== null) setDashboardScope(newValue);
+                  }}
+                  size="small"
+                  sx={{
+                    bgcolor: 'white',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    '& .MuiToggleButton-root': {
+                      px: 1.5,
+                      py: 0.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      color: 'text.secondary',
+                      border: '1px solid #f0f0f0',
+                      '&.Mui-selected': {
+                        bgcolor: '#7367f0',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: '#6356e5',
+                        }
+                      }
+                    }
+                  }}
+                >
+                  <ToggleButton value="me">Me</ToggleButton>
+                  <ToggleButton value="team">Team</ToggleButton>
+                </ToggleButtonGroup>
+                {statusData.length > 4 && (
+                  <Button
+                  size="small"
+                  onClick={() => setShowAllStatuses(prev => !prev)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#7367f0',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: 'rgba(115, 103, 240, 0.08)' }
+                  }}
+                >
+                  {showAllStatuses ? 'Show Less' : 'Show More'}
+                </Button>
+              )}
+              </Stack>
             </Stack>
 
-            {statusData.length > 0 ? (
+            {loading ? (
               <Grid container spacing={1.5}>
-                {statusData.map((status) => (
-                  <Grid key={status.statusId} item xs={6} sm={4} md={3} lg={2.4} >
+                {[1, 2, 3, 4].map((i) => (
+                  <Grid key={i} item xs={6} sm={4} md={3} lg={2.4}>
                     <Box sx={{
                       border: '1px solid #e0e0e0',
                       borderRadius: 2,
                       px: 1.5,
                       py: 1.25,
                       minHeight: 84,
-                      background: `linear-gradient(135deg, ${status.color}10 0%, #FFFFFF 70%)`,
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        borderColor: status.color,
-                        boxShadow: `0 6px 16px ${status.color}22`,
-                        transform: 'translateY(-2px)'
-                      }
+                      justifyContent: 'space-between'
                     }}>
-                      <Stack direction="row" alignItems="center" spacing={0.8} sx={{ minWidth: 0 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: status.color, flexShrink: 0 }} />
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: '#334155',
-                            fontWeight: 700,
-                            lineHeight: 1.2,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
-                          }}
-                          title={status.name}
-                        >
-                          {status.name}
-                        </Typography>
+                      <Stack direction="row" alignItems="center" spacing={0.8}>
+                        <Skeleton variant="circular" width={8} height={8} />
+                        <Skeleton variant="text" width="80%" height={16} />
                       </Stack>
-
-                      <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', mt: 1 }}>
-                        {status.value}
-                      </Typography>
+                      <Skeleton variant="text" width="50%" height={32} sx={{ mt: 1 }} />
                     </Box>
                   </Grid>
                 ))}
               </Grid>
             ) : (
-              <Box sx={{ py: 3, textAlign: 'center' }}>
-                <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600 }}>
-                  No status data available
-                </Typography>
-              </Box>
+              (() => {
+                const defaultStatuses = ['assigned', 'in progress', 'fixed', 'reopen'];
+                const visibleStatuses = showAllStatuses
+                  ? statusData
+                  : statusData.filter(s => defaultStatuses.includes(String(s.name).toLowerCase().trim()));
+                return visibleStatuses.length > 0 ? (
+                  <Grid container spacing={1.5}>
+                    {visibleStatuses.map((status) => (
+                      <Grid key={status.statusId} item xs={6} sm={4} md={3} lg={2.4} >
+                        <Box sx={{
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 2,
+                          px: 1.5,
+                          py: 1.25,
+                          minHeight: 84,
+                          background: `linear-gradient(135deg, ${status.color}10 0%, #FFFFFF 70%)`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: status.color,
+                            boxShadow: `0 6px 16px ${status.color}22`,
+                            transform: 'translateY(-2px)'
+                          }
+                        }}>
+                          <Stack direction="row" alignItems="center" spacing={0.8} sx={{ minWidth: 0 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: status.color, flexShrink: 0 }} />
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: '#334155',
+                                fontWeight: 700,
+                                lineHeight: 1.2,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}
+                              title={status.name}
+                            >
+                              {status.name}
+                            </Typography>
+                          </Stack>
+
+                          <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', mt: 1 }}>
+                            {status.value}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Box sx={{ py: 3, textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600 }}>
+                      No status data available
+                    </Typography>
+                  </Box>
+                );
+              })()
             )}
           </Paper>
         </Grid>
@@ -483,27 +588,21 @@ export default function Home() {
               boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
             }
           }}>
-            <Typography variant="h6" sx={{
-              fontWeight: 700,
-              mb: 0.5,
-              fontSize: '1.15rem'
-            }}>
-              Issue Distribution
-            </Typography>
-            <Typography variant="caption" sx={{
-              fontWeight: 500,
-              mb: 4,
-              display: 'block',
-              color: 'var(--text-2nd-color)',
-              fontSize: '0.85rem'
-            }}>
-              By current status
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, fontSize: '1.15rem' }}>
+                  Issue Distribution
+                </Typography>
+                <Typography variant="caption" sx={{ fontWeight: 500, display: 'block', color: 'var(--text-2nd-color)', fontSize: '0.85rem' }}>
+                  By status
+                </Typography>
+              </Box>
+            </Box>
             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={statusData}
+                    data={issueDistributionData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -511,7 +610,7 @@ export default function Home() {
                     paddingAngle={8}
                     dataKey="value"
                   >
-                    {statusData?.map((entry, index) => (
+                    {issueDistributionData?.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -525,17 +624,19 @@ export default function Home() {
                 transform: 'translate(-50%, -50%)',
                 textAlign: 'center'
               }}>
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>{stats?.totalBugs || 0}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                  {issueDistributionData.reduce((sum, item) => sum + item.value, 0)}
+                </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>TOTAL</Typography>
               </Box>
             </Box>
-            <Grid container spacing={2} sx={{ mt: 3 }}>
-              {statusData?.map((item) => (
+            <Grid container spacing={2} sx={{ mt: 3, maxHeight: 180, overflowY: 'auto' }}>
+              {issueDistributionData?.map((item) => (
                 <Grid item xs={6} key={item.name}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color }} />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.name}</Typography>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ overflow: 'hidden', mr: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
+                      <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'text.secondary' }} title={item.name}>{item.name}</Typography>
                     </Stack>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.value}</Typography>
                   </Box>

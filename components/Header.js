@@ -438,7 +438,7 @@ function HeaderContent() {
                             </Stack>
                         ) : (
                             <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Typography variant="h6" sx={{ fontWeight: 850, letterSpacing: '-0.02em', fontSize: '1.05rem', lineHeight: 1.1 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.1 }}>
                                     {getPageTitle()}
                                 </Typography>
                                 {bugCountSummary}

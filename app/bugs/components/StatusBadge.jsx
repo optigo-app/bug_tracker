@@ -6,7 +6,7 @@ export default function StatusBadge({ status }) {
   const statusLabel = typeof status === 'string' ? status : (status?.label || status);
 
   // Use global statusColors based on label (lowercase for matching)
-  const normalizedKey = statusLabel;
+  const normalizedKey = String(statusLabel || '');
   const colorConfig = statusColors[normalizedKey];
 
   return (

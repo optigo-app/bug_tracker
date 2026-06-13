@@ -159,6 +159,7 @@ GO
 					, @input_category NVARCHAR(50) = ''
 					, @input_categoryId INT = NULL
 					, @bug_filterType NVARCHAR(50) = ''
+					, @bug_userId INT = NULL
 
             BEGIN TRY
 
@@ -196,6 +197,7 @@ GO
 						,@notif_type      = ISNULL([type], '')
 						,@notif_relatedId = ISNULL(relatedId, NULL)
 						,@bug_filterType  = ISNULL(filterType, '')
+						,@bug_userId      = TRY_CAST(ISNULL(userId, NULL) AS INT)
                     FROM OPENJSON(@p)
                     WITH
                     (
@@ -236,7 +238,7 @@ GO
                 ------------------------------------------------
                 IF (@mode = 'buglist')
                 BEGIN
-                    DECLARE @appUserIdInt INT = TRY_CAST(@appuserid AS INT)
+                    DECLARE @appUserIdInt INT = COALESCE(@bug_userId, TRY_CAST(@appuserid AS INT))
 
                     IF (@bug_filterType = 'me')
                     BEGIN
@@ -766,16 +768,23 @@ GO
                 ------------------------------------------------
                 ELSE IF (@mode = 'dashboard')
                 BEGIN
+                    SET @appUserIdInt = @bug_userId
+                    SET @whereClause = ''
+                    IF (@bug_filterType = 'me')
+                    BEGIN
+                        SET @whereClause = ' WHERE assigneeId = ' + ISNULL(CAST(@appUserIdInt AS NVARCHAR(20)), 'NULL')
+                    END
+
                     SET @SQL = '
                         -- Total bugs count
                         SELECT COUNT(1) AS totalBugs
-                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK);
+                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK) ' + @whereClause + ';
 
                         -- Bugs by status
                         SELECT
                             statusId,
                             COUNT(1) AS count
-                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK)
+                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK) ' + @whereClause + '
                         GROUP BY statusId;
 
                         -- Weekly trend (last 7 days)
@@ -784,7 +793,8 @@ GO
                             DATEPART(WEEKDAY, entrydate) AS dayIndex,
                             COUNT(1)                     AS bugs
                         FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK)
-                        WHERE entrydate >= DATEADD(DAY, -7, CAST(GETDATE() AS DATE))
+                        WHERE entrydate >= DATEADD(DAY, -7, CAST(GETDATE() AS DATE)) ' + 
+                        IIF(@whereClause = '', '', REPLACE(@whereClause, 'WHERE', 'AND')) + '
                         GROUP BY CAST(entrydate AS DATE), DATEPART(WEEKDAY, entrydate)
                         ORDER BY date ASC;
 
@@ -799,7 +809,21 @@ GO
                             bh.remark,
                             bh.entrydate
                         FROM [' + @DBNAME + '].[dbo].[bug_history] bh WITH (NOLOCK)
-                        ORDER BY bh.entrydate DESC
+                        ORDER BY bh.entrydate DESC;
+
+                        -- Bugs by employee
+                        SELECT
+                            assigneeId,
+                            COUNT(1) AS count
+                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK) ' + @whereClause + '
+                        GROUP BY assigneeId;
+
+                        -- All bugs status counts (always team, for Issue Distribution)
+                        SELECT
+                            statusId,
+                            COUNT(1) AS count
+                        FROM [' + @DBNAME + '].[dbo].[bug_bugs] WITH (NOLOCK)
+                        GROUP BY statusId;
                     '
                     PRINT(@SQL)
                     EXEC (@SQL)

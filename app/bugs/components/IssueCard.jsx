@@ -8,7 +8,7 @@ import { formatDate } from '../constants';
 export default function IssueCard({ bug, isSelected, onClick, reassignInfo, onUndoReassign }) {
   const hasComments = bug.commentCount > 0;
   const hasAttach = bug.attachmentCount > 0;
-  const priority = typeof bug.priority === 'object' ? (bug.priority?.label || '')?.toUpperCase() : (bug.priority || '')?.toUpperCase();
+  const priority = typeof bug.priority === 'object' ? String(bug.priority?.label || '').toUpperCase() : String(bug.priority || '').toUpperCase();
   const isHighPriority = priority === 'CRITICAL';
 
   // Timer state for reassignment undo

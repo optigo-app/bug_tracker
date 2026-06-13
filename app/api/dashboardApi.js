@@ -1,8 +1,8 @@
 import { bugApi } from './bugApi';
 
-export const getDashboardApi = async () => {
+export const getDashboardApi = async (params = {}) => {
   return bugApi('dashboard', {
-    p: {},
+    p: params,
     f: 'Bug Management (bugmaster)',
   });
 };
