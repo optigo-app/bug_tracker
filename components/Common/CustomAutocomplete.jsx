@@ -19,6 +19,7 @@ export default function CustomAutocomplete({
   helperText = "",
   getOptionLabel = (option) => option.label || option,
   isOptionEqualToValue = (option, value) => option?.value === value?.value || option === value,
+  getOptionDisabled,
 }) {
   const [selectedValue, setSelectedValue] = useState(null);
 
@@ -110,6 +111,7 @@ export default function CustomAutocomplete({
         options={options}
         getOptionLabel={safeGetOptionLabel}
         isOptionEqualToValue={safeIsOptionEqualToValue}
+        getOptionDisabled={getOptionDisabled}
         value={selectedValue}
         onChange={handleChange}
         slotProps={{

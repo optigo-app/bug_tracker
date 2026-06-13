@@ -159,6 +159,7 @@ GO
 					, @input_category NVARCHAR(50) = ''
 					, @input_categoryId INT = NULL
 					, @bug_filterType NVARCHAR(50) = ''
+					, @bug_filterBy NVARCHAR(50) = ''
 					, @bug_userId INT = NULL
 
             BEGIN TRY
@@ -197,6 +198,7 @@ GO
 						,@notif_type      = ISNULL([type], '')
 						,@notif_relatedId = ISNULL(relatedId, NULL)
 						,@bug_filterType  = ISNULL(filterType, '')
+						,@bug_filterBy    = ISNULL(filterBy, '')
 						,@bug_userId      = TRY_CAST(ISNULL(userId, NULL) AS INT)
                     FROM OPENJSON(@p)
                     WITH
@@ -226,6 +228,7 @@ GO
 						,[type] NVARCHAR(50) '$.type'
 						,relatedId INT '$.relatedId'         
 						,filterType NVARCHAR(50) '$.filterType'
+						,filterBy NVARCHAR(50) '$.filterBy'
                     )
 
                     SET @bug_statusId   = COALESCE(@input_statusId, NULL)
@@ -772,7 +775,10 @@ GO
                     SET @whereClause = ''
                     IF (@bug_filterType = 'me')
                     BEGIN
-                        SET @whereClause = ' WHERE assigneeId = ' + ISNULL(CAST(@appUserIdInt AS NVARCHAR(20)), 'NULL')
+                        IF (@bug_filterBy = 'reporter')
+                            SET @whereClause = ' WHERE reporterId = ' + ISNULL(CAST(@appUserIdInt AS NVARCHAR(20)), 'NULL')
+                        ELSE
+                            SET @whereClause = ' WHERE assigneeId = ' + ISNULL(CAST(@appUserIdInt AS NVARCHAR(20)), 'NULL')
                     END
 
                     SET @SQL = '

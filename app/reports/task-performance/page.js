@@ -27,7 +27,7 @@ const page = () => {
         >
           <BarChart3 size={64} color="#6366F1" />
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#1E293B' }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 2, color: '#444050' }}>
           Task Performance Report Coming Soon
         </Typography>
         <Typography variant="body1" sx={{ color: 'var(--text-2nd-color)', maxWidth: 500 }}>

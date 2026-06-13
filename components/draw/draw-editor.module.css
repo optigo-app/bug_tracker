@@ -33,7 +33,187 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  gap: 12px;
+}
+
+.topbar {
+  height: 64px;
+}
+
+.topbarToolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbarColorRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbarColorDot {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.topbarColorDot:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.topbarColorDotActive {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.15);
+}
+
+.topbarColorDotInner {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.topbarStrokeRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.topbarStrokeBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.topbarStrokeBtn:hover {
+  border-color: rgba(115, 103, 240, 0.3);
+  transform: scale(1.1);
+}
+
+.topbarStrokeBtnActive {
+  border-color: #7367f0;
+  box-shadow: 0 0 0 2px rgba(115, 103, 240, 0.15);
+  background: rgba(115, 103, 240, 0.08);
+}
+
+.topbarToolInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
+}
+
+.topbarToolIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(115, 103, 240, 0.1);
+  color: #7367f0;
+}
+
+.topbarToolLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2f2f2f;
+  white-space: nowrap;
+}
+
+.topbarIconRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.topbarIconBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.topbarIconBtn:hover {
+  background: #ffffff;
+  border-color: rgba(115, 103, 240, 0.25);
+  transform: scale(1.1);
+}
+
+.topbarIconBtnActive {
+  border-color: #7367f0;
+  box-shadow: 0 0 0 2px rgba(115, 103, 240, 0.15);
+  background: rgba(115, 103, 240, 0.06);
+}
+
+.topbarSizeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.topbarSizeBtn {
+  min-width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #5b6470;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+
+.topbarSizeBtn:hover {
+  background: rgba(15, 23, 42, 0.05);
+  transform: scale(1.05);
+}
+
+.topbarSizeBtnActive {
+  background: rgba(115, 103, 240, 0.12) !important;
+  color: #7367f0;
 }
 
 .topbarChip {

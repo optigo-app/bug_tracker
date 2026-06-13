@@ -31,6 +31,7 @@ export const filterStatusDataByRole = (
   const isDeveloper = designation.includes('developer');
   const isTester =
     designation.includes('tester') ||
+    designation.includes('test') ||
     designation.includes('qa');
 
   const isAdmin = designation.includes('admin');

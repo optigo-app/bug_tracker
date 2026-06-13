@@ -102,7 +102,7 @@ export default function AttachmentsSection({ attachments = [], onAttachmentClick
                                         variant="caption"
                                         sx={{
                                             fontWeight: 700,
-                                            color: '#1E293B',
+                                            color: '#444050',
                                             display: 'block',
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis',

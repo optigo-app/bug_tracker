@@ -97,7 +97,7 @@ export default function AdvancedFilterDialog({
           py: 1.5
         }}
       >
-        <Typography sx={{ fontWeight: 700, color: '#1E293B', fontSize: '1rem' }}>
+        <Typography sx={{ fontWeight: 700, color: '#444050', fontSize: '1rem' }}>
           Advanced Filters
         </Typography>
         <IconButton size="small" onClick={onClose} sx={{ color: 'var(--text-2nd-color)' }}>

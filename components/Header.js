@@ -581,7 +581,7 @@ function HeaderContent() {
                                             <ListItemText
                                                 primary={
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Typography variant="body2" sx={{ fontWeight: n.isRead ? 500 : 700, color: '#1E293B', fontSize: '0.82rem', flex: 1 }}>
+                                                        <Typography variant="body2" sx={{ fontWeight: n.isRead ? 500 : 700, color: '#444050', fontSize: '0.82rem', flex: 1 }}>
                                                             {n.title}
                                                         </Typography>
                                                         {!n.isRead && (

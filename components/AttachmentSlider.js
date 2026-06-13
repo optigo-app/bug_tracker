@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Box, Typography, IconButton, Paper, Skeleton } from '@mui/material';
-import { ChevronLeft, ChevronRight, Download, File, ExternalLink, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, File, ExternalLink, MessageSquare, Play } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, EffectFade } from 'swiper/modules';
 import Stack from '@mui/material/Stack';
@@ -25,17 +25,21 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
   // Map API attachment format to expected structure
   const mappedAttachments = attachments.map(f => {
     const filePath = f.url || f.filepath || '';
+    const inferredType = getMimeTypeFromUrl(filePath);
+    const apiType = (f.type || '').toLowerCase();
+    const type = apiType && apiType !== 'application/octet-stream' ? f.type : inferredType;
     return {
       ...f,
       name: f.name || getFileNameFromUrl(filePath),
       url: filePath,
-      type: f.type || getMimeTypeFromUrl(filePath)
+      type
     };
   });
 
   if (!mappedAttachments || mappedAttachments.length === 0) return null;
 
   const isImage = (type) => (type || '').toLowerCase().startsWith('image') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes((type || '').toLowerCase());
+  const isVideo = (type) => (type || '').toLowerCase().startsWith('video') || ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi'].includes((type || '').toLowerCase());
 
   return (
     <Box sx={{ width: '100%', position: 'relative' }}>
@@ -104,6 +108,44 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
                     }}
                   />
                 </>
+              ) : isVideo(file.type) ? (
+                <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box
+                    component="video"
+                    src={file.url}
+                    controls
+                    preload="metadata"
+                    crossOrigin="anonymous"
+                    sx={{
+                      width: '100%',
+                      maxHeight: '600px',
+                      objectFit: 'contain',
+                      borderRadius: '8px',
+                      border: '1px solid #EAECEF',
+                      bgcolor: '#000',
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      bgcolor: 'rgba(0,0,0,0.5)',
+                      backdropFilter: 'blur(4px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                      zIndex: 2,
+                    }}
+                  >
+                    <Play size={24} color="#fff" fill="#fff" />
+                  </Box>
+                </Box>
               ) : (
                 <Stack alignItems="center" spacing={2}>
                   <Box sx={{ 
@@ -115,7 +157,7 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
                   }}>
                     <File size={64} color="#6366F1" />
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E293B', letterSpacing: '-0.01em' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#444050', letterSpacing: '-0.01em' }}>
                     {file.name}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)', fontWeight: 600 }}>
@@ -162,7 +204,7 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
                 bgcolor: 'rgba(255, 255, 255, 0.7)',
                 backdropFilter: 'blur(8px)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                color: '#1E293B',
+                color: '#444050',
                 width: 32,
                 height: 32,
                 '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)' },
@@ -182,7 +224,7 @@ const AttachmentSlider = ({ attachments = [], onImageClick }) => {
                 bgcolor: 'rgba(255, 255, 255, 0.7)',
                 backdropFilter: 'blur(8px)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                color: '#1E293B',
+                color: '#444050',
                 width: 32,
                 height: 32,
                 '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)' },

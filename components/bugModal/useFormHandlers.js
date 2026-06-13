@@ -65,8 +65,6 @@ export const handleSubmit = async (e, formData, attachments, currentUser, isEdit
     attachments: finalAttachments,
   };
 
-  console.log("payload",payload)
-
   try {
     let response;
     if (isEdit) {

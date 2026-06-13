@@ -159,11 +159,22 @@ export default function DrawEditor({ onSave, onSaveAndNew, onClose, initialImage
   return (
     <div className={styles.editorShell} ref={editorShellRef}>
       <DrawTopbar
+        activeTool={editor.activeTool}
+        applyStylesToSelected={editor.applyStylesToSelected}
+        currentColor={editor.currentColor}
+        currentDash={editor.currentDash}
+        currentFontSize={editor.currentFontSize}
+        currentStrokeWidth={editor.currentStrokeWidth}
         onExportPng={handleExportPng}
         onExportSvg={handleExportSvg}
         onSave={handleContinueSave}
         onSaveAndNew={onSaveAndNew ? handleSaveAndNew : null}
         onClose={onClose}
+        selectedShape={editor.selectedShape}
+        setCurrentColor={editor.setCurrentColor}
+        setCurrentDash={editor.setCurrentDash}
+        setCurrentFontSize={editor.setCurrentFontSize}
+        setCurrentStrokeWidth={editor.setCurrentStrokeWidth}
       />
 
       <main className={styles.canvasArea}>

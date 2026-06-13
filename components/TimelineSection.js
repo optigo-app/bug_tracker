@@ -97,12 +97,11 @@ export default function TimelineSection({ timeline = [], getUserName, showFullTi
                         <Box sx={{ position: 'absolute', left: 6, top: 8, bottom: 8, width: 1.5, bgcolor: '#EAECEF', borderRadius: 1 }} />
                         <Stack spacing={2.5}>
                             {(showFullTimeline ? transformedTimeline : transformedTimeline.slice(0, 5)).map((item, i) => {  
-                                console.log("kdjskj", item)
                                 const userName = getUserName ? getUserName(item.userId) : item.user;
                                 return (
                                     <Box key={item.id ?? i} sx={{ position: 'relative' }}>
                                         <Box sx={{ position: 'absolute', left: -19, top: 5, width: 9, height: 9, borderRadius: '50%', bgcolor: i === 0 ? '#4F46E5' : '#CBD5E1', border: '2px solid white', boxShadow: i === 0 ? '0 0 0 2px #C7D2FE' : 'none', zIndex: 1 }} />
-                                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#1E293B', mb: 0.25, lineHeight: 1.4 }}>
+                                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#444050', mb: 0.25, lineHeight: 1.4 }}>
                                             {userName}{' '}
                                             <Box component="span" sx={{ fontWeight: 500, color: 'var(--text-2nd-color)' }}>{item.action}</Box>
                                         </Typography>

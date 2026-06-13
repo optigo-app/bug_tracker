@@ -35,6 +35,15 @@ a {
   text-decoration: none;
 }
 
+/* Remove focus outline globally — prevents black border on page load */
+*:focus-visible {
+  outline: none !important;
+}
+
+*:focus {
+  outline: none !important;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;

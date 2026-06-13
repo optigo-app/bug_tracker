@@ -325,11 +325,11 @@ export default function IssueDetailPanel({
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 {/* Title with bugNo inline */}
                 <Typography sx={{
-                  fontWeight: 800,
+                  fontWeight: 700,
                   letterSpacing: '-0.02em',
                   lineHeight: 1.3,
                   fontSize: '1.25rem',
-                  color: '#1E293B',
+                
                   overflow: 'hidden',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
@@ -339,7 +339,7 @@ export default function IssueDetailPanel({
                     <>
                       <Typography component="span" sx={{
                         fontSize: '0.85rem',
-                        fontWeight: 800,
+                        fontWeight: 700,
                         color: '#7367f0',
                         fontFamily: 'monospace',
                         letterSpacing: '0.05em',
@@ -534,7 +534,7 @@ export default function IssueDetailPanel({
                     variant="contained"
                     startIcon={<CheckCircle2 size={15} />}
                     onClick={() => {
-                      const closedStatus = getStatusByLabel('Verified');
+                      const closedStatus = getStatusByLabel('Closed');
                       if (closedStatus) { setPendingStatus(closedStatus.id); setStatusOpen(true); }
                     }}
                     disabled={saving}
@@ -801,7 +801,7 @@ export default function IssueDetailPanel({
                             }
                           }}>
                             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1, flexWrap: 'wrap' }}>
-                              <Typography sx={{ fontWeight: 800, color: '#1E293B', fontSize: '0.82rem' }}>
+                              <Typography sx={{ fontWeight: 800, fontSize: '0.82rem' }}>
                                 {commentMemberName}
                               </Typography>
                               <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#CBD5E1' }} />
@@ -971,21 +971,37 @@ export default function IssueDetailPanel({
                             }
                           }}
                         >
-                          {statusData.map(s => (
-                            <MenuItem
-                              key={s.id}
-                              value={s.id}
-                              sx={{
-                                fontWeight: 600, fontSize: '0.78rem', textTransform: 'capitalize',
-                                borderRadius: '6px', mx: 0.75, my: 0.2, transition: 'all 0.15s ease',
-                                '&:hover': { backgroundColor: '#EAECEF' },
-                                '&.Mui-selected': { backgroundColor: 'rgba(115, 103, 240, 0.08)', color: '#7367f0', fontWeight: 700 },
-                                '&.Mui-selected:hover': { backgroundColor: 'rgba(115, 103, 240, 0.12)' }
-                              }}
-                            >
-                              {s.labelname}
-                            </MenuItem>
-                          ))}
+                          {(() => {
+                            const desig = String(currentUser?.designation || '').toLowerCase();
+                            const isDeveloper = desig.includes('developer');
+                            const isTester = desig.includes('tester') || desig.includes('test') || desig.includes('qa');
+                            const isAdmin = desig.includes('admin');
+                            const devAllowed = ['In Progress', 'Fixed', 'Ready For Test', 'Rejected'];
+                            const testerAllowed = ['New', 'Assigned', 'Verified', 'Closed', 'Reopen', 'Rejected'];
+                            const currentId = String(bug.statusId || getStatusByLabel(currentStatusLabel)?.id || '');
+                            return statusData.map(s => {
+                              const isAllowed = isAdmin
+                                || (isDeveloper && (devAllowed.includes(s.labelname) || String(s.id) === currentId))
+                                || (isTester && (testerAllowed.includes(s.labelname) || String(s.id) === currentId))
+                                || (!isDeveloper && !isTester && !isAdmin); // fallback: unrestricted for unknown roles
+                              return (
+                                <MenuItem
+                                  key={s.id}
+                                  value={s.id}
+                                  disabled={!isAllowed}
+                                  sx={{
+                                    fontWeight: 600, fontSize: '0.78rem', textTransform: 'capitalize',
+                                    borderRadius: '6px', mx: 0.75, my: 0.2, transition: 'all 0.15s ease',
+                                    '&:hover': { backgroundColor: '#EAECEF' },
+                                    '&.Mui-selected': { backgroundColor: 'rgba(115, 103, 240, 0.08)', color: '#7367f0', fontWeight: 700 },
+                                    '&.Mui-selected:hover': { backgroundColor: 'rgba(115, 103, 240, 0.12)' }
+                                  }}
+                                >
+                                  {s.labelname}
+                                </MenuItem>
+                              );
+                            });
+                          })()}
                         </Select>
                       ) : <StatusBadge status={bug.status} />}
                     </Box>
@@ -1077,7 +1093,7 @@ export default function IssueDetailPanel({
                           {!aImageSrc && assigneeDisplayName.charAt(0)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography className="assignee-name" sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', lineHeight: 1.2, transition: 'color 0.2s' }} noWrap>
+                          <Typography className="assignee-name" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2, transition: 'color 0.2s' }} noWrap>
                             {assigneeDisplayName || 'Unassigned'}
                           </Typography>
                           <Typography sx={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 500 }} noWrap>
@@ -1103,7 +1119,7 @@ export default function IssueDetailPanel({
                           {!rImageSrc && reporterDisplayName.charAt(0)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', lineHeight: 1.2 }} noWrap>
+                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }} noWrap>
                             {reporterDisplayName}
                           </Typography>
                           <Typography sx={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 500 }} noWrap>
@@ -1174,7 +1190,7 @@ export default function IssueDetailPanel({
                         <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.25, letterSpacing: '0.02em' }}>
                           Created
                         </Typography>
-                        <Typography sx={{ fontWeight: 700, color: '#1E293B', fontSize: '0.85rem' }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
                           {formatDate(bug.entrydate)}
                         </Typography>
                       </Box>
@@ -1184,7 +1200,7 @@ export default function IssueDetailPanel({
                         </Typography>
                         <Typography sx={{
                           fontWeight: 700,
-                          color: bug.dueDate && bug.dueDate !== 'Not set' ? '#EA5455' : '#1E293B',
+                          color: bug.dueDate && bug.dueDate !== 'Not set' ? '#EA5455' : '#444050',
                           fontSize: '0.85rem'
                         }}>
                           {formatDate(bug.dueDate)}

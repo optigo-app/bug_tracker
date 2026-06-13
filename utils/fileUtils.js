@@ -45,6 +45,11 @@ export const getMimeTypeFromUrl = (url = '') => {
     return 'application/vnd.ms-excel';
   }
 
+  const videoExt = ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi'];
+  if (videoExt.includes(ext)) {
+    return `video/${ext === 'mov' ? 'quicktime' : ext}`;
+  }
+
   return 'application/octet-stream';
 };
 

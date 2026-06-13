@@ -65,7 +65,7 @@ export default function CommentSection({
                                     </Avatar>
                                     <Box sx={{ flex: 1 }}>
                                         <Stack direction="row" spacing={1.5} alignItems="baseline" sx={{ mb: 0.75 }}>
-                                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E293B' }}>
+                                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#444050' }}>
                                                 {userName}
                                             </Typography>
                                             <Typography variant="caption" sx={{ color: 'var(--text-2nd-color)', fontWeight: 500 }}>

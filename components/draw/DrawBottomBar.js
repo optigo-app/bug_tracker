@@ -66,7 +66,7 @@ export default function DrawBottomBar({
 
     setActiveTool(id);
 
-    if (id === "text" && selectedShape?.type === "text") {
+    if ((id === "text" || id === "note") && (selectedShape?.type === "text" || selectedShape?.type === "note")) {
       beginTextEdit({ x: selectedShape.x, y: selectedShape.y });
     }
   };

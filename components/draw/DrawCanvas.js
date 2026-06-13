@@ -67,19 +67,16 @@ export default function DrawCanvas({
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9.5"
-            refY="5"
+            markerWidth="12"
+            markerHeight="12"
+            refX="10"
+            refY="6"
             orient="auto-start-reverse"
           >
             <path
-              d="M 0 0 L 10 5 L 0 10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              d="M 0 0 L 12 6 L 0 12 Z"
+              fill="currentColor"
+              stroke="none"
             />
           </marker>
           <pattern
@@ -91,6 +88,9 @@ export default function DrawCanvas({
           >
             <line x1="0" y1="0" x2="0" y2="8" stroke="currentColor" strokeWidth="1" />
           </pattern>
+          <filter id="note-shadow" x="-10%" y="-10%" width="130%" height="130%">
+            <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="rgba(0,0,0,0.18)" />
+          </filter>
         </defs>
 
         <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
@@ -199,7 +199,59 @@ export default function DrawCanvas({
                   />
                 )}
 
-                {(shape.type === "text" || shape.type === "note") && (
+                {shape.type === "note" && (
+                  <g filter="url(#note-shadow)">
+                    <rect
+                      x={shape.x}
+                      y={shape.y}
+                      width={shape.w}
+                      height={shape.h}
+                      rx="6"
+                      ry="6"
+                      fill={shape.backgroundColor && shape.backgroundColor !== "transparent" ? shape.backgroundColor : "#f3ad47"}
+                      stroke="none"
+                    />
+                    <path
+                      d={`M ${shape.x + shape.w} ${shape.y + shape.h - 14} L ${shape.x + shape.w} ${shape.y + shape.h} L ${shape.x + shape.w - 14} ${shape.y + shape.h} Z`}
+                      fill="rgba(0,0,0,0.08)"
+                      stroke="none"
+                    />
+                    <foreignObject
+                      x={shape.x}
+                      y={shape.y}
+                      width={shape.w}
+                      height={shape.h}
+                      pointerEvents="none"
+                    >
+                      <div
+                        xmlns="http://www.w3.org/1999/xhtml"
+                        style={{
+                          color: shape.color,
+                          fontSize: `${shape.fontSize || 18}px`,
+                          fontFamily: getFontFamily(shape.font),
+                          textAlign: shape.align === 'start' ? 'left' : shape.align === 'end' ? 'right' : 'center',
+                          textTransform: shape.textTransform || 'none',
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: shape.align === 'start' ? 'flex-start' : shape.align === 'end' ? 'flex-end' : 'center',
+                          padding: '10px',
+                          wordBreak: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          userSelect: 'none',
+                          fontWeight: shape.fontWeight || 'normal',
+                          fontStyle: shape.fontStyle || 'normal',
+                          textDecoration: shape.textDecoration || 'none'
+                        }}
+                      >
+                        {shape.text}
+                      </div>
+                    </foreignObject>
+                  </g>
+                )}
+
+                {shape.type === "text" && (
                   <g>
                     <rect
                       x={shape.x}
@@ -413,7 +465,7 @@ export default function DrawCanvas({
             top: editingText.y * viewport.scale + viewport.y,
             width: editingText.w * viewport.scale,
             height: editingText.h * viewport.scale,
-            color: selectedShape?.type === "text" ? (selectedShape.color || currentColor) : currentColor,
+            color: (selectedShape?.type === "text" || selectedShape?.type === "note") ? (selectedShape.color || currentColor) : currentColor,
             textAlign: 'left',
             textTransform: selectedShape?.textTransform || currentTextTransform || 'none',
             fontSize: `${(selectedShape?.fontSize || currentFontSize || 18) * viewport.scale}px`,
@@ -447,7 +499,7 @@ export default function DrawCanvas({
 }
 
 function getFill(shape) {
-  if (shape.type === "draw" || shape.type === "arrow" || shape.type === "text") return "none";
+  if (shape.type === "draw" || shape.type === "arrow" || shape.type === "text" || shape.type === "note") return "none";
   if (shape.backgroundColor) return shape.backgroundColor;
   const fill = shape.fill || "none";
   if (fill === "none") return "transparent";

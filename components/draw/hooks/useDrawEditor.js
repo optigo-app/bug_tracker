@@ -228,7 +228,7 @@ export function useDrawEditor() {
     setPanelMessage("");
     const existingText =
       shapeOverride ||
-      (selectedShape && selectedShape.type === "text"
+      (selectedShape && (selectedShape.type === "text" || selectedShape.type === "note")
         ? selectedShape
         : null);
 
@@ -240,15 +240,16 @@ export function useDrawEditor() {
         x: existingText.x,
         y: existingText.y,
         w: nextWidth,
-        h: nextHeight
+        h: nextHeight,
+        type: existingText.type,
       });
       setDraftText(String(existingText.text ?? ""));
       return;
     }
 
-    setEditingText({ id: null, x: point.x, y: point.y, w: 200, h: 120 });
+    setEditingText({ id: null, x: point.x, y: point.y, w: 200, h: 120, type: activeTool === "note" ? "note" : "text" });
     setDraftText("");
-  }, [selectedShape]);
+  }, [selectedShape, activeTool]);
 
   const commitTextEdit = useCallback(() => {
     if (!editingText) return;
@@ -540,7 +541,7 @@ export function useDrawEditor() {
   }, []);
 
   const updateSelectedText = useCallback((text) => {
-    if (!selectedShape || selectedShape.type !== "text") return;
+    if (!selectedShape || (selectedShape.type !== "text" && selectedShape.type !== "note")) return;
     const previousShapes = shapesRef.current;
     const nextShapes = previousShapes.map((shape) =>
       shape.id === selectedShape.id ? { ...shape, text } : shape
@@ -556,9 +557,10 @@ export function useDrawEditor() {
 
     const center = getViewportCenter(viewportRef.current, rect);
     const previousShapes = shapesRef.current;
+    const isNote = activeTool === "note";
     const newShape = {
-      id: generateId("text"),
-      type: "text",
+      id: generateId(isNote ? "note" : "text"),
+      type: isNote ? "note" : "text",
       x: center.x - 100,
       y: center.y - 60,
       w: 200,
@@ -572,7 +574,7 @@ export function useDrawEditor() {
       textDecoration: currentTextDecoration,
       align: currentAlign,
       fill: currentFill,
-      backgroundColor: activeTool === "note" ? "#f3ad47" : currentBackgroundColor,
+      backgroundColor: isNote ? "#f3ad47" : currentBackgroundColor,
       fontSize: currentFontSize,
       textTransform: currentTextTransform,
       dash: currentDash,
@@ -809,7 +811,7 @@ export function useDrawEditor() {
     if (
       targetShape &&
       event.detail >= 2 &&
-      targetShape.type === "text"
+      (targetShape.type === "text" || targetShape.type === "note")
     ) {
       setSelectedId(targetId);
       beginTextEdit({ x: targetShape.x, y: targetShape.y }, targetShape);
@@ -817,9 +819,9 @@ export function useDrawEditor() {
     }
 
     if (
-      activeTool === "text" &&
+      (activeTool === "text" || activeTool === "note") &&
       targetShape &&
-      targetShape.type === "text"
+      (targetShape.type === "text" || targetShape.type === "note")
     ) {
       setSelectedId(targetId);
       return;
@@ -880,11 +882,12 @@ export function useDrawEditor() {
       return;
     }
 
-    if (activeTool === "text") {
-      const shapeId = generateId("text");
+    if (activeTool === "text" || activeTool === "note") {
+      const shapeId = generateId(activeTool === "note" ? "note" : "text");
+      const isNote = activeTool === "note";
       const newShape = {
         id: shapeId,
-        type: "text",
+        type: isNote ? "note" : "text",
         x: point.x,
         y: point.y,
         w: 0,
@@ -893,11 +896,16 @@ export function useDrawEditor() {
         color: currentColor,
         strokeWidth: currentStrokeWidth,
         fill: currentFill,
-        backgroundColor: currentBackgroundColor,
+        backgroundColor: isNote ? "#f3ad47" : currentBackgroundColor,
         dash: currentDash,
         font: currentFont,
         align: currentAlign,
         arrowHead: currentArrowHead,
+        fontSize: currentFontSize,
+        fontWeight: currentFontWeight,
+        fontStyle: currentFontStyle,
+        textDecoration: currentTextDecoration,
+        textTransform: currentTextTransform,
       };
       const nextShapes = [...previousShapes, newShape];
       setShapes(nextShapes);
@@ -994,6 +1002,9 @@ export function useDrawEditor() {
     currentFontSize,
     currentTextTransform,
     currentFont,
+    currentFontWeight,
+    currentFontStyle,
+    currentTextDecoration,
     currentShapeType,
     currentStrokeWidth,
     currentArrowHead,
@@ -1177,7 +1188,7 @@ export function useDrawEditor() {
     const targetShape = shapesRef.current.find((shape) => shape.id === resolvedId);
     if (!targetShape) return;
 
-    if (targetShape.type === "text") {
+    if (targetShape.type === "text" || targetShape.type === "note") {
       interactionRef.current = null;
       setSelectedId(resolvedId);
       setActiveTool("select");

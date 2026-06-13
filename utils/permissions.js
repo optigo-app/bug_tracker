@@ -20,7 +20,7 @@ export const getRole = (u) => {
     if (!u || !u.designation) return null;
     const desig = u.designation.toLowerCase();
     if (desig.includes('developer')) return ROLES.DEV;
-    if (desig.includes('tester') || desig.includes('qa')) return ROLES.TESTER;
+    if (desig.includes('tester') || desig.includes('test') || desig.includes('qa')) return ROLES.TESTER;
     if (desig.includes('admin')) return ROLES.ADMIN;
     if (desig.includes('project manager') || desig === 'pm' || desig === 'project_manager') return ROLES.PM;
     return desig;

@@ -6,35 +6,17 @@ import {
   Italic,
   Strikethrough,
   Minus,
-  Plus,
   Square,
   Ban,
-  Pencil,
-  PaintBucket,
   MoveRight,
   MoveLeft,
   MoveHorizontal,
 } from "lucide-react";
-import { useState } from "react";
 import { Select, MenuItem } from "@mui/material";
 import DrawShapeMenu from "./DrawShapeMenu";
-import { COLORS, DASH_STYLES, FILL_STYLES, FONT_FAMILIES, TEXT_ALIGNMENTS } from "./constants";
+import { COLORS, FONT_FAMILIES, TEXT_ALIGNMENTS } from "./constants";
 import { SHAPE_OPTIONS } from "./shapeOptions";
 import styles from "./draw-editor.module.css";
-
-const SIZE_OPTIONS = [
-  { label: "12", value: 12 },
-  { label: "14", value: 14 },
-  { label: "16", value: 16 },
-  { label: "20", value: 20 },
-  { label: "24", value: 24 },
-  { label: "32", value: 32 },
-  { label: "40", value: 40 },
-  { label: "48", value: 48 },
-  { label: "64", value: 64 },
-  { label: "80", value: 80 },
-  { label: "90", value: 90 },
-];
 
 export default function DrawPropertiesPanel({
   activeTool,
@@ -78,7 +60,6 @@ export default function DrawPropertiesPanel({
   const shouldEditSelectedShape = Boolean(selectedShape) && activeTool === "select";
   const mode = shouldEditSelectedShape ? selectedShape.type : activeTool;
   const shouldHidePanel = !selectedShape && ["select", "pan", "eraser", "media"].includes(activeTool);
-  const [colorMode, setColorMode] = useState("stroke"); // "stroke" or "background"
 
   const handleStyleChange = (partial) => {
     if (shouldEditSelectedShape) {
@@ -100,7 +81,7 @@ export default function DrawPropertiesPanel({
       return;
     }
 
-    if (partial.color !== undefined && ["text", "note", "draw"].includes(mode) && applyColorToMode) {
+    if (partial.color !== undefined && ["text", "note", "draw", "arrow"].includes(mode) && applyColorToMode) {
       applyColorToMode(mode, partial.color);
       return;
     }
@@ -144,10 +125,7 @@ export default function DrawPropertiesPanel({
     );
   }
 
-  const showFillRow = ["draw", "arrow", "rect", "ellipse", "triangle", "diamond", "shape", "note"].includes(mode);
   const showBackgroundRow = ["text", "rect", "ellipse", "triangle", "diamond", "shape", "note"].includes(mode);
-  const showDashRow = ["draw", "arrow", "rect", "ellipse", "triangle", "diamond", "shape", "note"].includes(mode);
-  const showFontRow = ["text", "note", "arrow"].includes(mode);
   const showTextTransformRow = ["text", "note"].includes(mode);
   const showAlignRow = ["text", "note"].includes(mode);
   const showShapeRow = mode === "shape" || SHAPE_OPTIONS.some((shape) => shape.value === mode);
@@ -189,50 +167,9 @@ export default function DrawPropertiesPanel({
           />
         ) : null}
 
-        <div className={styles.compactSection}>
-          <div className={styles.propertyGrid}>
-
-            {COLORS.map((color) => (
-              <button
-                key={color}
-                className={`${styles.colorDot} ${colorMode === "stroke"
-                  ? (getActiveValue("color", currentColor) === color ? styles.colorDotActive : "")
-                  : (getActiveValue("backgroundColor", currentBackgroundColor) === color ? styles.colorDotActive : "")
-                  }`}
-                onClick={() => {
-                  if (colorMode === "stroke") {
-                    handleStyleChange({ color });
-                  } else {
-                    handleStyleChange({ backgroundColor: color });
-                  }
-                }}
-              >
-                <span
-                  className={styles.colorDotInner}
-                  style={{ backgroundColor: color }}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-
         {showBackgroundRow && (
           <div className={styles.compactSection}>
-            <div className={styles.iconGrid}>
-              <button
-                className={`${styles.gridIconButton} ${colorMode === "stroke" ? styles.gridIconButtonActive : ""}`}
-                onClick={() => setColorMode("stroke")}
-                title={mode === "text" || mode === "note" ? "Text Color" : "Stroke Color"}
-              >
-                <Pencil size={16} strokeWidth={2.5} />
-              </button>
-              <button
-                className={`${styles.gridIconButton} ${colorMode === "background" ? styles.gridIconButtonActive : ""}`}
-                onClick={() => setColorMode("background")}
-                title="Background Color"
-              >
-                <PaintBucket size={16} strokeWidth={2.5} />
-              </button>
+            <div className={styles.iconGrid} style={{ marginBottom: 8 }}>
               <button
                 className={`${styles.gridIconButton} ${getActiveValue("backgroundColor", currentBackgroundColor) === "transparent" ? styles.gridIconButtonActive : ""}`}
                 onClick={() => handleStyleChange({ backgroundColor: "transparent" })}
@@ -241,87 +178,23 @@ export default function DrawPropertiesPanel({
                 <Ban size={16} strokeWidth={2.5} />
               </button>
             </div>
-          </div>
-        )}
-        {!showFontRow && (
-          <div className={styles.compactSection}>
-            <div className={styles.sliderRow}>
-              <Minus size={14} />
-              <input
-                type="range"
-                min="1"
-                max="12"
-                step="1"
-                value={getActiveValue("strokeWidth", currentStrokeWidth)}
-                className={styles.thicknessSlider}
-                onChange={(event) =>
-                  handleStyleChange({ strokeWidth: parseInt(event.target.value, 10) })
-                }
-              />
-              <Plus size={14} />
-            </div>
-          </div>
-        )}
-
-
-        {showFillRow ? (
-          <div className={styles.compactSection}>
-            <div className={styles.iconGrid}>
-              {FILL_STYLES.map((fill) => (
+            <div className={styles.propertyGrid}>
+              {COLORS.map((color) => (
                 <button
-                  key={fill}
-                  className={`${styles.gridIconButton} ${getActiveValue("fill", currentFill) === fill ? styles.gridIconButtonActive : ""
-                    }`}
-                  onClick={() => handleStyleChange({ fill })}
+                  key={color}
+                  className={`${styles.colorDot} ${getActiveValue("backgroundColor", currentBackgroundColor) === color ? styles.colorDotActive : ""}`}
+                  onClick={() => handleStyleChange({ backgroundColor: color })}
                 >
-                  <FillIcon type={fill} />
+                  <span
+                    className={styles.colorDotInner}
+                    style={{ backgroundColor: color }}
+                  />
                 </button>
               ))}
             </div>
           </div>
-        ) : null}
+        )}
 
-        {showDashRow ? (
-          <div className={styles.compactSection}>
-            <div className={styles.iconGrid}>
-              {DASH_STYLES.map((dash) => (
-                <button
-                  key={dash}
-                  className={`${styles.gridIconButton} ${getActiveValue("dash", currentDash) === dash ? styles.gridIconButtonActive : ""
-                    }`}
-                  onClick={() => handleStyleChange({ dash })}
-                >
-                  <DashIcon type={dash} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className={styles.compactSection}>
-          <div className={styles.sizeGrid}>
-            {SIZE_OPTIONS.map((option) => (
-              <button
-                key={option.label}
-                className={`${styles.sizeButton} ${mode === "text" || mode === "note"
-                  ? getActiveValue("fontSize", currentFontSize) === option.value
-                  : getActiveValue("strokeWidth", currentStrokeWidth) === Math.round(option.value / 6)
-                    ? styles.sizeButtonActive
-                    : ""
-                  }`}
-                onClick={() => {
-                  if (mode === "text" || mode === "note") {
-                    handleStyleChange({ fontSize: option.value });
-                  } else {
-                    handleStyleChange({ strokeWidth: Math.round(option.value / 6) });
-                  }
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {showTextTransformRow ? (
           <div className={styles.compactSection}>
@@ -453,26 +326,6 @@ export default function DrawPropertiesPanel({
 
       </aside>
     </>
-  );
-}
-
-function FillIcon({ type }) {
-  const size = 18;
-  if (type === "none") return <Square size={size} strokeWidth={1.5} style={{ opacity: 0.45 }} />;
-  if (type === "semi") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 8h18M3 13h18M3 18h18" strokeOpacity="0.2" />
-      </svg>
-    );
-  }
-  if (type === "solid") return <Square size={size} fill="currentColor" strokeWidth={1.5} />;
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 21L21 3M8 21L21 8M3 16L16 3" strokeWidth="1" strokeOpacity="0.6" />
-    </svg>
   );
 }
 

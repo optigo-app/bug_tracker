@@ -86,8 +86,23 @@ export const useAttachmentHandlers = (attachments, setAttachments) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
   const addFiles = (files) => {
-    const newAttachments = files.map(file => ({
+    const validFiles = [];
+    const rejected = [];
+    files.forEach(file => {
+      if (file.size > MAX_FILE_SIZE) {
+        rejected.push(file.name);
+      } else {
+        validFiles.push(file);
+      }
+    });
+    if (rejected.length > 0) {
+      alert(`File(s) exceed 100MB limit and were not uploaded:\n${rejected.join('\n')}`);
+    }
+    if (validFiles.length === 0) return;
+    const newAttachments = validFiles.map(file => ({
       file,
       name: file.name,
       size: file.size,

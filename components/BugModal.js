@@ -313,7 +313,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
     }
   };
 
-  const renderAutocomplete = (label, name, value, placeholder, options, onChange, error = false, helperText = '', disabled = false) => (
+  const renderAutocomplete = (label, name, value, placeholder, options, onChange, error = false, helperText = '', disabled = false, getOptionDisabled = undefined) => (
     <CustomAutocomplete
       label={label}
       name={name}
@@ -324,6 +324,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
       disabled={disabled}
       error={error}
       helperText={helperText}
+      getOptionDisabled={getOptionDisabled}
     />
   );
 
@@ -618,14 +619,29 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              {renderAutocomplete(
-                'STATUS',
-                'status',
-                formData.status,
-                'Select Status',
-                statusOptions,
-                (name, value) => setFormData(prev => ({ ...prev, status: value }))
-              )}
+              {(() => {
+                const desig = String(currentUser?.designation || '').toLowerCase();
+                const isDeveloper = desig.includes('developer');
+                const isTester = desig.includes('tester') || desig.includes('test') || desig.includes('qa');
+                const isAdmin = desig.includes('admin');
+                const devAllowed = ['In Progress', 'Fixed', 'Ready For Test', 'Rejected'];
+                const testerAllowed = ['New', 'Assigned', 'Verified', 'Closed', 'Reopen', 'Rejected'];
+                const getOptionDisabled = isAdmin ? undefined : (option) => {
+                  const isCurrent = String(option?.value) === String(formData.status);
+                  if (isDeveloper) return !devAllowed.includes(option?.label) && !isCurrent;
+                  if (isTester) return !testerAllowed.includes(option?.label) && !isCurrent;
+                  return false;
+                };
+                return renderAutocomplete(
+                  'STATUS',
+                  'status',
+                  formData.status,
+                  'Select Status',
+                  statusOptions,
+                  (name, value) => setFormData(prev => ({ ...prev, status: value })),
+                  false, '', false, getOptionDisabled
+                );
+              })()}
             </Grid>
 
             {/* Due Date */}
@@ -649,7 +665,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
             {/* Attachments */}
             <Grid item xs={12}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', mb: 1, display: 'block' }}>ATTACHMENTS <span style={{ color: '#EF4444' }}>*</span></Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', display: 'block' }}>ATTACHMENTS <span style={{ color: '#EF4444' }}>*</span></Typography>
 
               <input
                 ref={fileInputRef}
@@ -661,7 +677,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
               {/* Image Previews Grid */}
               {imageAttachments.length > 0 && (
-                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                <Grid container spacing={1.5} sx={{ ml:0.5, mt: 1, mb:1.5 }}>
                   {imageAttachments.map((att, index) => {
                     const originalIndex = attachments.indexOf(att);
                     return (
@@ -776,7 +792,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
 
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Stack direction="row" spacing={1} alignItems="center">
-                              <Typography noWrap sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#1E293B' }}>{att.name}</Typography>
+                              <Typography noWrap sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#444050' }}>{att.name}</Typography>
                               {att.isEdited && (
                                 <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: '#6366F1', bgcolor: '#EEF2FF', px: 0.6, py: 0.05, borderRadius: 1, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                   Edited

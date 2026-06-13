@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -160,12 +160,49 @@ export default function Home() {
   const [showAllStatuses, setShowAllStatuses] = useState(false);
   const [loading, setLoading] = useState(true);
   const [taskAssignees, setTaskAssignees] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const defaultScopeSet = useRef(false);
+
+  const defaultStatuses = ['assigned', 'in progress', 'fixed', 'reopen'];
+  const visibleStatuses = useMemo(() => {
+    let result = showAllStatuses
+      ? statusData
+      : statusData.filter(s => defaultStatuses.includes(String(s.name).toLowerCase().trim()));
+    // Fallback: if filter is empty but we have raw data, show all
+    if (!showAllStatuses && result.length === 0 && statusData.length > 0) {
+      result = statusData;
+    }
+    return result;
+  }, [statusData, showAllStatuses]);
+  const hasMoreStatuses = statusData.some(s => !defaultStatuses.includes(String(s.name).toLowerCase().trim()));
 
   useEffect(() => {
     if (!checkAuth()) {
       router.push('/auto-login');
       return;
     }
+
+    // Set scope based on designation on first load
+    if (!defaultScopeSet.current) {
+      const userProfileData = localStorage.getItem('UserProfileData');
+      if (userProfileData) {
+        try {
+          const profile = JSON.parse(userProfileData);
+          const designation = String(profile.designation || '').toLowerCase();
+          const isAdminUser = designation.includes('admin');
+          if (isAdminUser !== isAdmin) setIsAdmin(isAdminUser);
+          if (isAdminUser && dashboardScope === 'me') {
+            setDashboardScope('team');
+            defaultScopeSet.current = true;
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing UserProfileData:', error);
+        }
+      }
+      defaultScopeSet.current = true;
+    }
+
     // Load task assignees from localStorage
     const taskAssigneeData = localStorage.getItem('taskAssigneeData');
     if (taskAssigneeData) {
@@ -181,17 +218,22 @@ export default function Home() {
   const fetchDashboardData = async (scope) => {
     try {
       setLoading(true);
+      // Compute filterBy directly from localStorage to avoid stale closure
+      let effectiveFilterBy = 'assignee';
       let userId = null;
       const userProfileData = localStorage.getItem('UserProfileData');
       if (userProfileData) {
         try {
           const profile = JSON.parse(userProfileData);
           userId = profile.id;
+          const designation = String(profile.designation || '').toLowerCase();
+          const isTester = designation.includes('tester') || designation.includes('test') || designation.includes('qa');
+          effectiveFilterBy = isTester ? 'reporter' : 'assignee';
         } catch (error) {
           console.error('Error parsing UserProfileData:', error);
         }
       }
-      const response = await getDashboardApi({ filterType: scope, userId });
+      const response = await getDashboardApi({ filterType: scope, userId, filterBy: effectiveFilterBy });
       const totalBugsResult = response?.rd || [];
       const statusCountsResult = response?.rd1 || [];
       const weeklyTrendResult = response?.rd2 || [];
@@ -226,7 +268,6 @@ export default function Home() {
         }
       });
       const taskBugStatusData = JSON?.parse(localStorage.getItem('taskbugstatusData'));
-      const taskAssigneeData = JSON?.parse(localStorage.getItem('taskAssigneeData')) || [];
       const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
@@ -317,13 +358,12 @@ export default function Home() {
       setStatusData(statusData);
       setIssueDistributionData(issueDistribution);
       setRecentActivity(recentActivity);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-    } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <Box sx={{
@@ -358,56 +398,58 @@ export default function Home() {
                 Status Breakdown
               </Typography>
               <Stack direction="row" spacing={1} alignItems="center">
-                <ToggleButtonGroup
-                  value={dashboardScope}
-                  exclusive
-                  onChange={(e, newValue) => {
-                    if (newValue !== null) setDashboardScope(newValue);
-                  }}
-                  size="small"
-                  sx={{
-                    bgcolor: 'white',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    '& .MuiToggleButton-root': {
-                      px: 1.5,
-                      py: 0.5,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      color: 'text.secondary',
-                      border: '1px solid #f0f0f0',
-                      '&.Mui-selected': {
-                        bgcolor: '#7367f0',
-                        color: 'white',
-                        '&:hover': {
-                          bgcolor: '#6356e5',
+                {!isAdmin && (
+                  <ToggleButtonGroup
+                    value={dashboardScope}
+                    exclusive
+                    onChange={(e, newValue) => {
+                      if (newValue !== null) setDashboardScope(newValue);
+                    }}
+                    size="small"
+                    sx={{
+                      bgcolor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      '& .MuiToggleButton-root': {
+                        px: 1.5,
+                        py: 0.5,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        color: 'text.secondary',
+                        border: '1px solid #f0f0f0',
+                        '&.Mui-selected': {
+                          bgcolor: '#7367f0',
+                          color: 'white',
+                          '&:hover': {
+                            bgcolor: '#6356e5',
+                          }
                         }
                       }
-                    }
-                  }}
-                >
-                  <ToggleButton value="me">Me</ToggleButton>
-                  <ToggleButton value="team">Team</ToggleButton>
-                </ToggleButtonGroup>
-                {statusData.length > 4 && (
+                    }}
+                  >
+                    <ToggleButton value="me">Me</ToggleButton>
+                    <ToggleButton value="team">Team</ToggleButton>
+                  </ToggleButtonGroup>
+                )}
+                {hasMoreStatuses && (
                   <Button
-                  size="small"
-                  onClick={() => setShowAllStatuses(prev => !prev)}
-                  sx={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#7367f0',
-                    textTransform: 'none',
-                    '&:hover': { bgcolor: 'rgba(115, 103, 240, 0.08)' }
-                  }}
-                >
-                  {showAllStatuses ? 'Show Less' : 'Show More'}
-                </Button>
-              )}
+                    size="small"
+                    onClick={() => setShowAllStatuses(prev => !prev)}
+                    sx={{
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: '#7367f0',
+                      textTransform: 'none',
+                      '&:hover': { bgcolor: 'rgba(115, 103, 240, 0.08)' }
+                    }}
+                  >
+                    {showAllStatuses ? 'Show Less' : 'Show More'}
+                  </Button>
+                )}
               </Stack>
             </Stack>
 
-            {loading ? (
+            {loading || !stats || statusData.length === 0 ? (
               <Grid container spacing={1.5}>
                 {[1, 2, 3, 4].map((i) => (
                   <Grid key={i} item xs={6} sm={4} md={3} lg={2.4}>
@@ -431,12 +473,7 @@ export default function Home() {
                 ))}
               </Grid>
             ) : (
-              (() => {
-                const defaultStatuses = ['assigned', 'in progress', 'fixed', 'reopen'];
-                const visibleStatuses = showAllStatuses
-                  ? statusData
-                  : statusData.filter(s => defaultStatuses.includes(String(s.name).toLowerCase().trim()));
-                return visibleStatuses.length > 0 ? (
+              visibleStatuses.length > 0 ? (
                   <Grid container spacing={1.5}>
                     {visibleStatuses.map((status) => (
                       <Grid key={status.statusId} item xs={6} sm={4} md={3} lg={2.4} >
@@ -489,9 +526,8 @@ export default function Home() {
                       No status data available
                     </Typography>
                   </Box>
-                );
-              })()
-            )}
+                )
+              )}
           </Paper>
         </Grid>
       </Grid>
@@ -530,7 +566,7 @@ export default function Home() {
               </Box>
             </Box>
             <Box sx={{ width: '100%', height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={weeklyData}>
                   <defs>
                     <linearGradient id="colorBugs" x1="0" y1="0" x2="0" y2="1">
@@ -599,7 +635,7 @@ export default function Home() {
               </Box>
             </Box>
             <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <PieChart>
                   <Pie
                     data={issueDistributionData}

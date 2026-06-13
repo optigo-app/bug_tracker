@@ -66,11 +66,14 @@ export default function AttachmentViewer({
     // Map API attachment format
     const mappedAttachments = useMemo(() => attachments.map(f => {
         const filePath = f.url || f.filepath || '';
+        const inferredType = getMimeTypeFromUrl(filePath);
+        const apiType = (f.type || '').toLowerCase();
+        const type = apiType && apiType !== 'application/octet-stream' ? f.type : inferredType;
         return {
             ...f,
             name: f.name || getFileNameFromUrl(filePath) || 'Untitled File',
             url: filePath,
-            type: f.type || getMimeTypeFromUrl(filePath) || 'application/octet-stream',
+            type,
             size: f.size || 'Unknown size',
             uploadedAt: f.uploadedAt || new Date().toLocaleDateString()
         };
@@ -78,6 +81,7 @@ export default function AttachmentViewer({
 
     const currentFile = mappedAttachments[currentIndex];
     const isImage = currentFile?.type?.toLowerCase().startsWith('image');
+    const isVideo = currentFile?.type?.toLowerCase().startsWith('video') || ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'avi'].includes((currentFile?.type || '').toLowerCase());
 
     // Reset view state
     const resetView = useCallback(() => {
@@ -405,6 +409,23 @@ export default function AttachmentViewer({
                                     transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0, 0.2, 1)',
                                     transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
                                     filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.1))'
+                                }}
+                            />
+                        ) : isVideo ? (
+                            <Box
+                                component="video"
+                                src={currentFile.url}
+                                controls
+                                autoPlay
+                                preload="auto"
+                                crossOrigin="anonymous"
+                                sx={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain',
+                                    userSelect: 'none',
+                                    borderRadius: 2,
+                                    bgcolor: '#000',
                                 }}
                             />
                         ) : (

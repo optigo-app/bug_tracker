@@ -74,7 +74,7 @@ export function getShapeBounds(shape) {
     };
   }
 
-  if (shape.type === "text") {
+  if (shape.type === "text" || shape.type === "note") {
     return {
       x: shape.x,
       y: shape.y,
