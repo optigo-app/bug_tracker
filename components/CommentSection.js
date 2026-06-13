@@ -127,7 +127,6 @@ export default function CommentSection({
                                         )}
                                     </Box>
                                 </Box>
-                                {idx < comments.length - 1 && <Divider sx={{ mx: 1, borderColor: '#FAFAFA' }} />}
                             </React.Fragment>
                         );
                     })}

@@ -319,8 +319,8 @@ export const statusColors = {
     backgroundColor: "#e1bee7",
   },
   "Verified": {
-    color: "#6a1b9a", // Purple - verify
-    backgroundColor: "#e1bee7",
+    color: "#CFE8E1", // Purple - verify
+    backgroundColor: "#2F7D6D",
   },
   "Closed": {
     color: "#616161", // Gray - closed

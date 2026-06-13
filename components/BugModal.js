@@ -94,7 +94,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   const getDefaultOptionId = (storageKey, preferredLabel) => {
     if (typeof window === 'undefined') return '';
     try {
-      const parsed = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
       if (!Array.isArray(parsed) || parsed.length === 0) return '';
       const preferred = parsed.find((item) =>
         String(item?.labelname || item?.label || item?.name || '').trim().toLowerCase() === preferredLabel
@@ -163,7 +163,7 @@ export default function BugModal({ open, onClose, bug = null, onSuccess, taskNo 
   useEffect(() => {
     setCategoryOptions(getCategoryOptions());
     setPriorityOptions(getPriorityOptions());
-    setStatusOptions(getStatusOptions(currentUser));
+    setStatusOptions(getStatusOptions(currentUser, true));
   }, [currentUser]);
 
   // Initialize form data when bug changes or modal opens

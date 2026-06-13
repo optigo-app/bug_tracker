@@ -186,10 +186,10 @@ function AutoLoginContent() {
             <CircularProgress size={60} thickness={4} sx={{ color: '#7367f0' }} />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                Authenticating...
+                Getting you in...
               </Typography>
               <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
-                Setting up your session
+                Unlocking the bug tracker — just a moment
               </Typography>
             </Box>
           </Stack>
@@ -210,10 +210,10 @@ function AutoLoginContent() {
             </Box>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                Authentication Successful!
+                You&apos;re in!
               </Typography>
               <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
-                Redirecting to dashboard...
+                Welcome back — taking you to the dashboard
               </Typography>
             </Box>
           </Stack>
@@ -234,13 +234,13 @@ function AutoLoginContent() {
             </Box>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                Authentication Failed
+                Oops, that didn&apos;t work
               </Typography>
               <Typography variant="body2" sx={{ color: '#EF4444', mb: 2, fontWeight: 600 }}>
                 {errorMessage}
               </Typography>
               <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
-                Please ensure you are accessing this application through the correct portal.
+                Make sure you&apos;re coming from the right portal and try again.
               </Typography>
             </Box>
           </Stack>
@@ -282,7 +282,7 @@ function LoadingScreen() {
               Loading...
             </Typography>
             <Typography variant="body2" sx={{ color: 'var(--text-2nd-color)' }}>
-              Preparing authentication
+              Getting everything ready for you
             </Typography>
           </Box>
         </Stack>

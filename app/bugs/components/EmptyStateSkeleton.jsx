@@ -3,7 +3,7 @@ import { Fade } from '@mui/material';
 import { Plus, Inbox } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-export default function EmptyStateSkeleton({ onCreate, isDeveloper = false }) {
+export default function EmptyStateSkeleton({ onCreate, isDeveloper = false, loading = false }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -45,6 +45,7 @@ export default function EmptyStateSkeleton({ onCreate, isDeveloper = false }) {
             variant="contained"
             startIcon={<Plus size={16} />}
             onClick={onCreate}
+            disabled={loading}
             sx={{
               borderRadius: 2,
               fontWeight: 700,
@@ -60,7 +61,7 @@ export default function EmptyStateSkeleton({ onCreate, isDeveloper = false }) {
               transition: 'all 0.2s'
             }}
           >
-            Create Bug
+            {loading ? 'Loading...' : 'Create Bug'}
           </Button>
         )}
       </Box>

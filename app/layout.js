@@ -5,6 +5,7 @@ import MainLayout from "@/components/MainLayout";
 import LocalizationProviderWrapper from "@/components/LocalizationProviderWrapper";
 import { Toaster } from "react-hot-toast";
 import { BugProvider } from "@/contexts/BugContext";
+import { MasterDataProvider } from "@/contexts/MasterDataContext";
 import { SocketProvider } from "@/contexts/SocketContext";
 
 const publicSans = Public_Sans({
@@ -32,18 +33,20 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={publicSans.variable}>
-        <BugProvider>
-          {/* <SocketProvider> */}
-            <LocalizationProviderWrapper>
-              <ThemeRegistry>
-                <MainLayout>
-                  {children}
-                </MainLayout>
-              </ThemeRegistry>
-            </LocalizationProviderWrapper>
-            <Toaster position="top-right" />
-          {/* </SocketProvider> */}
-        </BugProvider>
+        <MasterDataProvider>
+          <BugProvider>
+            {/* <SocketProvider> */}
+              <LocalizationProviderWrapper>
+                <ThemeRegistry>
+                  <MainLayout>
+                    {children}
+                  </MainLayout>
+                </ThemeRegistry>
+              </LocalizationProviderWrapper>
+              <Toaster position="top-right" />
+            {/* </SocketProvider> */}
+          </BugProvider>
+        </MasterDataProvider>
       </body>
     </html>
   );

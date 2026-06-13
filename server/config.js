@@ -15,7 +15,7 @@ const config = {
   API_VERSION: 'v6',
 
   // Local Development Hostnames (comma-separated)
-  LOCAL_HOSTNAMES: 'localhost,nzen,bugtracker.web',
+  LOCAL_HOSTNAMES: 'nzen,bugtracker.web',
 
   // Default API Environment (testing, live, backup_live)
   API_ENVIRONMENT: 'live',

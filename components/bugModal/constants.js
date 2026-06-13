@@ -1,7 +1,7 @@
 export const getCategoryOptions = () => {
   if (typeof window === 'undefined') return [];
   try {
-    const data = sessionStorage.getItem('bug_categoryData')
+    const data = localStorage.getItem('bug_categoryData')
     if (data) {
       const parsed = JSON.parse(data);
       return parsed.map(item => ({
@@ -92,7 +92,7 @@ export const INITIAL_FORM_DATA = {
 export const getPriorityOptions = () => {
   if (typeof window === 'undefined') return [];
   try {
-    const data = sessionStorage.getItem('taskbugpriorityData');
+    const data = localStorage.getItem('taskbugpriorityData');
     if (data) {
       const parsed = JSON.parse(data);
       return parsed.map(item => ({
@@ -109,7 +109,7 @@ export const getPriorityOptions = () => {
 export const getStatusOptions = (user = null, all) => {
   if (typeof window === 'undefined') return [];
   try {
-    const data = sessionStorage.getItem('taskbugstatusData');
+    const data = localStorage.getItem('taskbugstatusData');
     if (data) {
       const parsed = JSON.parse(data);
       const allOptions = parsed.map(item => ({

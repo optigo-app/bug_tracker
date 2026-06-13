@@ -73,11 +73,11 @@ export default function TasksPage() {
   };
 
   const processAndSetTasks = (tasks, bugsData = []) => {
-    const priorityData = JSON.parse(sessionStorage.getItem('taskpriorityData') || '[]');
-    const statusData = JSON.parse(sessionStorage.getItem('taskstatusData') || '[]');
-    const taskProject = JSON.parse(sessionStorage.getItem('taskprojectData') || '[]');
-    const taskCategory = JSON.parse(sessionStorage.getItem('taskworkcategoryData') || '[]');
-    const taskAssigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
+    const priorityData = JSON.parse(localStorage.getItem('taskpriorityData') || '[]');
+    const statusData = JSON.parse(localStorage.getItem('taskstatusData') || '[]');
+    const taskProject = JSON.parse(localStorage.getItem('taskprojectData') || '[]');
+    const taskCategory = JSON.parse(localStorage.getItem('taskworkcategoryData') || '[]');
+    const taskAssigneeData = JSON.parse(localStorage.getItem('taskAssigneeData') || '[]');
 
     const enhanceTask = (task) => {
       const priority = priorityData?.find((item) => item?.id == task?.priorityid);

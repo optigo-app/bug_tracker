@@ -27,8 +27,8 @@ export default function CommentInput({ bugId, currentUser, onCommentAdded }) {
         if (!text.trim() && attachments.length === 0) return;
         setIsSubmitting(true);
 
-        // Get userId from UserProfileData in sessionStorage
-        const userProfileData = sessionStorage.getItem('UserProfileData');
+        // Get userId from UserProfileData in localStorage
+        const userProfileData = localStorage.getItem('UserProfileData');
         let userId = null;
         if (userProfileData) {
             try {
@@ -94,7 +94,6 @@ export default function CommentInput({ bugId, currentUser, onCommentAdded }) {
             pt: 2,
             bgcolor: '#FFFFFF',
             zIndex: 10,
-            borderTop: '1px solid #E5E7EB'
         }}>
             <Box sx={{ bgcolor: 'white', borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                 <Stack direction="row" spacing={0}>

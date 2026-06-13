@@ -14,8 +14,10 @@ export const BugProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [bugsLoaded, setBugsLoaded] = useState(false);
   const [reportBugSignal, setReportBugSignal] = useState(0);
+  const [refreshDetailSignal, setRefreshDetailSignal] = useState(0);
 
   const triggerReportBug = useCallback(() => setReportBugSignal(prev => prev + 1), []);
+  const triggerRefreshDetail = useCallback(() => setRefreshDetailSignal(prev => prev + 1), []);
 
   const fetchBugsGlobal = useCallback(async (forceRefresh = false) => {
     let currentBugs = [];
@@ -79,6 +81,8 @@ export const BugProvider = ({ children }) => {
         fetchBugsGlobal,
         reportBugSignal,
         triggerReportBug,
+        refreshDetailSignal,
+        triggerRefreshDetail,
       }}
     >
       {children}

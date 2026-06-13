@@ -25,7 +25,7 @@ export default function ReportBugFlow({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const userProfile = sessionStorage.getItem('UserProfileData');
+        const userProfile = localStorage.getItem('UserProfileData');
         if (userProfile) {
           const parsed = JSON.parse(userProfile);
           const name = `${parsed.firstname || ''} ${parsed.lastname || ''}`.trim();

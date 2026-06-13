@@ -149,8 +149,8 @@ export default function Home() {
       router.push('/auto-login');
       return;
     }
-    // Load task assignees from sessionStorage
-    const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
+    // Load task assignees from localStorage
+    const taskAssigneeData = localStorage.getItem('taskAssigneeData');
     if (taskAssigneeData) {
       try {
         setTaskAssignees(JSON.parse(taskAssigneeData));
@@ -197,7 +197,7 @@ export default function Home() {
           matchingDay.bugs = row.bugs;
         }
       });
-      const taskBugStatusData = JSON?.parse(sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData'));
+      const taskBugStatusData = JSON?.parse(localStorage.getItem('taskbugstatusData'));
       const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {

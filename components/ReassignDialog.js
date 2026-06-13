@@ -36,9 +36,9 @@ export default function ReassignDialog({
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // Load assignees from sessionStorage
+        // Load assignees from localStorage
         if (typeof window !== 'undefined') {
-            const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
+            const taskAssigneeData = localStorage.getItem('taskAssigneeData');
             if (taskAssigneeData) {
                 try {
                     const parsedData = JSON.parse(taskAssigneeData);

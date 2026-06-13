@@ -24,6 +24,7 @@ import IssueDetailPanel from './components/IssueDetailPanel';
 import ReportBugFlow from './components/ReportBugFlow';
 import { decodeUrlParams } from '@/utils/urlParams';
 import { useBugContext } from '@/contexts/BugContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import AdvancedFilterDialog from './components/AdvancedFilterDialog';
 
 // ─── Main Page Component ─────────────────────────────────────────────────────
@@ -52,9 +53,60 @@ function BugsPageContent() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedId, setSelectedId] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [developers, setDevelopers] = useState([]);
-  const [taskAssignees, setTaskAssignees] = useState([]);
+
+  // Synchronously hydrate currentUser and master data from localStorage on first render
+  // so create-bug effects (openReportParam / reportBugSignal) don't race with useEffect
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const userProfileData = localStorage.getItem('UserProfileData');
+    if (userProfileData) {
+      try {
+        const profile = JSON.parse(userProfileData);
+        return {
+          id: profile.id,
+          name: `${profile.firstname} ${profile.lastname}`.trim() || profile.id,
+          role: profile.designation || 'User',
+          email: profile.userid,
+          ...profile
+        };
+      } catch (error) {
+        console.error('Error parsing UserProfileData:', error);
+      }
+    }
+    return null;
+  });
+
+  const [taskAssignees, setTaskAssignees] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const data = localStorage.getItem('taskAssigneeData');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { return []; }
+    }
+    return [];
+  });
+
+  const [developers, setDevelopers] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const data = localStorage.getItem('taskAssigneeData');
+    if (data) {
+      try {
+        const list = JSON.parse(data);
+        return Array.isArray(list)
+          ? list.map(user => ({
+              id: user.id,
+              name: `${user.firstname} ${user.lastname}`.trim() || user.id,
+              role: user.designation || user.department || 'Developer'
+            }))
+          : [];
+      } catch (e) { return []; }
+    }
+    return [];
+  });
+
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [priorityMap, setPriorityMap] = useState({});
+  const [priorityOptions, setPriorityOptions] = useState([]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [bugToDelete, setBugToDelete] = useState(null);
@@ -63,15 +115,14 @@ function BugsPageContent() {
   const [reassignInfo, setReassignInfo] = useState(null);
   const [drawEditorOpen, setDrawEditorOpen] = useState(false);
   const [editedImage, setEditedImage] = useState(null);
-  const [statusOptions, setStatusOptions] = useState([]);
-  const [masterDataLoaded, setMasterDataLoaded] = useState(false);
+
+  const { isMasterDataReady, ensureMasterData } = useMasterData();
 
   // Filter and Sort states
   const [filterScope, setFilterScope] = useState('all');
   const [filterAnchorEl, setFilterAnchorEl] = useState(null);
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'priority-high', 'priority-low'
-  const [priorityMap, setPriorityMap] = useState({});
   const [isResizing, setIsResizing] = useState(false);
   const [listWidth, setListWidth] = useState(320);
 
@@ -86,7 +137,6 @@ function BugsPageContent() {
     dueDate: { startDate: '', endDate: '' }
   });
   const [advFilterOpen, setAdvFilterOpen] = useState(false);
-  const [priorityOptions, setPriorityOptions] = useState([]);
   const bugListRef = useRef(null);
 
   const hydrateMasterDataFromStorage = useCallback(() => {
@@ -94,7 +144,7 @@ function BugsPageContent() {
     let hasPriorities = false;
     let hasStatuses = false;
 
-    const taskAssigneeData = sessionStorage.getItem('taskAssigneeData');
+    const taskAssigneeData = localStorage.getItem('taskAssigneeData');
     if (taskAssigneeData) {
       try {
         const parsedData = JSON.parse(taskAssigneeData);
@@ -112,7 +162,7 @@ function BugsPageContent() {
       }
     }
 
-    const priorityData = sessionStorage.getItem('taskbugpriorityData') || localStorage.getItem('taskbugpriorityData');
+    const priorityData = localStorage.getItem('taskbugpriorityData');
     if (priorityData) {
       try {
         const parsed = JSON.parse(priorityData);
@@ -132,7 +182,7 @@ function BugsPageContent() {
       }
     }
 
-    const statusData = sessionStorage.getItem('taskbugstatusData') || localStorage.getItem('taskbugstatusData');
+    const statusData = localStorage.getItem('taskbugstatusData');
     if (statusData) {
       try {
         const parsed = JSON.parse(statusData);
@@ -189,7 +239,7 @@ function BugsPageContent() {
   }, [isResizing, resize, stopResizing]);
 
   useEffect(() => {
-    const userProfileData = sessionStorage.getItem('UserProfileData');
+    const userProfileData = localStorage.getItem('UserProfileData');
     if (userProfileData) {
       try {
         const profile = JSON.parse(userProfileData);
@@ -207,35 +257,54 @@ function BugsPageContent() {
         console.error('Error parsing UserProfileData:', error);
       }
     }
-    setMasterDataLoaded(hydrateMasterDataFromStorage());
+    hydrateMasterDataFromStorage();
   }, [hydrateMasterDataFromStorage]);
 
+  const lastHandledSignalRef = useRef(0);
+
   useEffect(() => {
-    if (reportBugSignal > 0 && currentUser && permissions.canReportBug(currentUser)) {
-      if (taskNoParam) {
-        setDrawEditorOpen(true);
-      } else {
-        setTaskSelectOpen(true);
-      }
+    if (reportBugSignal <= 0) return;
+    if (reportBugSignal === lastHandledSignalRef.current) return;
+    if (!currentUser || !permissions.canReportBug(currentUser)) return;
+    if (!isMasterDataReady) return;
+
+    lastHandledSignalRef.current = reportBugSignal;
+    if (taskNoParam) {
+      setDrawEditorOpen(true);
+    } else {
+      setTaskSelectOpen(true);
     }
-  }, [reportBugSignal, currentUser, taskNoParam]);
+  }, [reportBugSignal, currentUser, isMasterDataReady, taskNoParam]);
 
   useEffect(() => {
     if (!openReportParam || !currentUser) return;
+    if (openReportParam !== '1') return;
+    if (!permissions.canReportBug(currentUser)) return;
 
-    if (openReportParam === '1' && permissions.canReportBug(currentUser)) {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!isMasterDataReady) {
+        await ensureMasterData();
+      }
+      if (cancelled) return;
+
       if (taskNoParam) {
         setDrawEditorOpen(true);
       } else {
         setTaskSelectOpen(true);
       }
-    }
 
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.delete('openReport');
-    const nextQuery = nextParams.toString();
-    router.replace(nextQuery ? `/bugs?${nextQuery}` : '/bugs');
-  }, [openReportParam, currentUser, router, searchParams, taskNoParam]);
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete('openReport');
+      const nextQuery = nextParams.toString();
+      router.replace(nextQuery ? `/bugs?${nextQuery}` : '/bugs');
+    };
+
+    run();
+
+    return () => { cancelled = true; };
+  }, [openReportParam, currentUser, isMasterDataReady, taskNoParam, router, searchParams, ensureMasterData]);
 
   const fetchBugs = useCallback(async (forceRefresh = false) => {
     try {
@@ -275,34 +344,23 @@ function BugsPageContent() {
     let isMounted = true;
     const MASTER_FETCH_TIMEOUT_MS = 8000;
 
-    const ensureMasterData = async () => {
-      const alreadyLoaded = hydrateMasterDataFromStorage();
-      if (alreadyLoaded) {
-        if (isMounted) setMasterDataLoaded(true);
+    const run = async () => {
+      if (isMasterDataReady) {
+        hydrateMasterDataFromStorage();
         return;
       }
-
-      try {
-        const { fetchMasterGlFunc } = await import('@/app/api/masterApi');
-        await Promise.race([
-          fetchMasterGlFunc(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Master data fetch timeout')), MASTER_FETCH_TIMEOUT_MS))
-        ]);
-      } catch (error) {
-        console.error('Error fetching master data:', error);
-      } finally {
-        if (!isMounted) return;
+      await ensureMasterData();
+      if (isMounted) {
         hydrateMasterDataFromStorage();
-        setMasterDataLoaded(true);
       }
     };
 
-    ensureMasterData();
+    run();
 
     return () => {
       isMounted = false;
     };
-  }, [hydrateMasterDataFromStorage]);
+  }, [hydrateMasterDataFromStorage, isMasterDataReady, ensureMasterData]);
 
   const filteredBugs = useMemo(() => {
     // Pre-calculate filter values
@@ -537,7 +595,7 @@ function BugsPageContent() {
               ...slimScroll
             }}
           >
-            {((!bugsLoaded && !error) || !masterDataLoaded) ? (
+            {(((!bugsLoaded || isLoading) && !error) || !isMasterDataReady) ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                 {[...Array(8)].map((_, i) => (
                   <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f5f5f5' }} />
@@ -603,7 +661,7 @@ function BugsPageContent() {
           flexDirection: 'column',
           minWidth: 0
         }}>
-          {((!bugsLoaded && !error) || !masterDataLoaded) ? (
+          {((!bugsLoaded && !error) || !isMasterDataReady) ? (
             <BugDetailSkeleton />
           ) : selectedId ? (
             <IssueDetailPanel
@@ -617,7 +675,6 @@ function BugsPageContent() {
               onViewDetails={() => router.push(`/bugs/${selectedId}`)}
               onBack={() => setSelectedId(null)}
               onReassign={(info) => setReassignInfo(info)}
-              onRefress={handleRefresh}
               onPrev={() => {
                 if (hasPrev) {
                   setSelectedId(filteredBugs[selectedIndex - 1]?.id || null);
@@ -639,6 +696,7 @@ function BugsPageContent() {
           ) : (
             <EmptyStateSkeleton
               onCreate={() => {
+                if (!isMasterDataReady) return;
                 if (!taskNoParam) {
                   setTaskSelectOpen(true);
                 } else {
@@ -646,6 +704,7 @@ function BugsPageContent() {
                 }
               }}
               isDeveloper={!permissions.canReportBug(currentUser)}
+              loading={!isMasterDataReady}
             />
           )}
         </Box>

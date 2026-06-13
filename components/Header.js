@@ -23,6 +23,7 @@ import { getNotificationsApi } from '@/app/api/notificationgetApi';
 import { markNotificationReadApi } from '@/app/api/notificationmarkreadApi';
 import { permissions } from '@/utils/permissions';
 import { useBugContext } from '@/contexts/BugContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
 import { fetchMasterGlFunc } from '@/app/api/masterApi';
 import {
@@ -77,7 +78,8 @@ function HeaderContent() {
     const decodedParams = decodeUrlParams(dataParam);
     const taskNoParam = decodedParams.taskno;
     const taskNameParam = decodedParams.taskname;
-    const { triggerReportBug, bugs: globalBugs, totalBugCount, todayBugCount } = useBugContext();
+    const { triggerReportBug, triggerRefreshDetail, fetchBugsGlobal, bugs: globalBugs, totalBugCount, todayBugCount } = useBugContext();
+    const { isMasterDataReady, ensureMasterData } = useMasterData();
     const taskId = decodedParams.taskid;
 
     const isToday = (dateStr) => {
@@ -106,7 +108,7 @@ function HeaderContent() {
 
     useEffect(() => {
         const syncUserProfile = () => {
-            const rawProfile = sessionStorage.getItem('UserProfileData') || '';
+            const rawProfile = localStorage.getItem('UserProfileData') || '';
             if (rawProfile === lastUserProfileRawRef.current) return;
             lastUserProfileRawRef.current = rawProfile;
             if (!rawProfile) {
@@ -315,7 +317,34 @@ function HeaderContent() {
         </Stack>
     );
 
-    const handleReportBugClick = () => {
+    const [creatingBug, setCreatingBug] = useState(false);
+    const [refreshingBugs, setRefreshingBugs] = useState(false);
+
+    const handleRefreshBugs = async () => {
+        setRefreshingBugs(true);
+        triggerRefreshDetail();
+        try {
+            await fetchBugsGlobal(true);
+        } catch (error) {
+            console.error('Failed to refresh bugs:', error);
+        } finally {
+            setRefreshingBugs(false);
+        }
+    };
+
+    const handleReportBugClick = async () => {
+        if (!isMasterDataReady) {
+            setCreatingBug(true);
+            try {
+                await ensureMasterData();
+            } catch (error) {
+                console.error('Failed to load master data before creating bug:', error);
+                setCreatingBug(false);
+                return;
+            }
+            setCreatingBug(false);
+        }
+
         if (pathname === '/bugs' || pathname.startsWith('/bugs?')) {
             triggerReportBug();
         } else {
@@ -420,13 +449,40 @@ function HeaderContent() {
             </Box>
             {/* Actions & User Profile */}
             <Stack direction="row" spacing={2} alignItems="center">
+                {pathname.includes('/bugs') && (
+                    <Tooltip title="Refresh Bugs">
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: '#F4F5F7',
+                                borderRadius: '10px',
+                                p: 0.5,
+                            }}
+                        >
+                            <IconButton
+                                size="small"
+                                onClick={handleRefreshBugs}
+                                disabled={refreshingBugs}
+                                sx={{
+                                    color: 'var(--text-2nd-color)',
+                                    '&:hover': { bgcolor: '#FFFFFF', color: '#6366F1' },
+                                }}
+                            >
+                                <RefreshCw size={18} className={refreshingBugs ? 'spin' : ''} />
+                            </IconButton>
+                        </Box>
+                    </Tooltip>
+                )}
                 {pathname.includes('/bugs') && permissions.canReportBug(currentUser) && (
                     <Button
-                        startIcon={<Plus size={16} />}
+                        startIcon={creatingBug ? <RefreshCw size={16} className="spin" /> : <Plus size={16} />}
                         onClick={handleReportBugClick}
+                        disabled={creatingBug}
                         className='buttonClassname'
                     >
-                        Create Bug
+                        {creatingBug ? 'Loading...' : 'Create Bug'}
                     </Button>
                 )}
 
@@ -545,7 +601,7 @@ function HeaderContent() {
                                                 }
                                             />
                                         </ListItem>
-                                        {i < notifications.length - 1 && <Divider sx={{ mx: 2.5, opacity: 0.5 }} />}
+                                        {/* {i < notifications.length - 1 && <Divider sx={{ mx: 2.5, opacity: 0.5 }} />} */}
                                     </React.Fragment>
                                 ))}
                             </List>

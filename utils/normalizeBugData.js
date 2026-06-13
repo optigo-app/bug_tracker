@@ -11,7 +11,7 @@ export function normalizeBugData(bug) {
 
   const normalized = { ...bug };
 
-  // Load reference data from session storage
+  // Load reference data from localStorage
   let statusData = [];
   let priorityData = [];
   let categoryData = [];
@@ -19,10 +19,10 @@ export function normalizeBugData(bug) {
 
   if (typeof window !== 'undefined') {
     try {
-      statusData = JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]');
-      priorityData = JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]');
-      categoryData = JSON.parse(sessionStorage.getItem('bug_categoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]');
-      assigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
+      statusData = JSON.parse(localStorage.getItem('taskbugstatusData') || '[]');
+      priorityData = JSON.parse(localStorage.getItem('taskbugpriorityData') || '[]');
+      categoryData = JSON.parse(localStorage.getItem('bug_categoryData') || localStorage.getItem('taskbugcategoryData') || '[]');
+      assigneeData = JSON.parse(localStorage.getItem('taskAssigneeData') || '[]');
     } catch (error) {
       console.error('Error loading reference data for bug normalization:', error);
     }

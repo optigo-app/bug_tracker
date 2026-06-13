@@ -28,10 +28,10 @@ export default function TimelineSection({ timeline = [], getUserName, showFullTi
     useEffect(() => {
         if (typeof window !== 'undefined') {
             try {
-                setStatusData(JSON.parse(sessionStorage.getItem('taskbugstatusData') || '[]'));
-                setPriorityData(JSON.parse(sessionStorage.getItem('taskbugpriorityData') || '[]'));
-                setCategoryData(JSON.parse(sessionStorage.getItem('bug_categoryData') || sessionStorage.getItem('taskbugcategoryData') || '[]'));
-                setAssigneeData(JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]'));
+                setStatusData(JSON.parse(localStorage.getItem('taskbugstatusData') || '[]'));
+                setPriorityData(JSON.parse(localStorage.getItem('taskbugpriorityData') || '[]'));
+                setCategoryData(JSON.parse(localStorage.getItem('bug_categoryData') || localStorage.getItem('taskbugcategoryData') || '[]'));
+                setAssigneeData(JSON.parse(localStorage.getItem('taskAssigneeData') || '[]'));
             } catch (error) {
                 console.error('Error loading reference data for timeline:', error);
             }

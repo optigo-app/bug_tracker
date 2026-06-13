@@ -5,7 +5,7 @@ export const useUserSession = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const userProfileData = sessionStorage.getItem('UserProfileData');
+      const userProfileData = localStorage.getItem('UserProfileData');
       if (userProfileData) {
         try {
           const profile = JSON.parse(userProfileData);
@@ -32,7 +32,7 @@ export const useAssignees = (open) => {
   useEffect(() => {
     if (open) {
       try {
-        const taskAssigneeData = JSON.parse(sessionStorage.getItem('taskAssigneeData') || '[]');
+        const taskAssigneeData = JSON.parse(localStorage.getItem('taskAssigneeData') || '[]');
         setAssignees(taskAssigneeData);
       } catch (error) {
         console.error('Error loading assignees:', error);

@@ -1,6 +1,6 @@
 USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 29-05-2026 10:37:04 ******/
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 13-06-2026 09:47:46 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -378,7 +378,7 @@ GO
                 ELSE IF (@mode = 'bugupdate')
                 BEGIN
                     SET @SQL = '
-                        DECLARE @now DATETIME = GETDATE()
+                        DECLARE @now DATETIME = isnull([dbo].[UTC_CSERVERLOCAL](getdate()),getdate())
                         DECLARE @oldStatusId NVARCHAR(50), @oldPriorityId NVARCHAR(50), @oldCategoryId NVARCHAR(50)
                         DECLARE @oldAssigneeId NVARCHAR(50), @oldTitle NVARCHAR(200), @oldDescription NVARCHAR(MAX)
                         DECLARE @newStatusId NVARCHAR(50), @newPriorityId NVARCHAR(50), @newCategoryId NVARCHAR(50)

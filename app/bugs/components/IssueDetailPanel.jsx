@@ -7,10 +7,9 @@ import {
 } from '@mui/material';
 import { filterStatusDataByRole } from '@/components/bugModal/constants';
 import {
-  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRightClose, PanelRightOpen,
+  Edit2, CheckCircle2, RotateCcw, ExternalLink, PanelRight,
   AlertCircle, ChevronLeft, ChevronRight, Paperclip, MessageSquare, Calendar, Clock,
   User, ShieldAlert, Sparkles, Download, Eye, FileText, Send, Info, Trash2,
-  RefreshCcw,
   Image,
   ListCollapse
 } from 'lucide-react';
@@ -32,6 +31,7 @@ import PriorityBadge from './PriorityBadge';
 import BugDetailSkeleton from './BugDetailSkeleton';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import { deleteBugApi } from '@/app/api/bugdeleteApi';
+import { useBugContext } from '@/contexts/BugContext';
 
 export default function IssueDetailPanel({
   bugId,
@@ -41,7 +41,6 @@ export default function IssueDetailPanel({
   onRefreshList,
   onUpdateBug,
   onViewDetails,
-  onRefress,
   onBack,
   onReassign,
   onPrev,
@@ -68,15 +67,36 @@ export default function IssueDetailPanel({
   const [error, setError] = useState(null);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showFullTimeline, setShowFullTimeline] = useState(false);
-  const [statusData, setStatusData] = useState([]);
-  const [priorityData, setPriorityData] = useState([]);
+
+  const { refreshDetailSignal } = useBugContext();
+
+  // Hydrate status/priority from localStorage synchronously so dropdowns
+  // render immediately after client-side redirect (not just after reload)
+  const [statusData, setStatusData] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const data = localStorage.getItem('taskbugstatusData');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { return []; }
+    }
+    return [];
+  });
+
+  const [priorityData, setPriorityData] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    const data = localStorage.getItem('taskbugpriorityData');
+    if (data) {
+      try { return JSON.parse(data); } catch (e) { return []; }
+    }
+    return [];
+  });
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load status and priority data from session storage
+  // Refresh status/priority when currentUser changes or storage events fire
   useEffect(() => {
     const loadStatusData = () => {
-      const data = sessionStorage.getItem('taskbugstatusData');
+      const data = localStorage.getItem('taskbugstatusData');
       if (data) {
         try {
           const allStatusData = JSON.parse(data);
@@ -89,7 +109,7 @@ export default function IssueDetailPanel({
     };
 
     const loadPriorityData = () => {
-      const data = sessionStorage.getItem('taskbugpriorityData');
+      const data = localStorage.getItem('taskbugpriorityData');
       if (data) {
         try {
           setPriorityData(JSON.parse(data));
@@ -103,7 +123,6 @@ export default function IssueDetailPanel({
     loadStatusData();
     loadPriorityData();
 
-    // Listen for changes in session storage
     const handleStorageChange = () => {
       loadStatusData();
       loadPriorityData();
@@ -158,6 +177,12 @@ export default function IssueDetailPanel({
     setBug(null);
     fetchBug();
   }, [bugId, fetchBug]);
+
+  useEffect(() => {
+    if (refreshDetailSignal > 0 && bugId) {
+      fetchBug();
+    }
+  }, [refreshDetailSignal, bugId, fetchBug]);
 
   const handleViewerBugChange = useCallback(async (newBugId) => {
     if (!newBugId) return;
@@ -331,37 +356,6 @@ export default function IssueDetailPanel({
                   ) : bug.title}
                 </Typography>
               </Box>
-              <Tooltip title="Refress Bug page">
-                <span>
-                  <IconButton
-                    size="small"
-                    onClick={onRefress}
-                    sx={{
-                      border: '1px solid #EAECEF',
-                      borderRadius: '12px',
-                      width: 34,
-                      height: 34,
-                      color: 'var(--text-2nd-color)',
-                      bgcolor: '#FFFFFF',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover:not(:disabled)': {
-                        bgcolor: '#FFFFFF',
-                        borderColor: '#7367f0',
-                        color: '#7367f0',
-                        boxShadow: '0 3px 8px rgba(115, 103, 240, 0.15)',
-                        transform: 'translateY(-1px)'
-                      },
-                      '&:disabled': {
-                        opacity: 0.5,
-                        cursor: 'not-allowed'
-                      }
-                    }}
-                  >
-                    <RefreshCcw size={16} />
-                  </IconButton>
-                </span>
-              </Tooltip>
               <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0 }}>
                 <Tooltip title="Previous Bug">
                   <span>
@@ -495,7 +489,13 @@ export default function IssueDetailPanel({
                       }
                     }}
                   >
-                    {showSidebar ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+                    <PanelRight
+                      size={16}
+                      style={{
+                        transition: 'transform 0.3s ease',
+                        transform: showSidebar ? 'rotate(180deg)' : 'rotate(0deg)'
+                      }}
+                    />
                   </IconButton>
                 </Tooltip>
                 {/* <Tooltip title="Open in Full Page">
@@ -527,7 +527,7 @@ export default function IssueDetailPanel({
 
             {/* Action Buttons Section */}
             <Stack direction="row" spacing={1} sx={{ mt: 1.5, justifyContent: 'flex-end' }}>
-              {permissions.canVerifyBug(currentUser) && currentStatusLabel === 'Ready For Test' && (
+              {permissions.canVerifyBug(currentUser) && currentStatusLabel == 'Ready For Test' && (
                 <>
                   <Button
                     size="small"
@@ -890,8 +890,6 @@ export default function IssueDetailPanel({
                   )}
                 </Stack>
 
-                <Divider sx={{ my: 2.5, borderColor: '#EAECEF' }} />
-
                 {/* New Comment Input Wrapper */}
                 <Box sx={{ mt: 1 }}>
                   <CommentInput bugId={bugId} currentUser={currentUser} onCommentAdded={() => fetchBug(true)} />
@@ -999,7 +997,7 @@ export default function IssueDetailPanel({
                           <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-2nd-color)', mb: 0.75, letterSpacing: '0.02em' }}>
                             Priority Level
                           </Typography>
-                          <PriorityBadge priority={bug.priority} py={0.55} px={1.5} fontSize="0.7rem"/>
+                          <PriorityBadge priority={bug.priority} py={0.55} px={1.5} fontSize="0.7rem" />
                         </Box>
                         {bug.category != '0' && (
                           <Box>
@@ -1007,7 +1005,11 @@ export default function IssueDetailPanel({
                               Category
                             </Typography>
                             <Chip
-                              label={typeof bug.category === 'object' ? bug.category.label : bug.category}
+                              label={
+                                bug.category && typeof bug.category === 'object'
+                                  ? bug.category.label
+                                  : bug.category ?? ''
+                              }
                               size="small"
                               sx={{
                                 fontWeight: 600,

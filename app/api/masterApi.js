@@ -82,7 +82,7 @@ export const AssigneeMaster = async () => {
                 }
                 return firstComp;
             });
-            sessionStorage.setItem('taskAssigneeData', JSON.stringify(sortedData));
+            localStorage.setItem('taskAssigneeData', JSON.stringify(sortedData));
             return response.Data;
         } else {
             return { rd: [] };
@@ -99,9 +99,9 @@ export const fetchMasterGlFunc = async () => {
         const uniqueDepartments = new Set();
         let UserProfileData;
         const setUserProfileData = (data) => {
-            sessionStorage.setItem('UserProfileData', JSON.stringify(data));
+            localStorage.setItem('UserProfileData', JSON.stringify(data));
         };
-        const AssigneeMasterData = JSON.parse(sessionStorage.getItem('taskAssigneeData'));
+        const AssigneeMasterData = JSON.parse(localStorage.getItem('taskAssigneeData'));
         if (!AssigneeMasterData) {
             const assigneeRes = await AssigneeMaster();
             const rd = assigneeRes?.rd || [];
@@ -122,7 +122,7 @@ export const fetchMasterGlFunc = async () => {
             id: index + 1,
             labelname: department
         }));
-        sessionStorage.setItem('taskDepartments', JSON.stringify(departmentArray));
+        localStorage.setItem('taskDepartments', JSON.stringify(departmentArray));
 
         // Fetch taskbugstatus and taskbugpriority first
         const priorityModes = ['taskbugstatus', 'taskbugpriority'];
@@ -135,7 +135,6 @@ export const fetchMasterGlFunc = async () => {
                 }
                 return (a.labelname || '').localeCompare(b.labelname || '');
             });
-            sessionStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
             localStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
         }
 
@@ -153,7 +152,7 @@ export const fetchMasterGlFunc = async () => {
                         }
                         return (a.labelname || '').localeCompare(b.labelname || '');
                     });
-                    sessionStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
+                    localStorage.setItem(`${mode}Data`, JSON.stringify(filteredData || []));
                 }
             }
         }
