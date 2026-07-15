@@ -1,6 +1,6 @@
 USE [404146_CentralUser]
 GO
-/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 13-06-2026 09:47:46 ******/
+/****** Object:  StoredProcedure [dbo].[bugv1]    Script Date: 14-07-2026 18:17:59 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -246,7 +246,7 @@ GO
                     IF (@bug_filterType = 'me')
                     BEGIN
                         IF (@bug_assigneeId IS NULL)
-                            SET @bug_assigneeId = @appUserIdInt 
+                            SET @bug_assigneeId = @appUserIdInt
                         IF (@bug_reporterId IS NULL)
                             SET @bug_reporterId = @appUserIdInt
                     END
@@ -256,34 +256,61 @@ GO
                         SET @bug_reporterId = NULL
                     END
 
-                    DECLARE @Whereclause as nvarchar(max)=''
+                    -- Build WHERE predicate (inlined values — safe, all INT inputs)
+                    DECLARE @Whereclause as nvarchar(max)=' WHERE 1=1'
 
-                     IF (@bug_taskId IS NOT NULL)
-                        SET @Whereclause = @Whereclause + ' AND b.taskId = @bug_taskId'
+                    IF (@bug_taskId IS NOT NULL)
+                        SET @Whereclause = @Whereclause + ' AND b.taskId = ' + CAST(@bug_taskId AS NVARCHAR(20))
 
                     IF (@bug_statusId IS NOT NULL)
-                        SET @Whereclause = @Whereclause + ' AND b.statusId = @bug_statusId'
+                        SET @Whereclause = @Whereclause + ' AND b.statusId = ' + CAST(@bug_statusId AS NVARCHAR(20))
 
                     IF (@bug_assigneeId IS NOT NULL AND @bug_reporterId IS NOT NULL)
-                        SET @Whereclause = @Whereclause + ' AND (b.assigneeId = @bug_assigneeId OR b.reporterId = @bug_reporterId)'
-
+                        SET @Whereclause = @Whereclause + ' AND (b.assigneeId = ' + CAST(@bug_assigneeId AS NVARCHAR(20)) + ' OR b.reporterId = ' + CAST(@bug_reporterId AS NVARCHAR(20)) + ')'
                     ELSE IF (@bug_assigneeId IS NOT NULL)
-                        SET @Whereclause = @Whereclause + ' AND b.assigneeId = @bug_assigneeId'
-
+                        SET @Whereclause = @Whereclause + ' AND b.assigneeId = ' + CAST(@bug_assigneeId AS NVARCHAR(20))
                     ELSE IF (@bug_reporterId IS NOT NULL)
-                        SET @Whereclause = @Whereclause + ' AND b.reporterId = @bug_reporterId'
+                        SET @Whereclause = @Whereclause + ' AND b.reporterId = ' + CAST(@bug_reporterId AS NVARCHAR(20))
+
+                    -- Key optimization: filter bugs FIRST in CTE, then only aggregate
+                    -- counts for matching bug IDs — avoids full scans of comment/attch tables
                     SET @SQL = '
+                        ;WITH filtered AS (
                             SELECT
-                                b.*,
-                                b.statusId AS [status],
-                                b.priorityId AS [priority],
-                                b.categoryId AS [category],
-                                (SELECT COUNT(1) FROM [' + @DBNAME + '].[dbo].[bug_comment] c WHERE c.bugid = b.id) AS commentCount
-                            FROM ' + QUOTENAME(@DBNAME) + '.[dbo].[bug_Bugs] b
-                            WHERE 1 = 1
-                            '+@Whereclause+'
-                            ORDER BY b.entrydate DESC
-                        '
+                                b.id, b.bugNo, b.title, b.taskId, b.taskNo, b.taskName,
+                                b.assigneeId, b.reporterId, b.priorityId, b.dueDate,
+                                b.categoryId, b.environment, b.statusId,
+                                b.entrydate, b.updateddate
+                            FROM [' + @DBNAME + '].[dbo].[bug_Bugs] b WITH (NOLOCK)
+                            ' + @Whereclause + '
+                        )
+                        SELECT
+                            f.id, f.bugNo, f.title, f.taskId, f.taskNo, f.taskName,
+                            f.assigneeId, f.reporterId, f.priorityId, f.dueDate,
+                            f.categoryId, f.environment, f.statusId,
+                            f.entrydate, f.updateddate,
+                            f.statusId   AS [status],
+                            f.priorityId AS [priority],
+                            f.categoryId AS [category],
+                            ISNULL(cc.cnt, 0) AS commentCount,
+                            ISNULL(ac.cnt, 0) AS attachmentCount
+                        FROM filtered f
+                        LEFT JOIN (
+                            SELECT bugid, COUNT(1) AS cnt
+                            FROM [' + @DBNAME + '].[dbo].[bug_comment] WITH (NOLOCK)
+                            WHERE bugid IN (SELECT id FROM filtered)
+                            GROUP BY bugid
+                        ) cc ON cc.bugid = f.id
+                        LEFT JOIN (
+                            SELECT bugid, COUNT(1) AS cnt
+                            FROM [' + @DBNAME + '].[dbo].[bug_attch] WITH (NOLOCK)
+                            WHERE commentid IS NULL
+                            AND bugid IN (SELECT id FROM filtered)
+                            GROUP BY bugid
+                        ) ac ON ac.bugid = f.id
+                        ORDER BY f.entrydate DESC
+                        OPTION (RECOMPILE)
+                    '
 
                     PRINT(@SQL)
                     EXEC (@SQL)

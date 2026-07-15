@@ -40,13 +40,44 @@ export const BugProvider = ({ children }) => {
         filterType: 'team',
       });
       const data = response?.rd || response?.rd1 || [];
-      const normalizedBugs = normalizeBugList(data);
-      setBugs(normalizedBugs);
-      setBugsLoaded(true);
-      return normalizedBugs;
+
+      // API responded — stop showing loading skeleton immediately
+      setIsLoading(false);
+
+      // Yield to let React paint before starting heavy normalization
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Normalize in chunks so the main thread stays responsive
+      // First chunk renders quickly, rest fills in progressively
+      const CHUNK_SIZE = 5000;
+
+      if (data.length <= CHUNK_SIZE) {
+        // Small dataset — normalize in one go
+        const normalizedBugs = normalizeBugList(data);
+        setBugs(normalizedBugs);
+        setBugsLoaded(true);
+        return normalizedBugs;
+      }
+
+      // Large dataset — show first chunk immediately, then stream the rest
+      const firstChunk = normalizeBugList(data.slice(0, CHUNK_SIZE));
+      setBugs(firstChunk);
+      setBugsLoaded(true); // unlock UI with first chunk
+
+      // Process remaining chunks with yield points between each
+      let allBugs = [...firstChunk];
+      for (let i = CHUNK_SIZE; i < data.length; i += CHUNK_SIZE) {
+        await new Promise((resolve) => setTimeout(resolve, 0)); // yield to browser
+        const chunk = normalizeBugList(data.slice(i, i + CHUNK_SIZE));
+        allBugs = allBugs.concat(chunk);
+        setBugs([...allBugs]);
+      }
+
+      return allBugs;
     } catch (err) {
       console.error('Error fetching global bugs:', err);
       setError('Failed to fetch bug list.');
+      setIsLoading(false);
       throw err;
     } finally {
       setIsLoading(false);

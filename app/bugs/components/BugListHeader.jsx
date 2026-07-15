@@ -1,6 +1,25 @@
 import { Box, Stack, InputBase, IconButton, Tooltip, Chip, Button, Tabs, Tab } from '@mui/material';
 import { Filter, SortAsc, SlidersHorizontal, X } from 'lucide-react';
 
+function formatCompactCount(num) {
+  if (!num && num !== 0) return '';
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k+';
+  return num;
+}
+
+function TabLabel({ label, count }) {
+  const exact = typeof count === 'number' ? count.toLocaleString() : count;
+  return (
+    <Tooltip title={`${label}: ${exact}`} arrow placement="top">
+      <Stack direction="row" alignItems="center" spacing={0.4} sx={{ lineHeight: 1.2 }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.85 }}>({formatCompactCount(count)})</span>
+      </Stack>
+    </Tooltip>
+  );
+}
+
 export default function BugListHeader({
   bugCount,
   search,
@@ -229,9 +248,9 @@ export default function BugListHeader({
           }
         }}
       >
-        <Tab label={`All (${bugCount?.all})`} value="all" />
-        <Tab label={`Me (${bugCount?.me})`} value="me" />
-        <Tab label={`Team (${bugCount?.team})`} value="team" />
+        <Tab label={<TabLabel label="All" count={bugCount?.all ?? 0} />} value="all" />
+        <Tab label={<TabLabel label="Me" count={bugCount?.me ?? 0} />} value="me" />
+        <Tab label={<TabLabel label="Team" count={bugCount?.team ?? 0} />} value="team" />
       </Tabs>
 
       {/* Active Filters */}

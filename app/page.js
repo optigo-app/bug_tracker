@@ -22,7 +22,7 @@ import {
   ToggleButtonGroup,
   Skeleton
 } from '@mui/material';
-import { getRandomAvatarColor, ImageUrl } from '@/utils/glocalfunc';
+import { getRandomAvatarColor, ImageUrl, getStatusColorByLabel } from '@/utils/glocalfunc';
 import { checkAuth } from '@/utils/authCheck';
 import { getDashboardApi } from '@/app/api/dashboardApi';
 import { useBugContext } from '@/contexts/BugContext';
@@ -268,14 +268,19 @@ export default function Home() {
         }
       });
       const taskBugStatusData = JSON?.parse(localStorage.getItem('taskbugstatusData'));
-      const colors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
+      const fallbackColors = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#8B5CF6', '#F97316', '#14B8A6', 'var(--text-2nd-color)'];
+      const getStatusColor = (label, index) => {
+        const config = getStatusColorByLabel(label);
+        return config ? config.color : fallbackColors[index % fallbackColors.length];
+      };
       const statusData = Object.entries(statusMap)
         .map(([statusId, count], index) => {
           const label = taskBugStatusData?.find(item => String(item?.id) === String(statusId));
+          const labelName = label?.labelname || `Status ${statusId}`;
           return {
-            name: label?.labelname || `Status ${statusId}`,
+            name: labelName,
             value: Number(count || 0),
-            color: colors[index % colors.length],
+            color: getStatusColor(labelName, index),
             statusId
           };
         })
@@ -283,10 +288,11 @@ export default function Home() {
       const issueDistribution = allStatusCountsResult
         .map((row, index) => {
           const label = taskBugStatusData?.find(item => String(item?.id) === String(row.statusId));
+          const labelName = label?.labelname || `Status ${row.statusId}`;
           return {
-            name: label?.labelname || `Status ${row.statusId}`,
+            name: labelName,
             value: Number(row.count || 0),
-            color: colors[index % colors.length],
+            color: getStatusColor(labelName, index),
             statusId: row.statusId
           };
         })

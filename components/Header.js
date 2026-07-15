@@ -243,47 +243,64 @@ function HeaderContent() {
     const userImageSrc = ImageUrl(currentUser);
     const open = Boolean(anchorEl);
     const profileOpen = Boolean(profileAnchorEl);
+    const fmtCompact = (n) => {
+        if (!n && n !== 0) return '0';
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k+';
+        return n;
+    };
+
     const bugCountSummary = pathname.includes('/bugs') && (
         <Stack direction="row" spacing={0.75} alignItems="center">
-            <Box sx={{
-                bgcolor: 'rgba(99, 102, 241, 0.12)',
-                color: '#4338CA',
-                px: 1,
-                py: 0.55,
-                borderRadius: '8px',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
-                width: 72,
-                minWidth: 72,
-                textAlign: 'center',
-                flexShrink: 0
-            }}>
-                <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
-                    {displayTotal}
-                    <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
+            <Tooltip title={`Total: ${typeof displayTotal === 'number' ? displayTotal.toLocaleString() : displayTotal}`} arrow>
+                <Box sx={{
+                    bgcolor: '#F3F0FF',
+                    color: '#5B4DDB',
+                    px: 1.6,
+                    py: 0.5,
+                    borderRadius: '20px',
+                    border: '1px solid rgba(99, 102, 241, 0.18)',
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'baseline',
+                    gap: 0.5,
+                    minWidth: 68,
+                    boxShadow: '0 1px 2px rgba(99, 102, 241, 0.06)'
+                }}>
+                    <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
+                        {fmtCompact(displayTotal)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.65, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                         Total
-                    </Box>
-                </Typography>
-            </Box>
+                    </Typography>
+                </Box>
+            </Tooltip>
 
-            <Box sx={{
-                bgcolor: 'rgba(16, 185, 129, 0.12)',
-                color: '#047857',
-                px: 1,
-                py: 0.55,
-                borderRadius: '8px',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
-                width: 72,
-                minWidth: 72,
-                textAlign: 'center',
-                flexShrink: 0
-            }}>
-                <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
-                    {displayToday}
-                    <Box component="span" sx={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.75, letterSpacing: '0.04em', textTransform: 'uppercase', ml: 0.5 }}>
+            <Tooltip title={`Today: ${typeof displayToday === 'number' ? displayToday.toLocaleString() : displayToday}`} arrow>
+                <Box sx={{
+                    bgcolor: '#ECFDF5',
+                    color: '#047857',
+                    px: 1.6,
+                    py: 0.5,
+                    borderRadius: '20px',
+                    border: '1px solid rgba(16, 185, 129, 0.18)',
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'baseline',
+                    gap: 0.5,
+                    minWidth: 68,
+                    boxShadow: '0 1px 2px rgba(16, 185, 129, 0.06)'
+                }}>
+                    <Typography sx={{ fontSize: '0.95rem', lineHeight: 1, fontWeight: 800 }}>
+                        {fmtCompact(displayToday)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, opacity: 0.65, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                         Today
-                    </Box>
-                </Typography>
-            </Box>
+                    </Typography>
+                </Box>
+            </Tooltip>
 
             {dataParam && (
                 <Button

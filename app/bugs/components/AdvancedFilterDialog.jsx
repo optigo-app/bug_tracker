@@ -38,7 +38,8 @@ export default function AdvancedFilterDialog({
   statusOptions,
   priorityOptions,
   developers,
-  taskAssignees
+  taskAssignees,
+  assigneeOptions
 }) {
   // Use a local state for the dialog so changes don't apply until "Apply" is clicked
   const [localFilters, setLocalFilters] = useState(advFilters);
@@ -156,9 +157,9 @@ export default function AdvancedFilterDialog({
             <Autocomplete
               size="small"
               fullWidth
-              options={developers}
-              getOptionLabel={(option) => option.name || option.id}
-              value={developers.find(d => d.id === localFilters.assignee) || null}
+              options={assigneeOptions || developers}
+              getOptionLabel={(option) => String(option.name || option.id)}
+              value={(assigneeOptions || developers).find(d => d.id === localFilters.assignee) || null}
               onChange={(e, val) => setLocalFilters({ ...localFilters, assignee: val ? val.id : null })}
               renderInput={(params) => (
                 <TextField {...params} label="Assignee" sx={{ '& .MuiInputBase-root': { borderRadius: 1.5 } }} />
@@ -168,7 +169,7 @@ export default function AdvancedFilterDialog({
               size="small"
               fullWidth
               options={developers}
-              getOptionLabel={(option) => option.name || option.id}
+              getOptionLabel={(option) => String(option.name || option.id)}
               value={developers.find(d => d.id === localFilters.reporter) || null}
               onChange={(e, val) => setLocalFilters({ ...localFilters, reporter: val ? val.id : null })}
               renderInput={(params) => (

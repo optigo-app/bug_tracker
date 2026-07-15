@@ -94,7 +94,7 @@ function BugsPageContent() {
         return Array.isArray(list)
           ? list.map(user => ({
               id: user.id,
-              name: `${user.firstname} ${user.lastname}`.trim() || user.id,
+              name: `${user.firstname || ''} ${user.lastname || ''}`.trim() || String(user.id),
               role: user.designation || user.department || 'Developer'
             }))
           : [];
@@ -102,6 +102,13 @@ function BugsPageContent() {
     }
     return [];
   });
+
+  const assigneeOptions = useMemo(() => {
+    return developers.filter((d) => {
+      const role = String(d.role || '').toLowerCase();
+      return role.includes('developer') || role.includes('dev') || role.includes('tester') || role.includes('test') || role.includes('qa');
+    });
+  }, [developers]);
 
   const [statusOptions, setStatusOptions] = useState([]);
   const [priorityMap, setPriorityMap] = useState({});
@@ -137,6 +144,7 @@ function BugsPageContent() {
     dueDate: { startDate: '', endDate: '' }
   });
   const [advFilterOpen, setAdvFilterOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(100);
   const bugListRef = useRef(null);
 
   const hydrateMasterDataFromStorage = useCallback(() => {
@@ -408,10 +416,15 @@ function BugsPageContent() {
       return isAssigned || isReporter;
     };
 
-    // First filter: taskId, search, status, advFilters
-    const baseFiltered = globalBugs.filter((bug) => {
+    // Single-pass filter + count
+    const baseFiltered = [];
+    let meCount = 0;
+    let teamCount = 0;
+
+    for (let i = 0; i < globalBugs.length; i++) {
+      const bug = globalBugs[i];
       if (taskIdParam && String(bug.taskId || '') !== String(taskIdParam)) {
-        return false;
+        continue;
       }
 
       const title = String(bug?.title || '').toLowerCase();
@@ -441,30 +454,49 @@ function BugsPageContent() {
         new Date(bug.dueDate) <= dueDateRange.end
       );
 
-      return matchSearch && matchStatus && matchAdvTaskNo && matchAdvBugNo && matchAdvStatus && matchAdvPriority && matchAdvAssignee && matchAdvReporter && matchAdvStartDate && matchAdvDueDate;
-    });
+      if (matchSearch && matchStatus && matchAdvTaskNo && matchAdvBugNo && matchAdvStatus && matchAdvPriority && matchAdvAssignee && matchAdvReporter && matchAdvStartDate && matchAdvDueDate) {
+        baseFiltered.push(bug);
+        if (isUserBug(bug)) {
+          meCount++;
+        } else {
+          teamCount++;
+        }
+      }
+    }
 
-    // Calculate counts
-    const meCount = baseFiltered.filter(isUserBug).length;
-    const teamCount = baseFiltered.filter((bug) => !isUserBug(bug)).length;
     const allCount = baseFiltered.length;
 
-    // Second filter: filterScope (all vs me vs team)
-    const scopeFiltered = baseFiltered.filter((bug) => {
-      if (filterScope === 'all') return true;
-      if (filterScope === 'me') return isUserBug(bug);
-      if (filterScope === 'team') return !isUserBug(bug);
-      return true;
-    });
+    // Scope filter
+    const scopeFiltered = filterScope === 'all'
+      ? baseFiltered
+      : baseFiltered.filter((bug) => {
+        if (filterScope === 'me') return isUserBug(bug);
+        if (filterScope === 'team') return !isUserBug(bug);
+        return true;
+      });
 
-    // Sort
-    const sorted = scopeFiltered.sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.entrydate) - new Date(a.entrydate);
-      if (sortBy === 'oldest') return new Date(a.entrydate) - new Date(b.entrydate);
-      const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
-      const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
-      return sortBy === 'priority-high' ? pB - pA : pA - pB;
-    });
+    // Sort with cached dates for performance
+    const sorted = scopeFiltered;
+    if (sortBy === 'newest' || sortBy === 'oldest') {
+      const dateCache = new Map();
+      const getTime = (bug) => {
+        if (dateCache.has(bug.id)) return dateCache.get(bug.id);
+        const t = new Date(bug.entrydate).getTime();
+        dateCache.set(bug.id, t);
+        return t;
+      };
+      sorted.sort((a, b) => {
+        const tA = getTime(a);
+        const tB = getTime(b);
+        return sortBy === 'newest' ? tB - tA : tA - tB;
+      });
+    } else {
+      sorted.sort((a, b) => {
+        const pA = priorityMap[String(a.priorityId || a.priority)] || 0;
+        const pB = priorityMap[String(b.priorityId || b.priority)] || 0;
+        return sortBy === 'priority-high' ? pB - pA : pA - pB;
+      });
+    }
 
     Object.assign(sorted, { meCount, teamCount, allCount });
     return sorted;
@@ -479,6 +511,11 @@ function BugsPageContent() {
   useEffect(() => {
     bugListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [filterScope]);
+
+  // Reset pagination when filters/search change
+  useEffect(() => {
+    setVisibleCount(100);
+  }, [search, statusFilter, filterScope, sortBy, advFilters.taskNo, advFilters.bugNo, advFilters.status, advFilters.priority, advFilters.assignee, advFilters.reporter, advFilters.startDate?.startDate, advFilters.startDate?.endDate, advFilters.dueDate?.startDate, advFilters.dueDate?.endDate]);
 
   const selectedIndex = filteredBugs.findIndex((bug) => bug.id === selectedId);
   const hasPrev = selectedIndex > 0;
@@ -595,10 +632,10 @@ function BugsPageContent() {
               ...slimScroll
             }}
           >
-            {(((!bugsLoaded || isLoading) && !error) || !isMasterDataReady) ? (
+            {(isLoading || (!bugsLoaded && !error)) ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                 {[...Array(8)].map((_, i) => (
-                  <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f5f5f5' }} />
+                  <Skeleton key={i} variant='rectangular' height={120} animation="wave" sx={{ bgcolor: '#f5f5f5', borderRadius: 1 }} />
                 ))}
               </Box>
             ) : error ? (
@@ -615,22 +652,36 @@ function BugsPageContent() {
                 </Typography>
               </Box>
             ) : (
-              filteredBugs.map((bug) => (
-                <IssueCard
-                  key={bug.id}
-                  bug={bug}
-                  isSelected={bug.id === selectedId}
-                  onClick={() => setSelectedId(bug.id)}
-                  reassignInfo={reassignInfo}
-                  onUndoReassign={async () => {
-                    if (reassignInfo?.previousAssignee) {
-                      await updateBugApi({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee, remark: 'Reverted reassignment', userId: currentUser?.id, reporterId: globalBugs.find(b => b.id === reassignInfo.bugId)?.reporterId });
-                      setReassignInfo(null);
-                      handleUpdateBug({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee });
-                    }
-                  }}
-                />
-              ))
+              <>
+                {filteredBugs.slice(0, visibleCount).map((bug) => (
+                  <IssueCard
+                    key={bug.id}
+                    bug={bug}
+                    isSelected={bug.id === selectedId}
+                    onClick={() => setSelectedId(bug.id)}
+                    reassignInfo={reassignInfo}
+                    onUndoReassign={async () => {
+                      if (reassignInfo?.previousAssignee) {
+                        await updateBugApi({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee, remark: 'Reverted reassignment', userId: currentUser?.id, reporterId: globalBugs.find(b => b.id === reassignInfo.bugId)?.reporterId });
+                        setReassignInfo(null);
+                        handleUpdateBug({ id: reassignInfo.bugId, assigneeId: reassignInfo.previousAssignee });
+                      }
+                    }}
+                  />
+                ))}
+                {filteredBugs.length > visibleCount && (
+                  <Box sx={{ py: 2, textAlign: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setVisibleCount(prev => prev + 100)}
+                      sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none' }}
+                    >
+                      Load More ({filteredBugs.length - visibleCount} remaining)
+                    </Button>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </Box>
@@ -661,7 +712,7 @@ function BugsPageContent() {
           flexDirection: 'column',
           minWidth: 0
         }}>
-          {((!bugsLoaded && !error) || !isMasterDataReady) ? (
+          {(!bugsLoaded && !error && isLoading) ? (
             <BugDetailSkeleton />
           ) : selectedId ? (
             <IssueDetailPanel
@@ -719,6 +770,7 @@ function BugsPageContent() {
         statusOptions={statusOptions}
         priorityOptions={priorityOptions}
         developers={developers}
+        assigneeOptions={assigneeOptions}
         taskAssignees={taskAssignees}
       />
       <ReportBugFlow

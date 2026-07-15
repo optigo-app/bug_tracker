@@ -6,18 +6,18 @@
  * @param {Object} bug - Raw bug object from API
  * @returns {Object} Normalized bug object with enriched fields
  */
-export function normalizeBugData(bug) {
+export function normalizeBugData(bug, refData = null) {
   if (!bug) return null;
 
   const normalized = { ...bug };
 
-  // Load reference data from localStorage
-  let statusData = [];
-  let priorityData = [];
-  let categoryData = [];
-  let assigneeData = [];
+  // Load reference data from localStorage only if not provided
+  let statusData = refData?.statusData ?? [];
+  let priorityData = refData?.priorityData ?? [];
+  let categoryData = refData?.categoryData ?? [];
+  let assigneeData = refData?.assigneeData ?? [];
 
-  if (typeof window !== 'undefined') {
+  if (!refData && typeof window !== 'undefined') {
     try {
       statusData = JSON.parse(localStorage.getItem('taskbugstatusData') || '[]');
       priorityData = JSON.parse(localStorage.getItem('taskbugpriorityData') || '[]');
@@ -28,39 +28,50 @@ export function normalizeBugData(bug) {
     }
   }
 
+  // Build lookup maps for O(1) access instead of O(n) .find()
+  const statusMap = refData?.statusMap;
+  const priorityMap = refData?.priorityMap;
+  const categoryMap = refData?.categoryMap;
+  const assigneeMap = refData?.assigneeMap;
+
   // Normalize status (by id)
   const statusId = bug.statusId;
-  const statusObj = statusData.find(s =>
-    String(s?.id) === String(statusId)
-  );
-  if (statusObj) {
-    normalized.status = statusObj.labelname || "";
+  if (statusMap) {
+    const statusObj = statusMap[String(statusId)];
+    if (statusObj) normalized.status = statusObj.labelname || "";
+  } else {
+    const statusObj = statusData.find(s => String(s?.id) === String(statusId));
+    if (statusObj) normalized.status = statusObj.labelname || "";
   }
 
   // Normalize priority (by id or label)
   const priorityId = bug.priorityId;
-  const priorityObj = priorityData.find(p =>
-    String(p?.id) === String(priorityId)
-  );
-  if (priorityObj) {
-    normalized.priority = priorityObj.labelname || "";
+  if (priorityMap) {
+    const priorityObj = priorityMap[String(priorityId)];
+    if (priorityObj) normalized.priority = priorityObj.labelname || "";
+  } else {
+    const priorityObj = priorityData.find(p => String(p?.id) === String(priorityId));
+    if (priorityObj) normalized.priority = priorityObj.labelname || "";
   }
 
   // Normalize category (by id)
   const categoryId = bug.categoryId;
-  const categoryObj = categoryData.find(c =>
-    String(c?.id) === String(categoryId)
-  );
-  if (categoryObj) {
-    normalized.category = categoryObj.labelname || "";
+  if (categoryMap) {
+    const categoryObj = categoryMap[String(categoryId)];
+    if (categoryObj) normalized.category = categoryObj.labelname || "";
+  } else {
+    const categoryObj = categoryData.find(c => String(c?.id) === String(categoryId));
+    if (categoryObj) normalized.category = categoryObj.labelname || "";
   }
 
   // Normalize assignee (by id)
   const assigneeId = bug.assigneeId;
-  const assigneeObj = assigneeData.find(a =>
-    String(a?.id) === String(assigneeId) ||
-    String(a?.userid) === String(assigneeId)
-  );
+  let assigneeObj = null;
+  if (assigneeMap) {
+    assigneeObj = assigneeMap[String(assigneeId)] ?? assigneeMap[String(assigneeData.find(a => String(a?.userid) === String(assigneeId))?.id)];
+  } else {
+    assigneeObj = assigneeData.find(a => String(a?.id) === String(assigneeId) || String(a?.userid) === String(assigneeId));
+  }
   if (assigneeObj) {
     normalized.assignee = {
       id: assigneeObj.id,
@@ -76,10 +87,12 @@ export function normalizeBugData(bug) {
 
   // Normalize reporter (by id)
   const reporterId = bug.reporterId;
-  const reporterObj = assigneeData.find(r =>
-    String(r?.id) === String(reporterId) ||
-    String(r?.userid) === String(reporterId)
-  );
+  let reporterObj = null;
+  if (assigneeMap) {
+    reporterObj = assigneeMap[String(reporterId)] ?? assigneeMap[String(assigneeData.find(r => String(r?.userid) === String(reporterId))?.id)];
+  } else {
+    reporterObj = assigneeData.find(r => String(r?.id) === String(reporterId) || String(r?.userid) === String(reporterId));
+  }
   if (reporterObj) {
     normalized.reporter = {
       id: reporterObj.id,
@@ -104,5 +117,39 @@ export function normalizeBugData(bug) {
  */
 export function normalizeBugList(bugs) {
   if (!Array.isArray(bugs)) return [];
-  return bugs.map(bug => normalizeBugData(bug));
+
+  // Pre-load reference data once for the entire list
+  let refData = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const statusData = JSON.parse(localStorage.getItem('taskbugstatusData') || '[]');
+      const priorityData = JSON.parse(localStorage.getItem('taskbugpriorityData') || '[]');
+      const categoryData = JSON.parse(localStorage.getItem('bug_categoryData') || localStorage.getItem('taskbugcategoryData') || '[]');
+      const assigneeData = JSON.parse(localStorage.getItem('taskAssigneeData') || '[]');
+
+      const toMap = (arr) => {
+        const map = {};
+        for (let i = 0; i < arr.length; i++) {
+          const item = arr[i];
+          if (item?.id !== undefined) map[String(item.id)] = item;
+        }
+        return map;
+      };
+
+      refData = {
+        statusData,
+        priorityData,
+        categoryData,
+        assigneeData,
+        statusMap: toMap(statusData),
+        priorityMap: toMap(priorityData),
+        categoryMap: toMap(categoryData),
+        assigneeMap: toMap(assigneeData),
+      };
+    } catch (error) {
+      console.error('Error loading reference data for bug list normalization:', error);
+    }
+  }
+
+  return bugs.map(bug => normalizeBugData(bug, refData));
 }

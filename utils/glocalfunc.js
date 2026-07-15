@@ -303,8 +303,8 @@ export const statusColors = {
     backgroundColor: "#fafafa",
   },
   "Assigned": {
-    color: "#6D6B77",
-    backgroundColor: "#fafafa",
+    color: "#B06A1B",
+    backgroundColor: "#F6E2C8",
   },
   "In Progress": {
     color: "#1e88e5", // Blue - in progress
@@ -334,6 +334,13 @@ export const statusColors = {
     color: "#d32f2f", // Red - rejected
     backgroundColor: "#ffcdd2",
   }
+};
+
+export const getStatusColorByLabel = (label) => {
+  if (!label) return null;
+  const normalized = String(label).toLowerCase().trim();
+  const key = Object.keys(statusColors).find((k) => k.toLowerCase() === normalized);
+  return key ? statusColors[key] : null;
 };
 
 export const priorityColors = {
